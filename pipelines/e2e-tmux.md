@@ -1,5 +1,5 @@
 ---
-name: 'e2e-tmux'
+name: 'kdh-playwright-e2e-full-auto-24-7-tmux'
 description: 'Playwright E2E Full-Auto 24/7 — TMUX Version v2.1. Loop-based automated E2E testing + instant bug fix + deploy. Uses TeamCreate for parallel 4-agent testing with BMAD agent personas. Runs on VPS inside tmux + Claude CLI.'
 ---
 

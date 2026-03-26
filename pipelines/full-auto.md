@@ -1,6 +1,6 @@
 ---
-name: 'full-auto'
-description: 'Universal Full Pipeline v9.2 — BMAD-powered full-cycle automation. Auto-discovers workflows, real BMAD agent personas, party mode per step, user gates. Usage: /full-auto [planning|story-ID|parallel ID1 ID2...|swarm epic-N]'
+name: 'kdh-full-auto-pipeline'
+description: 'Universal Full Pipeline v9.2 — BMAD-powered full-cycle automation. Auto-discovers workflows, real BMAD agent personas, party mode per step, user gates. Usage: /kdh-full-auto-pipeline [planning|story-ID|parallel ID1 ID2...|swarm epic-N]'
 ---
 
 # Universal Full Pipeline v9.2

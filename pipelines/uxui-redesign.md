@@ -1,5 +1,5 @@
 ---
-name: 'uxui-redesign'
+name: 'kdh-uxui-redesign-full-auto-pipeline'
 description: 'UXUI Redesign Pipeline v7.0 (ProMax). 6 Phases. promax design-system DB + Playwright visual research + Stitch 2 MCP + party mode. BMAD real agent names. Step Grade system. Multi-theme support. Zero hardcoded colors.'
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: 'e2e-vs'
+name: 'kdh-playwright-e2e-full-auto-24-7-vs'
 description: 'Playwright E2E Full-Auto 24/7 — VS Version v2.0. Loop-based automated E2E testing + instant bug fix + deploy. Designed for /loop 15m in VSCode Claude Code. Single-agent sequential mode.'
 ---
 
