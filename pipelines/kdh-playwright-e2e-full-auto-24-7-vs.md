@@ -1,9 +1,9 @@
 ---
 name: 'kdh-playwright-e2e-full-auto-24-7-vs'
-description: 'Playwright E2E Full-Auto 24/7 — VS Version v2.0. Loop-based automated E2E testing + instant bug fix + deploy. Designed for /loop 15m in VSCode Claude Code. Single-agent sequential mode.'
+description: 'Playwright E2E Full-Auto 24/7 — VS Version v2.1 + ECC v1.9.0. Loop-based automated E2E testing + instant bug fix + deploy. Designed for /loop 15m in VSCode Claude Code. Single-agent sequential mode.'
 ---
 
-# Playwright E2E Full-Auto 24/7 — VS Version v2.0
+# Playwright E2E Full-Auto 24/7 — VS Version v2.1 + ECC v1.9.0
 
 Loop-based automated E2E testing + instant bug fix + deploy. Designed to run via `/loop 15m` in VSCode Claude Code.
 
@@ -149,6 +149,8 @@ Step 2.5: Console Error Sweep
     ChunkLoadError, TypeError, 500 response = MAJOR bug
 ```
 
+> **ECC Enhancement — click-path-audit + browser-qa**: `click-path-audit` maps state stores before interaction testing. Detects Phantom Success (toast without API), Sequential Undo, Dead Path. `browser-qa` 4-phase protocol structures testing (Smoke→Interaction→Visual Regression→Accessibility). See [core/ecc-integration.md §3.1](../core/ecc-integration.md#31-e2e-agents--socrates-methodology).
+
 ### Phase 3: Code Analysis + Cross-Check (30s)
 
 ```
@@ -201,6 +203,8 @@ Safety rules:
   - No touching auth.ts or middleware (too risky for auto-fix)
 ```
 
+> **ECC Enhancement — build-error-resolver + ai-regression-testing**: `build-error-resolver` for tsc/build failures. `ai-regression-testing` checks sandbox/production path consistency. See [core/ecc-integration.md §3.2](../core/ecc-integration.md#32-fixer-agents--build-error-resolver--ai-regression-testing).
+
 ### Phase 5: Simplify (1min)
 
 ```
@@ -248,6 +252,8 @@ Update stability-state.md:
   - Update last_commit_hash
   - If consecutive_clean_cycles >= 3 → set mode: WATCH
 ```
+
+> **ECC Enhancement — continuous-learning**: `continuous-learning-v2` captures E2E patterns. `/learn-eval` runs automatically. See [core/ecc-integration.md §3.3](../core/ecc-integration.md#33-post-cycle--continuous-learning).
 
 ### Phase 8: Report + Cleanup (15s)
 
@@ -336,6 +342,7 @@ On exit: set mode=ACTIVE, reset consecutive_clean_cycles=0
 11. **Check known-behaviors.md** — before reporting any bug, verify it's not a known behavior
 12. **Update ESCALATED.md** — failed fixes go to ESCALATED; warn at 3+ re-reports
 13. **Respect stabilization mode** — WATCH mode = reduced testing, 2h interval
+14. **ECC enhancements are additive.** click-path-audit supplements Socrates method. build-error-resolver supplements Phase 4. BMAD takes precedence on any conflict.
 
 ## Output
 

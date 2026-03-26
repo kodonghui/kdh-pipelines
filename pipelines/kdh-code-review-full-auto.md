@@ -1,9 +1,9 @@
 ---
 name: 'kdh-code-review-full-auto'
-description: 'Universal full-auto code review + auto-fix pipeline v4.0. 8 phases: Static Gate → Visual/E2E → Risk Analysis → 3-Critic Party → Verdict → Auto-Fix → Re-Review → Final. BMAD real agents, cross-talk, score variance check. Works on ANY project. Usage: /kdh-code-review-full-auto [PR-url|commit-range|changed-files]'
+description: 'Universal full-auto code review + auto-fix pipeline v4.1 + ECC v1.9.0 integration. 8 phases: Static Gate → Visual/E2E → Risk Analysis → 3-Critic Party → Verdict → Auto-Fix → Re-Review → Final. BMAD real agents, cross-talk, score variance check. Works on ANY project. Usage: /kdh-code-review-full-auto [PR-url|commit-range|changed-files]'
 ---
 
-# Universal Code Review + Auto-Fix Pipeline v4.0
+# Universal Code Review + Auto-Fix Pipeline v4.1
 
 ## Input Selection
 
@@ -112,6 +112,8 @@ Automated checks. No agents needed. Orchestrator runs directly.
    - GATE RESULT: PASS / BLOCKED
 ```
 
+> **ECC Enhancement — verification-loop + security-review**: Phase 1 static checks are supplemented by the `verification-loop` 6-phase deterministic verification (Build→Type→Lint→Test→Security→Diff) and the `security-review` skill's 46+ vulnerability patterns (OWASP Top 10). See [core/ecc-integration.md §2.1](../core/ecc-integration.md#21-static-gate--verification-loop--security-review).
+
 ---
 
 ## Phase 2: Visual/E2E Verification
@@ -169,6 +171,8 @@ If no UI files changed → skip with note in review-report, proceed to Phase 3.
    - Theme: CONSISTENT / N violations
    - Router: PASS / N broken imports
 ```
+
+> **ECC Enhancement — browser-qa + click-path-audit**: Phase 2 is enhanced by `browser-qa` 4-phase protocol (Smoke→Interaction→Visual Regression→Accessibility) and `click-path-audit` for Phantom Success detection (toast without DB write), Sequential Undo, and Dead Path patterns. State store mapping runs before interaction testing. See [core/ecc-integration.md §2.2](../core/ecc-integration.md#22-visual-e2e--browser-qa--click-path-audit).
 
 ---
 
@@ -354,6 +358,8 @@ Grade C (LOW risk) = Writer Solo. winston reviews alone, no critics spawned.
     ANY item unchecked → REJECT [Review Complete], do NOT proceed
 ```
 
+> **ECC Enhancement — santa-method + ai-regression-testing**: After 3-Critic party mode PASSES, `santa-method` runs 2 context-isolated reviewers independently. Both must PASS. Includes Phantom Success rubric criterion. The `ai-regression-testing` skill checks sandbox/production path consistency — the #1 AI regression pattern. MAX_ITERATIONS=2. See [core/ecc-integration.md §2.3](../core/ecc-integration.md#23-party-review--santa-method--ai-regression-testing).
+
 ### Party-log File Format
 
 Each critic log MUST follow this structure:
@@ -500,6 +506,8 @@ ESCALATED issues are tracked persistently:
    - Each entry timestamped
 ```
 
+> **ECC Enhancement — build-error-resolver + refactor-cleaner**: The `build-error-resolver` agent is the primary fixer for build/tsc failures (minimal diffs, categorized errors). The `refactor-cleaner` agent runs after to remove dead code introduced during fixes. See [core/ecc-integration.md §2.4](../core/ecc-integration.md#24-auto-fix--build-error-resolver--refactor-cleaner).
+
 ---
 
 ## Phase 7: Re-Review (if Phase 6 applied fixes)
@@ -624,6 +632,8 @@ Structure:
    - Where to check
 ```
 
+> **ECC Enhancement — continuous-learning**: On pipeline completion, `continuous-learning-v2` captures review patterns as project-scoped instincts. `/learn-eval` extracts findings (e.g., "this repo's auth routes need extra scrutiny"). See [core/ecc-integration.md §2.5](../core/ecc-integration.md#25-post-completion--continuous-learning).
+
 ### 8C: Cleanup
 
 ```
@@ -730,6 +740,7 @@ Timeout hierarchy: Phase timeout > per-item timeout. If total pipeline hits 45mi
 13. **Orchestrator owns transitions.** Agents do NOT self-advance.
 14. **Cleanup mandatory.** Phase 8C runs regardless of verdict.
 15. **Output quality: specific and concrete.** File paths, line numbers, exact values.
+16. **ECC enhancements are additive.** santa-method runs AFTER party mode PASS, not instead of it. verification-loop supplements Phase 1, not replaces it. BMAD takes precedence on any conflict.
 
 ---
 

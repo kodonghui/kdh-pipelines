@@ -44,6 +44,7 @@ kdh-pipelines/
     scoring.md             # Grade A/B/C system + Score Variance Check
     agent-roster.md        # BMAD agent name mapping
     project-scan.md        # Step 0: Universal project auto-scan
+    ecc-integration.md     # ECC v1.9.0 integration mapping (NEW)
   pipelines/               # Individual pipeline definitions
     full-auto.md
     uxui-redesign.md
@@ -78,6 +79,26 @@ All agents use real BMAD personas (not generic names):
 - `sally` — UX Designer (interaction design, accessibility)
 - `bob` — Scrum Master (sprint planning, delivery risk)
 - `dev` — Developer (implementation, code quality)
+
+## ECC Integration (v1.9.0)
+
+All pipelines are enhanced with [ECC v1.9.0](https://github.com/affaan-m/everything-claude-code) components:
+
+| ECC Component | Pipelines | Purpose |
+|--------------|-----------|---------|
+| `santa-method` | Full-Auto, Code-Review | Adversarial 2-agent verification after party mode PASS |
+| `click-path-audit` | All | Detect Phantom Success (toast without DB write), Sequential Undo |
+| `verification-loop` | Full-Auto, Code-Review | 6-phase deterministic gate (Build→Type→Lint→Test→Security→Diff) |
+| `search-first` | Full-Auto | Research existing solutions before writing new code |
+| `tdd-workflow` | Full-Auto, UXUI | RED→GREEN→REFACTOR, 80%+ coverage enforcement |
+| `browser-qa` | Code-Review, UXUI, E2E | 4-phase browser testing protocol |
+| `security-review` | Code-Review, Full-Auto | 46+ vulnerability patterns, OWASP Top 10 |
+| `build-error-resolver` | Code-Review, E2E | Minimal-diff automated build error resolution |
+| `continuous-learning-v2` | All | Automatic pattern extraction → instinct → evolved skills |
+| `design-system` | UXUI | Visual audit + AI slop detection |
+| `synthesis-master` | UXUI | LibreUIUX plugin orchestration |
+
+ECC enhancements are **additive** — they supplement BMAD agents and party mode, never replace them. For details, see [core/ecc-integration.md](core/ecc-integration.md).
 
 ## License
 

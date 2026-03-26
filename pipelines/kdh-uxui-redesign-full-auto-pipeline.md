@@ -1,9 +1,9 @@
 ---
 name: 'kdh-uxui-redesign-full-auto-pipeline'
-description: 'UXUI Redesign Pipeline v7.0 (ProMax). 6 Phases. promax design-system DB + Playwright visual research + Stitch 2 MCP + party mode. BMAD real agent names. Step Grade system. Multi-theme support. Zero hardcoded colors.'
+description: 'UXUI Redesign Pipeline v7.1 + ECC v1.9.0 (ProMax). 6 Phases. promax design-system DB + Playwright visual research + Stitch 2 MCP + party mode. BMAD real agent names. Step Grade system. Multi-theme support. Zero hardcoded colors.'
 ---
 
-# UXUI Redesign Pipeline v7.0 — ProMax Edition
+# UXUI Redesign Pipeline v7.1 + ECC v1.9.0 — ProMax Edition
 
 6 Phase fully automated. **promax** for design system generation, **Playwright MCP** for visual research, **Stitch 2 MCP** for screen generation, **party mode** for quality gates.
 Works on ANY frontend project — auto-detects framework, router, design tokens, and app shell.
@@ -294,6 +294,8 @@ Present ALL theme candidates to user for selection (or keep all for multi-theme)
 git commit "docs(uxui): Phase 2 complete — {N} theme design systems generated"
 ```
 
+> **ECC Enhancement — design-system + design-principles + design-masters**: The `design-system` skill supplements promax with AI slop detection and 10-dimension visual audit. `design-principles` applies timeless design rules (Rams, Muller-Brockmann). `design-masters` references legendary designer patterns. These are advisory inputs to promax, not replacements. See [core/ecc-integration.md §4.1](../core/ecc-integration.md#41-design-system-phase--design-system--design-principles--design-masters).
+
 ---
 
 ## Phase 3: Screen Generation (Stitch 2 MCP)
@@ -421,6 +423,8 @@ CRITICAL: This is a REBUILD, not a patch.
 CRITICAL: ALL colors via CSS variables. grep for hardcoded hex → must be 0.
 ```
 
+> **ECC Enhancement — coding-standards + tdd-workflow**: Rebuild agents follow `coding-standards` for TypeScript/React patterns (immutability, error handling). Component tests use `tdd-workflow` RED→GREEN→REFACTOR. See [core/ecc-integration.md §4.2](../core/ecc-integration.md#42-implementation-phase--coding-standards--tdd-workflow).
+
 ### Step 4-2: API Binding + Routing (Party Mode)
 
 ```
@@ -500,6 +504,8 @@ Output: phase-5-verification/visual-report.md
 Output: phase-5-verification/e2e-report.md
 ```
 
+> **ECC Enhancement — click-path-audit + browser-qa**: `click-path-audit` maps rebuilt pages' state stores and traces all handlers. `browser-qa` 4-phase protocol structures verification. See [core/ecc-integration.md §4.3](../core/ecc-integration.md#43-verification-phase--click-path-audit--browser-qa).
+
 ### Step 5-3: Accessibility Audit (Party Mode)
 
 ```
@@ -519,6 +525,8 @@ Score >= 7 → PASS.
 Output: phase-5-verification/accessibility-report.md
 git commit "docs(uxui): Phase 5 complete — all verification passed"
 ```
+
+> **ECC Enhancement — synthesis-master + libre commands**: `synthesis-master` coordinates all LibreUIUX plugins. `/libre-ui-critique` (design feedback), `/libre-a11y-audit` (WCAG 2.1 AA), `/libre-ui-responsive` (responsive check). synthesis-master coordinates but doesn't replace party mode critics. See [core/ecc-integration.md §4.4](../core/ecc-integration.md#44-final-review--synthesis-master--libre-commands).
 
 ---
 
@@ -589,6 +597,7 @@ git commit "docs(uxui): Phase 5 complete — all verification passed"
 10. **Every interactive element tested.** "Looks fine" ≠ "works fine".
 11. **code-review-graph for structural verification.** Orphans, circular deps, missing connections.
 12. **pipeline-status.yaml is single source of truth.** On resume: read it first.
+13. **ECC design skills are advisory.** design-system/design-principles/design-masters inform promax, not override it. promax remains the single source of design decisions. synthesis-master coordinates but doesn't replace party mode critics.
 
 ## Non-BMAD Fallback
 

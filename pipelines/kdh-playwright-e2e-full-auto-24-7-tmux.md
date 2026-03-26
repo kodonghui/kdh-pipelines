@@ -1,9 +1,9 @@
 ---
 name: 'kdh-playwright-e2e-full-auto-24-7-tmux'
-description: 'Playwright E2E Full-Auto 24/7 — TMUX Version v2.1. Loop-based automated E2E testing + instant bug fix + deploy. Uses TeamCreate for parallel 4-agent testing with BMAD agent personas. Runs on VPS inside tmux + Claude CLI.'
+description: 'Playwright E2E Full-Auto 24/7 — TMUX Version v2.2 + ECC v1.9.0. Loop-based automated E2E testing + instant bug fix + deploy. Uses TeamCreate for parallel 4-agent testing with BMAD agent personas. Runs on VPS inside tmux + Claude CLI.'
 ---
 
-# Playwright E2E Full-Auto 24/7 — TMUX Version v2.1 (Team Agents + BMAD Personas)
+# Playwright E2E Full-Auto 24/7 — TMUX Version v2.2 + ECC v1.9.0 (Team Agents + BMAD Personas)
 
 Loop-based automated E2E testing + instant bug fix + deploy. Uses **TeamCreate** for parallel 4-agent testing with **BMAD agent personas**. Runs on VPS inside tmux + Claude CLI.
 
@@ -110,6 +110,19 @@ Each agent MUST embody their BMAD persona. First action on spawn = read persona 
 | dev | Server bugs | `_bmad/bmm/agents/dev.md` |
 | quinn | Frontend bugs | `_bmad/bmm/agents/qa.md` |
 | sally | Design bugs | `_bmad/bmm/agents/ux-designer.md` |
+
+### ECC Agent Enhancement
+
+Each BMAD agent's prompt is supplemented with ECC Socrates methodology. BMAD persona defines personality; ECC defines testing methodology. BMAD persona loaded FIRST.
+
+| BMAD Agent | ECC Enhancement | Additional Methodology |
+|------------|----------------|----------------------|
+| quinn (Functional) | `socrates-functional` + DB verify | Declare expected state BEFORE interaction. After CRUD: `browser_network_requests()` → verify POST sent → API GET → verify DB persistence. |
+| sally (Visual) | `socrates-visual` + `design-system` audit | 10-dimension visual audit scoring. AI slop detection. |
+| winston (Edge) | `socrates-edge` + `security-review` | 46+ vulnerability patterns. OWASP Top 10. |
+| bob (Regression) | `socrates-regression` + `click-path-audit` | State store mapping. Phantom Success + Sequential Undo detection. |
+
+> See [core/ecc-integration.md §3.1](../core/ecc-integration.md#31-e2e-agents--socrates-methodology) for full prompt injection templates.
 
 ---
 
@@ -425,6 +438,8 @@ SendMessage shutdown_request to each fixer
 TeamDelete (e2e-fixers-{N})
 ```
 
+> **ECC Enhancement — build-error-resolver + ai-regression-testing**: `build-error-resolver` for tsc/build failures (minimal diffs). `ai-regression-testing` checks sandbox/production path consistency after every fix. `verification-loop` 6-phase gate after all fixers complete. See [core/ecc-integration.md §3.2](../core/ecc-integration.md#32-fixer-agents--build-error-resolver--ai-regression-testing).
+
 ---
 
 ### Phase 5: Simplify (1min)
@@ -476,6 +491,8 @@ Save context snapshot to _qa-e2e/playwright-e2e/context-snapshots/cycle-{N}.md:
   - Deploy result
   - Theme used this cycle
 ```
+
+> **ECC Enhancement — continuous-learning**: `continuous-learning-v2` captures E2E patterns as project-scoped instincts. `/learn-eval` runs automatically. See [core/ecc-integration.md §3.3](../core/ecc-integration.md#33-post-cycle--continuous-learning).
 
 ### Phase 8: Report + Cleanup (30s)
 
@@ -656,3 +673,4 @@ If TeamCreate fails (connection issue, resource limit):
 22. **BMAD Persona mandatory** — All agents read and embody persona file on spawn. No operation without persona.
 23. **Cross-talk mandatory** — Phase 2 completion → Step 2.6 cross-talk round. Inter-agent bug cross-verification.
 24. **Page Health tracking** — Update page-health.md every cycle. score < 5 for 3 cycles → auto-escalate.
+25. **ECC Socrates methodology is additive.** BMAD persona defines personality/communication. ECC Socrates defines testing methodology. Both loaded at spawn. BMAD persona file read FIRST.
