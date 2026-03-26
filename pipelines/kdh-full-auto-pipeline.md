@@ -597,9 +597,14 @@ Reference: _bmad/bmm/workflows/4-implementation/code-review/checklist.md
 After Phase F passes:
 1. Run tsc commands from project-context.yaml (all must pass)
 2. If UI files changed → run UI Verification (see section below)
-3. Verify Story Dev Completion Checklist (all items [x])
-4. git commit + push
-5. Shutdown team → TeamDelete
+3. **E2E Gate** (if .tsx page files changed):
+   - Follow protocol in `core/e2e-gate.md`
+   - Identify changed pages → load TCs → Playwright verify CRUD → lint check
+   - CRITICAL: Verify DB writes, not just toast messages
+   - PASS → continue. FAIL → return to Phase A for fix (max 2 retries)
+4. Verify Story Dev Completion Checklist (all items [x])
+5. git commit + push
+6. Shutdown team → TeamDelete
 
 ### Developer Writer Prompt Template (Phase A/B)
 

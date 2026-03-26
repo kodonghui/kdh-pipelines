@@ -15,6 +15,18 @@ e2e:
     password: "ceo1234"
   test_company_prefix: "E2E-TEMP"
 
+e2e_gate:
+  enabled: true
+  admin_url: "http://localhost:5173"
+  app_url: "http://localhost:5174"
+  api_url: "http://localhost:3000/api"
+  test_cases_path: "_qa-e2e/e2e-test-cases-complete.md"
+  lint_scripts:
+    - ".claude/hooks/toast-without-api-check.sh"
+    - ".claude/hooks/cross-check.sh"
+  max_retries: 2
+  timeout_seconds: 300
+
 uxui:
   themes:
     - name: "command"
