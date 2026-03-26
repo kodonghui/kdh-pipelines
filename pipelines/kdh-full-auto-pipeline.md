@@ -1,9 +1,9 @@
 ---
-name: 'full-auto'
-description: 'Universal Full Pipeline v9.2 — BMAD-powered full-cycle automation. Auto-discovers workflows, real BMAD agent personas, party mode per step, user gates. Usage: /full-auto [planning|story-ID|parallel ID1 ID2...|swarm epic-N]'
+name: 'kdh-full-auto-pipeline'
+description: 'Universal Full Pipeline v9.3 — BMAD-powered full-cycle automation + ECC v1.9.0 integration. Auto-discovers workflows, real BMAD agent personas, party mode per step, user gates. Usage: /kdh-full-auto-pipeline [planning|story-ID|parallel ID1 ID2...|swarm epic-N]'
 ---
 
-# Universal Full Pipeline v9.2
+# Universal Full Pipeline v9.3
 
 ## Mode Selection
 
@@ -21,6 +21,8 @@ description: 'Universal Full Pipeline v9.2 — BMAD-powered full-cycle automatio
 If `project-context.yaml` already exists and is < 1 hour old, skip re-scan (use cached).
 
 ---
+
+> **ECC Enhancement — search-first**: If project-context.yaml shows missing common patterns or `test_enabled: false`, the `search-first` skill runs automatically to identify existing frameworks before planning begins. See [core/ecc-integration.md §1.1](../core/ecc-integration.md#11-planning-phase--search-first).
 
 ## BMAD Auto-Discovery Protocol
 
@@ -539,6 +541,8 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 5. Save: context-snapshots/stories/{story-id}-phase-b.md
 ```
 
+> **ECC Enhancement — tdd-workflow + coding-standards**: dev(Writer) follows the `tdd-workflow` RED→GREEN→REFACTOR cycle. Tests written before implementation. quinn(Critic) enforces 80%+ coverage. All code checked against `coding-standards` (immutability, error handling, input validation). See [core/ecc-integration.md §1.2](../core/ecc-integration.md#12-story-dev--tdd-workflow--coding-standards).
+
 ### Phase C: Simplify
 
 ```
@@ -592,14 +596,22 @@ Reference: _bmad/bmm/workflows/4-implementation/code-review/checklist.md
 5. Save: context-snapshots/stories/{story-id}-phase-f.md
 ```
 
+> **ECC Enhancement — santa-method**: After Phase F party mode PASSES, run `santa-method` adversarial verification: 2 context-isolated agents independently review changed files. Both must PASS. MAX_ITERATIONS=2, then ESCALATE. Includes Phantom Success rubric criterion. See [core/ecc-integration.md §1.3](../core/ecc-integration.md#13-code-review--santa-method--security-review).
+
 ### Phase transitions
 
 After Phase F passes:
 1. Run tsc commands from project-context.yaml (all must pass)
 2. If UI files changed → run UI Verification (see section below)
-3. Verify Story Dev Completion Checklist (all items [x])
-4. git commit + push
-5. Shutdown team → TeamDelete
+3. **E2E Gate** (if .tsx page files changed):
+   - Follow protocol in `core/e2e-gate.md`
+   - Identify changed pages → load TCs → Playwright verify CRUD → lint check
+   - CRITICAL: Verify DB writes, not just toast messages
+   - PASS → continue. FAIL → return to Phase A for fix (max 2 retries)
+   - **ECC Enhancement**: `click-path-audit` maps state stores and traces handler chains for Phantom Success detection. `verification-loop` runs 6-phase deterministic gate (Build→Type→Lint→Test→Security→Diff). See [core/ecc-integration.md §1.4](../core/ecc-integration.md#14-e2e-gate--click-path-audit--verification-loop).
+4. Verify Story Dev Completion Checklist (all items [x])
+5. git commit + push
+6. Shutdown team → TeamDelete
 
 ### Developer Writer Prompt Template (Phase A/B)
 
@@ -631,6 +643,9 @@ Implement real, working features. Fix based on critic feedback. No stubs.
 - NEVER use Skill tool. Read .md files manually.
 - Real working code only. No stubs/mocks.
 - All references read FROM FILE, not from message memory.
+- PROHIBITION: No success UI (toast, redirect) without a preceding api.post/put/delete or mutation.mutate().
+  addToast({ type: 'success' }) without API call = CRITICAL BUG. Document each CRUD handler:
+  API endpoint → server route → DB table. See core/ecc-integration.md §6 (Phantom Success Defense).
 ```
 
 ---
@@ -746,6 +761,8 @@ Story Dev completion checklist:
 ALL items must be [x] before story is accepted.
 If any UI check fails → fix → re-run → must pass.
 
+> **ECC Enhancement — continuous-learning**: On story completion, `continuous-learning-v2` observe hook captures patterns as project-scoped instincts. `/learn-eval` extracts reusable knowledge. See [core/ecc-integration.md §1.5](../core/ecc-integration.md#15-post-completion--continuous-learning).
+
 ---
 
 ## Pipeline Interconnection: UXUI Redesign → Code Review
@@ -812,3 +829,4 @@ Output: _qa-e2e/uxui-redesign-review-{date}.md
 18. **Run to completion.** Do NOT stop at intermediate milestones (except GATE steps).
 19. **Batch parallelism.** Independent files needing similar changes → split into batches, launch background agents.
 20. **Startup cleanup.** Clean stale worktrees/panes/dirs. Shutdown: clean all resources.
+21. **ECC enhancements are additive.** ECC skills enhance but never replace BMAD party mode or agent personas. If ECC and BMAD conflict, BMAD takes precedence. santa-method runs AFTER party mode, not instead of it.

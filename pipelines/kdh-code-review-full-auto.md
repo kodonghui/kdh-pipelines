@@ -1,6 +1,6 @@
 ---
-name: 'code-review'
-description: 'Universal full-auto code review + auto-fix pipeline v4.0. 8 phases: Static Gate → Visual/E2E → Risk Analysis → 3-Critic Party → Verdict → Auto-Fix → Re-Review → Final. BMAD real agents, cross-talk, score variance check. Works on ANY project. Usage: /code-review [PR-url|commit-range|changed-files]'
+name: 'kdh-code-review-full-auto'
+description: 'Universal full-auto code review + auto-fix pipeline v4.0. 8 phases: Static Gate → Visual/E2E → Risk Analysis → 3-Critic Party → Verdict → Auto-Fix → Re-Review → Final. BMAD real agents, cross-talk, score variance check. Works on ANY project. Usage: /kdh-code-review-full-auto [PR-url|commit-range|changed-files]'
 ---
 
 # Universal Code Review + Auto-Fix Pipeline v4.0

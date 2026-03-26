@@ -1,0 +1,65 @@
+# KDH Pipeline Preset — CORTHEX v3 "OpenClaw"
+project:
+  name: "corthex-v3"
+  description: "AI Virtual Office Management Platform"
+
+e2e:
+  base_url: "https://corthex-hq.com"
+  admin_login:
+    endpoint: "/api/auth/admin/login"
+    username: "admin"
+    password: "admin1234"
+  ceo_login:
+    endpoint: "/api/auth/login"
+    username: "ceo"
+    password: "ceo1234"
+  test_company_prefix: "E2E-TEMP"
+
+e2e_gate:
+  enabled: true
+  admin_url: "http://localhost:5173"
+  app_url: "http://localhost:5174"
+  api_url: "http://localhost:3000/api"
+  test_cases_path: "_qa-e2e/e2e-test-cases-complete.md"
+  lint_scripts:
+    - ".claude/hooks/toast-without-api-check.sh"
+    - ".claude/hooks/cross-check.sh"
+  max_retries: 2
+  timeout_seconds: 300
+
+uxui:
+  themes:
+    - name: "command"
+      keywords: "AI command center dark premium cyberpunk"
+      target: "Power users, tech-savvy, dark mode lovers"
+    - name: "studio"
+      keywords: "AI virtual office collaboration modern clean"
+      target: "Creative teams, daily users, light and friendly"
+    - name: "corporate"
+      keywords: "AI enterprise SaaS dashboard professional trust"
+      target: "Enterprise, formal, executive presentations"
+  packages:
+    - "app"
+    - "admin"
+    - "landing"
+    - "office"
+  icon_library: "lucide-react"
+
+planning:
+  reference_docs:
+    - "_bmad-output/planning-artifacts/prd.md"
+    - "_bmad-output/planning-artifacts/architecture.md"
+    - "_bmad-output/planning-artifacts/v1-feature-spec.md"
+    - "_bmad-output/planning-artifacts/epics-and-stories.md"
+
+code_review:
+  protected_paths:
+    - "packages/server/src/routes/auth.ts"
+    - "packages/server/src/middleware/"
+    - "packages/server/src/db/migrations/"
+    - "packages/server/src/lib/credential-crypto.ts"
+  smart_limits:
+    logic: 3
+    style: 10
+    text: 15
+    mixed: 5
