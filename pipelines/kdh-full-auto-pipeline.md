@@ -525,6 +525,25 @@ Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
 6. Save: context-snapshots/stories/{story-id}-phase-a.md
 ```
 
+### Sprint Contract (Phase A → B 전환)
+
+Phase B 코딩 시작 전, dev(Writer)와 quinn(QA)이 스프린트 계약을 협상:
+
+```
+1. dev가 story 파일 읽고 Sprint Contract 초안 작성:
+   - 이번 스프린트에서 구현할 기능 목록
+   - 각 기능의 검증 가능한 완료 조건 (예: "POST /api/departments → 201 + DB에 row 존재")
+   - 제외 범위 (이번에 안 하는 것)
+   - Save: context-snapshots/stories/{story-id}-sprint-contract.md
+2. quinn이 계약서 검토:
+   - 완료 조건이 기계적으로 검증 가능한지 확인
+   - 누락된 엣지 케이스 지적
+   - Phantom Success 패턴 위험 체크 (UI-only 완료 조건 거부)
+3. 합의 → Phase B 시작. 불합의 → 1회 재협상 후 진행.
+```
+
+> Sprint Contract는 Anthropic Labs의 "Harness Design" 기법에서 채택. 코딩 전 합의가 사후 리뷰보다 효과적.
+
 ### Phase B: Develop Story
 
 ```
@@ -756,6 +775,7 @@ Story Dev completion checklist:
   [ ] If UI story: no unexpected console errors
   [ ] All router imports resolve
   [ ] Real functionality (no stub/mock/placeholder)
+  [ ] Sprint Contract 완료 조건 전부 충족 (context-snapshots/{story-id}-sprint-contract.md 대조)
 ```
 
 ALL items must be [x] before story is accepted.

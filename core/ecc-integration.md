@@ -256,6 +256,17 @@ After every Create/Update/Delete action:
 5. Santa agents are shut down immediately after verdict
 ```
 
+### Evaluator Calibration
+
+Santa 에이전트도 캘리브레이션이 필요합니다. Anthropic Labs의 실험에서 확인된 사실:
+> "Out of the box, Claude is a poor QA agent. It identified legitimate issues, then talked itself into deciding they weren't a big deal and approved the work anyway."
+
+**캘리브레이션 방법**:
+1. Santa 리뷰 로그(`party-logs/santa-a.md`, `santa-b.md`)를 오케스트레이터가 사후 분석
+2. PASS했지만 나중에 버그로 밝혀진 사례를 `_qa-e2e/evaluator-calibration.md`에 기록
+3. 다음 Santa 실행 시 프롬프트에 "Known False Passes" 섹션 주입
+4. 5회 실행마다 캘리브레이션 리뷰 (기존 false pass 목록이 여전히 유효한지 확인)
+
 ### Application Conditions
 
 | Story Type | Review Configuration |
@@ -284,6 +295,7 @@ After every Create/Update/Delete action:
 
 | Layer | Defense | Pipeline Phase | Mechanism |
 |-------|---------|---------------|-----------|
+| 0 | Sprint Contract | Phase A→B 전환 | dev↔quinn 사전 합의: 검증 가능한 완료 조건 + 제외 범위 |
 | 1 | Generation Prevention | Writer Prompt (Phase B) | API Wiring Checklist: success UI <- API call 필수 |
 | 2 | Static Lint | Pre-commit hook | toast-without-api-check.sh (blocking, exit 2) |
 | 3 | Dynamic Verification | E2E Gate | CRUD -> API GET -> DB persistence 확인 |

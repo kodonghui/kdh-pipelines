@@ -148,6 +148,25 @@ If no UI files changed → skip with note in review-report, proceed to Phase 3.
    e. CRUD operations (if applicable): create → read → update → delete
    f. Navigation links: click → verify route change + no 404
 
+   g. **12-Dimension Scenario Sweep** (Grade A/B changed pages only):
+
+      | # | Dimension | Check | Example |
+      |---|-----------|-------|---------|
+      | 1 | Happy Path | 정상 입력 → 기대 결과? | 유효한 이름으로 부서 생성 |
+      | 2 | Error | 잘못된 입력 → 에러 표시? | 빈 이름, 특수문자, 중복 |
+      | 3 | Edge | 경계값 정상 작동? | 1글자, 255글자, 0건 목록 |
+      | 4 | Abuse | 악의적 입력 방어? | XSS, SQL injection |
+      | 5 | Scale | 대량 데이터 성능? | 1000건 목록 |
+      | 6 | Concurrent | 동시 요청 안전? | 같은 이름 동시 생성 |
+      | 7 | Temporal | 시간 엣지? | 자정, 타임존, 만료 |
+      | 8 | State | 상태 전이 올바른가? | 생성→수정→삭제→재생성 |
+      | 9 | Integration | 다른 기능 연동? | 부서 삭제 시 소속 직원 |
+      | 10 | Data | 데이터 무결성? | null, undefined, NaN |
+      | 11 | Permission | 권한 올바른가? | 일반 유저 → admin API |
+      | 12 | Environment | 환경별 차이? | 모바일, 다크모드 |
+
+      Grade A: 12차원 전부. Grade B: 1-4, 8-11 (핵심 8개).
+
 5. Console error collection:
    - Capture ALL browser console messages during E2E
    - Filter benign: React DevTools, HMR, favicon 404
@@ -249,6 +268,21 @@ TeamCreate("code-review-{timestamp}")
 | dev (Critic 2: Security+Code) | _bmad/bmm/agents/dev.md | OWASP top 10, injection, XSS, auth bypass, code quality, performance. |
 | john (Critic 3: Product) | _bmad/bmm/agents/pm.md | Scope compliance, product alignment, unnecessary changes, user impact. |
 ```
+
+### Evaluator Calibration Protocol
+
+평가자(Critic) 에이전트는 기본적으로 관대합니다. 캘리브레이션 없이는 진짜 문제를 발견해도 "별거 아니다"로 넘깁니다.
+
+**캘리브레이션 사이클** (파이프라인 첫 실행 후 1회, 이후 5회 실행마다 1회):
+
+1. 오케스트레이터가 최근 party-log 파일들을 읽음
+2. Critic이 PASS했지만 실제로 버그가 있었던 사례 식별 (예: "toast는 OK" 판정했지만 실제 API 호출 누락)
+3. 해당 패턴을 Critic 스폰 프롬프트의 "Known False Passes" 섹션에 추가
+4. 다음 리뷰에서 해당 패턴에 대한 Critic 판단 재확인
+
+**Known False Passes 누적 위치**: `_qa-e2e/evaluator-calibration.md`
+
+> Anthropic Labs: "Tuning a standalone evaluator to be skeptical turns out to be far more tractable than making a generator critical of its own work."
 
 ### Agent Spawn Template
 
