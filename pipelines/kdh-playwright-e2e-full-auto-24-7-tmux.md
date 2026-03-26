@@ -220,6 +220,27 @@ TaskCreate (4 parallel):
 **Important: All Agent calls MUST include team_name. Omitting it creates a subagent that cannot communicate with the team.**
 **Important: Staggered spawn to prevent browser contention (quinn→winston→bob→sally, 30s intervals).**
 
+#### 12-Dimension Scenario Checklist (모든 에이전트 공통)
+
+각 에이전트는 담당 페이지 테스트 시 12차원 중 전문 영역을 우선 체크:
+
+| Dimension | quinn | sally | winston | bob |
+|-----------|:-----:|:-----:|:-------:|:---:|
+| 1. Happy Path | **주** | - | - | 확인 |
+| 2. Error | **주** | - | 확인 | - |
+| 3. Edge | 확인 | - | **주** | - |
+| 4. Abuse | - | - | **주** | - |
+| 5. Scale | - | - | 확인 | 확인 |
+| 6. Concurrent | - | - | **주** | - |
+| 7. Temporal | 확인 | - | - | **주** |
+| 8. State | **주** | - | - | **주** |
+| 9. Integration | 확인 | - | - | **주** |
+| 10. Data | **주** | - | 확인 | - |
+| 11. Permission | - | - | **주** | - |
+| 12. Environment | - | **주** | - | 확인 |
+
+bugs.md 보고 시 Dimension 번호 포함: `BUG-Q001 [Dim:8] 부서 삭제 후 재생성 시 ID 충돌`
+
 #### quinn — Functional (CRUD + Buttons)
 
 ```
@@ -522,6 +543,15 @@ Save context snapshot to _qa-e2e/playwright-e2e/context-snapshots/cycle-{N}.md:
 - Test company cleanup: {success|failed}
 - Theme: {ACTIVE_THEME}
 - Page health: {pages_degrading} degrading, {pages_escalated} auto-escalated
+
+2b. Append to _qa-e2e/playwright-e2e/cycle-data.tsv:
+    (헤더 없으면 첫 줄에 생성)
+
+    Header: cycle	timestamp	api_pass	api_total	pages	errors	dead_buttons	bugs_found	bugs_fixed	remaining	p0	p1	p2	p3	files	deploy	smoke	degrading	theme
+    Row: {N}	{ISO}	{pass}	{total}	{pages}	{err}	{dead}	{found}	{fixed}	{rem}	{p0}	{p1}	{p2}	{p3}	{cnt}	{deploy}	{smoke}	{deg}	{theme}
+
+    - cycle-report.md = 사람용 (유지), cycle-data.tsv = 기계 파싱용 (신규)
+    - 추세 분석: awk -F'\t' '{print $2, $8}' cycle-data.tsv | sort
 
 3. Update stability-state.md:
    - 0 bugs → increment clean_cycles
