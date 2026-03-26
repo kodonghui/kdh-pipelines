@@ -1,0 +1,51 @@
+# KDH Pipeline Preset — Copy this file and customize for your project
+# Usage: Save as presets/my-project.yaml in your project root
+
+project:
+  name: "my-project"
+  description: "Brief project description"
+
+# E2E Testing
+e2e:
+  base_url: "https://your-site.com"
+  admin_login:
+    endpoint: "/api/auth/admin/login"
+    username: "admin"
+    password: "admin1234"
+  ceo_login:
+    endpoint: "/api/auth/login"
+    username: "ceo"
+    password: "ceo1234"
+  test_company_prefix: "E2E-TEMP"
+
+# UXUI Redesign
+uxui:
+  themes:
+    - name: "default"
+      keywords: "modern clean professional SaaS"
+      target: "General users"
+  packages:
+    - "app"
+    - "admin"
+  icon_library: "lucide-react"
+
+# Planning
+planning:
+  # Files to reference during planning stages (relative to project root)
+  reference_docs: []
+  # User gate questions can be customized per project
+  # Default gates from the pipeline will be used if not specified here
+
+# Code Review
+code_review:
+  # Files/paths that should never be auto-fixed
+  protected_paths:
+    - "src/auth/"
+    - "src/middleware/"
+    - "migrations/"
+  # Max files per auto-fix
+  smart_limits:
+    logic: 3
+    style: 10
+    text: 15
+    mixed: 5
