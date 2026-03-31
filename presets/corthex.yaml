@@ -1,63 +1,77 @@
-# KDH Pipeline Preset — CORTHEX v3 "OpenClaw"
+# KDH Pipeline Preset — CORTHEX v3
+# Updated: 2026-03-31 (v10)
+
 project:
   name: "corthex-v3"
   description: "AI Virtual Office Management Platform"
+  phase: 1
+  total_stories: 47
+  sprints: 6
+
+monorepo:
+  manager: "turborepo"
+  package_manager: "bun"
+  packages:
+    server: "packages/server"
+    admin: "packages/admin"
+    app: "packages/app"
+    shared: "packages/shared"
+
+contracts:
+  path: "packages/shared/src/contracts/"
+  barrel: "packages/shared/src/contracts/index.ts"
+  enforcement: strict  # inline types = auto-FAIL
+
+db:
+  provider: "neon"
+  orm: "drizzle"
+  schema_path: "packages/server/src/db/schema/"
+
+ui:
+  framework: "react"
+  bundler: "vite"
+  css: "tailwind"
+  components: "subframe"
+  themes_path: "packages/admin/src/lib/themes.ts"
 
 e2e:
   base_url: "https://corthex-hq.com"
-  admin_login:
-    endpoint: "/api/auth/admin/login"
-    username: "admin"
-    password: "admin1234"
-  ceo_login:
-    endpoint: "/api/auth/login"
-    username: "ceo"
-    password: "ceo1234"
+  dev_admin_url: "http://localhost:5173"
+  dev_api_url: "http://localhost:3000/api"
   test_company_prefix: "E2E-TEMP"
-
-e2e_gate:
-  enabled: true
-  admin_url: "http://localhost:5173"
-  app_url: "http://localhost:5174"
-  api_url: "http://localhost:3000/api"
-  test_cases_path: "_qa-e2e/e2e-test-cases-complete.md"
-  lint_scripts:
-    - ".claude/hooks/toast-without-api-check.sh"
-    - ".claude/hooks/cross-check.sh"
-  max_retries: 2
-  timeout_seconds: 300
-
-uxui:
-  themes:
-    - name: "command"
-      keywords: "AI command center dark premium cyberpunk"
-      target: "Power users, tech-savvy, dark mode lovers"
-    - name: "studio"
-      keywords: "AI virtual office collaboration modern clean"
-      target: "Creative teams, daily users, light and friendly"
-    - name: "corporate"
-      keywords: "AI enterprise SaaS dashboard professional trust"
-      target: "Enterprise, formal, executive presentations"
-  packages:
-    - "app"
-    - "admin"
-    - "landing"
-    - "office"
-  icon_library: "lucide-react"
+  journeys:
+    - "signup → login"
+    - "company CRUD"
+    - "division CRUD"
+    - "team + member management"
+    - "AI agent CRUD"
 
 planning:
+  artifacts_path: "_bmad-output/planning-artifacts/"
+  party_logs_path: "_bmad-output/party-logs/"
+  sprint_status: "_bmad-output/implementation-artifacts/sprint-status.yaml"
   reference_docs:
     - "_bmad-output/planning-artifacts/prd.md"
     - "_bmad-output/planning-artifacts/architecture.md"
-    - "_bmad-output/planning-artifacts/v1-feature-spec.md"
     - "_bmad-output/planning-artifacts/epics-and-stories.md"
+    - "_bmad-output/planning-artifacts/api-contracts.md"
+
+review:
+  critics: ["winston", "quinn", "john"]
+  pass_threshold: 7.5
+  min_cycles: 1
+  contract_compliance: strict
+
+gate:
+  language: "korean"
+  tech_jargon: false
+  auto_mode_keyword: "계속"
 
 code_review:
   protected_paths:
     - "packages/server/src/routes/auth.ts"
     - "packages/server/src/middleware/"
     - "packages/server/src/db/migrations/"
-    - "packages/server/src/lib/credential-crypto.ts"
   smart_limits:
     logic: 3
     style: 10

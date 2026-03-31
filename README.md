@@ -1,137 +1,156 @@
-# KDH Pipeline Suite
+# KDH Pipeline Suite v10
 
-**AI-powered software development pipelines for Claude Code.** Built on [BMAD Method](https://github.com/bmadcode/BMAD-METHOD) + [Everything Claude Code](https://github.com/affaan-m/everything-claude-code).
+**AI-powered software development pipelines for Claude Code.** Built on [BMAD Method](https://github.com/bmadcode/BMAD-METHOD) + [Everything Claude Code](https://github.com/affaan-m/everything-claude-code) + latest research (Superpowers, GSD, Ralph Wiggum, revfactory/harness).
 
-5 pipelines that automate the entire software lifecycle — from product brief to E2E testing — using multi-agent teams with real-time peer review.
-
----
-
-## Why This Exists
-
-AI coding tools are great at writing individual features. But they consistently fail at **integration** — connecting features across packages, maintaining type contracts, and catching bugs that only appear when components interact.
-
-After building 167 features (29 epics) for a production monorepo, we found 29 integration bugs that unit tests and `tsc` couldn't catch. Every bug had the same root cause: **no enforced contract between frontend and backend**.
-
-These pipelines solve that by treating AI development like a real engineering team — with planning, peer review, adversarial testing, and automated quality gates at every step.
+7 modular skills that automate the entire software lifecycle — from product brief to E2E testing — using multi-agent teams with real-time peer review.
 
 ---
 
-## Pipelines
+## v10: Complete Redesign
 
-| Pipeline | Version | Command | What It Does |
-|----------|---------|---------|-------------|
-| **Full Auto** | v9.4 | `/kdh-full-auto-pipeline` | Complete lifecycle: Planning (9 stages) → Story Dev (6 phases) → Parallel → Swarm |
-| **UXUI Redesign** | v7.1 | `/kdh-uxui-redesign-full-auto-pipeline` | Design system generation → page rebuild → visual verification. Multi-theme. |
-| **Code Review** | v4.1 | `/kdh-code-review-full-auto` | 8-phase review: Static → Visual → Risk → 3-Critic Party → Santa Method → Fix |
-| **E2E Testing (tmux)** | v2.2 | `/kdh-playwright-e2e-full-auto-24-7-tmux` | 4-agent parallel E2E loop. Socrates methodology + 12-Dimension scenarios. |
-| **E2E Testing (VS)** | v2.1 | `/kdh-playwright-e2e-full-auto-24-7-vs` | Single-agent sequential E2E. Click-path audit + browser QA. |
+v9.x had one 1,060-line monolith skill that was too large for AI to follow reliably. v10 splits it into 7 focused skills (100-300 lines each), with key improvements from 5 research reports:
 
-### Full Auto Pipeline v9.4 — Highlights
+| Source | What We Took |
+|--------|-------------|
+| [Superpowers](https://github.com/obra/superpowers) (127k stars) | TDD enforcement (RED-GREEN-REFACTOR) |
+| [GSD Framework](https://www.mindstudio.ai/blog/gsd-framework) | Clean context per phase, file-based state |
+| [Ralph Wiggum Loop](https://github.com/ErikBjare/are-you-better-than-a-mass-produced-agent) (14.1k stars) | Fresh agent spawn per story |
+| [revfactory/harness](https://github.com/revfactory/harness) (1k stars) | 6 team patterns (Pipeline, Producer-Reviewer, etc.) |
+| [Anthropic 3-Agent](https://docs.anthropic.com/en/docs/agents) | Generator ≠ Evaluator separation |
 
-The flagship pipeline. 4 execution modes:
+### Key Changes from v9.x
 
-| Mode | Usage | When |
-|------|-------|------|
-| `planning` | `/kdh-full-auto-pipeline planning` | New project or epic — runs 9 planning stages with party mode |
-| `story-ID` | `/kdh-full-auto-pipeline 9-1` | Single story dev — 6 phases (create → dev → simplify → test → QA → review) |
-| `parallel` | `/kdh-full-auto-pipeline parallel 9-1 9-2 9-3` | Up to 3 stories in parallel via git worktrees |
-| `swarm` | `/kdh-full-auto-pipeline swarm epic-9` | Auto-epic: 3 self-organizing teams, dependency-aware task claiming |
-
-**v9.4 additions:**
-- **EARS requirements** — unambiguous requirement syntax in Brief, PRD, Story, and Test phases
-- **Contract Stage 6.5** — all API types defined in shared package BEFORE coding begins
-- **Wiring Stories** — auto-generated stories for cross-package connections
-- **Integration Gate** — cross-package `tsc` + contract compliance check before commit
-- **Hono RPC auto-detect** — if your server uses Hono, types flow automatically via `hc<AppType>()`
+| Problem | v9.x | v10 |
+|---------|------|-----|
+| AI can't follow 1060-line skill | 1 monolith | 7 skills, 100-300 lines each |
+| Swarm skipped party mode | Structural flaw | Party mode in dedicated /kdh-review |
+| Self-review bias | Same agent builds + reviews | Generator ≠ Evaluator (separate agents) |
+| Context pollution | Long-running sessions | Fresh agent per story (Ralph Loop) |
+| No E2E verification | Manual only | Automated /kdh-e2e at sprint end |
+| User needs 6 commands | 6 skills to learn | `/kdh-go` — one command |
 
 ---
 
-## How It Works
+## Skills
 
-### Party Mode (Multi-Critic Review)
+| Skill | Lines | Pattern | What It Does |
+|-------|-------|---------|-------------|
+| **`/kdh-go`** | 177 | Dispatcher | **One command to rule them all.** Auto-detects state, runs everything. |
+| **`/kdh-plan`** | 234 | Pipeline | BMAD Stage 0-8 planning with party mode + GATE steps |
+| **`/kdh-build`** | 217 | Producer | TDD story implementation (Generator role) |
+| **`/kdh-review`** | 227 | Producer-Reviewer | Party mode code review (Evaluator role, separate agent) |
+| **`/kdh-sprint`** | 172 | Supervisor | Sprint orchestration — dependency resolution + parallel dispatch |
+| **`/kdh-e2e`** | 233 | Evaluator | Playwright browser testing — 5 user journeys per sprint |
+| **`/kdh-gate`** | 61 | Human-in-loop | CEO decision points — no tech jargon, A/B/C choices |
+| **`/kdh-research`** | 59 | Research | Deep multi-source research with citations |
 
-Every important step goes through structured peer review:
+### Skill Interaction Flow
 
 ```
-Writer writes section
-    ↓
-3-5 Critics review independently (party-logs/*.md)
-    ↓
-Critics cross-talk: discuss disagreements with peers
-    ↓
-Writer applies fixes → critics verify → score (1-10)
-    ↓
-Average >= threshold → PASS
+/kdh-go (entry point)
+  │
+  ├─ Planning not done? → /kdh-plan (Stage 0-8, party mode)
+  │                          └─ /kdh-gate (CEO decisions)
+  │
+  └─ Sprint N pending? → /kdh-sprint N
+                            │
+                            ├─ For each story:
+                            │   /kdh-build (TDD: RED→GREEN→REFACTOR)
+                            │       ↓
+                            │   /kdh-review (3 critics: winston/quinn/john)
+                            │       ↓
+                            │   PASS → next story
+                            │   CONDITIONAL → fix → re-review
+                            │   FAIL → escalate
+                            │
+                            └─ Sprint done → /kdh-e2e (Playwright)
+                                               └─ /kdh-gate (CEO browser check)
 ```
-
-- **Grade A** (critical): avg ≥ 8.0, 2 cycles minimum, Devil's Advocate
-- **Grade B** (important): avg ≥ 7.5, 1 cycle + cross-talk
-- **Grade C** (setup): Writer Solo, no review
-
-### BMAD Agents
-
-All agents use real personas with specialized expertise — not generic "critic-a/b/c":
-
-| Agent | Role | Focus |
-|-------|------|-------|
-| `winston` | Architect | Distributed systems, API design, scalability |
-| `quinn` | QA Engineer | Testing, edge cases, coverage analysis |
-| `john` | Product Manager | Requirements, user value, stakeholder alignment |
-| `sally` | UX Designer | Interaction design, accessibility, user research |
-| `bob` | Scrum Master | Sprint planning, delivery risk, velocity |
-| `dev` | Developer | Implementation, code quality, performance |
-| `analyst` | Analyst | Research synthesis, data interpretation |
-| `tech-writer` | Tech Writer | Documentation, specification clarity |
-
-### Anti-Pattern Defense
-
-14 production-verified failure patterns with automatic prevention:
-
-| # | Pattern | How It's Prevented |
-|---|---------|-------------------|
-| 1 | Writer calls Skill tool (bypasses review) | Prohibition in spawn prompt |
-| 2 | Writer batches steps (skips per-step review) | One step → party mode → next |
-| 3 | Generic agent names (loses expertise) | Real BMAD names enforced |
-| 4 | Score convergence (rubber-stamp) | Stdev < 0.5 triggers re-scoring |
-| 5 | Single-cycle pass (no Devil's Advocate) | Grade A requires 2 cycles minimum |
-| 6 | Cross-talk skipped | Logs without `## Cross-talk` = REJECT |
-| 7 | Missing party-log files | Orchestrator verifies before ACCEPT |
-| 13 | Inline API type duplication | Contract compliance check in Phase F |
-| 14 | Missing wiring (module created, never connected) | Wiring Stories auto-generated |
-
-Full list in [pipelines/kdh-full-auto-pipeline.md](pipelines/kdh-full-auto-pipeline.md).
 
 ---
 
-## ECC Integration
+## Usage
 
-All pipelines are enhanced with [Everything Claude Code v1.9.0](https://github.com/affaan-m/everything-claude-code) components:
+### For the CEO (2 commands)
 
-| Component | Purpose | Used By |
-|-----------|---------|---------|
-| `santa-method` | 2-agent adversarial review (context-isolated) | Full-Auto, Code-Review |
-| `click-path-audit` | Phantom Success detection (toast without DB write) | All pipelines |
-| `verification-loop` | 6-phase deterministic gate (Build→Type→Lint→Test→Security→Diff) | Full-Auto, Code-Review |
-| `tdd-workflow` | RED→GREEN→REFACTOR, 80%+ coverage | Full-Auto, UXUI |
-| `browser-qa` | 4-phase browser testing protocol | Code-Review, UXUI, E2E |
-| `security-review` | 46+ vulnerability patterns, OWASP Top 10 | Code-Review, Full-Auto |
-| `continuous-learning-v2` | Automatic pattern extraction → instinct → skill evolution | All pipelines |
-| `design-system` | Visual audit + AI slop detection | UXUI, E2E |
+```bash
+# Daytime — runs next task, pauses at decisions
+/kdh-go
 
-### Phantom Success Defense (6 Layers)
+# Overnight — auto-selects all decisions, runs until done
+/kdh-go 계속
+```
 
-Prevents "UI shows success but nothing actually happened":
+### For Developers (individual skills)
 
-| Layer | Where | How |
-|-------|-------|-----|
-| L1 | Writer Prompt | API Wiring Checklist: success UI must have preceding API call |
-| L2 | Pre-commit Hook | `toast-without-api-check.sh` blocks commit |
-| L3 | E2E Gate | CRUD → API GET → verify DB persistence |
-| L4 | Code Review | Santa Method + Phantom Success rubric |
-| L5 | 24/7 E2E | Network request verification on every action |
-| L6 | Learning Loop | Pattern → `bug-patterns.yaml` → future prompt injection |
+```bash
+/kdh-plan              # Run planning pipeline
+/kdh-build 1-1         # Build story 1-1 with TDD
+/kdh-review 1-1        # Review story 1-1 with party mode
+/kdh-sprint 1          # Run entire Sprint 1
+/kdh-e2e               # Run E2E browser tests
+/kdh-research topic    # Deep research on any topic
+```
 
-Details in [core/ecc-integration.md](core/ecc-integration.md).
+### Overnight Execution (Ralph Loop)
+
+For maximum stability — fresh context every iteration:
+
+```bash
+while true; do claude -p "/kdh-go 계속"; sleep 5; done
+```
+
+---
+
+## Party Mode (Multi-Critic Review)
+
+Every story goes through structured peer review by BMAD agents:
+
+```
+/kdh-build (dev implements)     ← Generator
+    ↓ (terminates)
+/kdh-review (fresh agents)      ← Evaluator (different agent!)
+    ↓
+    ├── winston: Architecture review
+    ├── quinn: QA + test quality review
+    └── john: Product requirements review
+    ↓
+    Cross-talk (critics discuss disagreements)
+    ↓
+    Score ≥ 7.5 → PASS
+    Score < 7.5 → CONDITIONAL (fix + re-review)
+    Any score < 3 → auto-FAIL
+```
+
+**Key principle: Generator ≠ Evaluator.** The agent that writes code NEVER reviews its own code. This eliminates self-bias (confirmed by Anthropic's 3-agent research).
+
+---
+
+## BMAD Agents
+
+| Agent | Persona | Review Focus |
+|-------|---------|-------------|
+| `winston` | Architect | API design, DB queries, scalability, security |
+| `quinn` | QA Engineer | Test coverage, edge cases, error handling |
+| `john` | Product Manager | Requirements, user stories, acceptance criteria |
+| `sally` | UX Designer | Interaction design, accessibility |
+| `bob` | Scrum Master | Sprint planning, delivery risk |
+| `dev` | Developer | Implementation, code quality |
+| `analyst` | Analyst | Research, data analysis |
+
+---
+
+## Contract Compliance (v9.4+)
+
+All API types must be defined in `packages/shared/src/contracts/` and imported — never defined inline. This prevents the #1 cause of integration bugs (29 bugs in v2 from type drift).
+
+```typescript
+// ✅ ALLOWED
+import { Company, CreateCompanyRequest } from '@corthex/shared'
+
+// ❌ FORBIDDEN (auto-FAIL in /kdh-review)
+interface Company { id: string; name: string }
+```
 
 ---
 
@@ -140,71 +159,50 @@ Details in [core/ecc-integration.md](core/ecc-integration.md).
 ```
 kdh-pipelines/
 ├── README.md
-├── core/                         # Shared protocols (all pipelines reference these)
-│   ├── party-mode.md             # Multi-critic review protocol
-│   ├── scoring.md                # Grade A/B/C + 6-dimension scoring rubric
-│   ├── agent-roster.md           # BMAD agent registry + spawn template
-│   ├── project-scan.md           # Step 0: Universal project auto-scan
-│   ├── e2e-gate.md               # Story-level browser verification gate
-│   └── ecc-integration.md        # ECC v1.9.0 integration mapping
-├── pipelines/                    # Pipeline definitions (Claude Code slash commands)
-│   ├── kdh-full-auto-pipeline.md           # v9.4 — Planning + Story Dev + Parallel + Swarm
-│   ├── kdh-uxui-redesign-full-auto-pipeline.md  # v7.1 — Design system + page rebuild
-│   ├── kdh-code-review-full-auto.md        # v4.1 — 8-phase review + Santa Method
-│   ├── kdh-playwright-e2e-full-auto-24-7-tmux.md  # v2.2 — 4-agent parallel E2E
-│   └── kdh-playwright-e2e-full-auto-24-7-vs.md    # v2.1 — Single-agent sequential E2E
+├── skills/                       # v10 skill definitions (Claude Code SKILL.md format)
+│   ├── kdh-go/SKILL.md          # Entry point — one command
+│   ├── kdh-plan/SKILL.md        # Planning pipeline (Stage 0-8)
+│   ├── kdh-build/SKILL.md       # Story builder (Generator, TDD)
+│   ├── kdh-review/SKILL.md      # Story reviewer (Evaluator, party mode)
+│   ├── kdh-sprint/SKILL.md      # Sprint orchestrator
+│   ├── kdh-e2e/SKILL.md         # E2E browser testing
+│   ├── kdh-gate/SKILL.md        # CEO decision protocol
+│   └── kdh-research/SKILL.md    # Deep research
+├── core/                         # Shared protocols (referenced by skills)
+│   ├── party-mode.md
+│   ├── scoring.md
+│   ├── agent-roster.md
+│   ├── project-scan.md
+│   ├── e2e-gate.md
+│   └── ecc-integration.md
 └── presets/                      # Project-specific configurations
-    ├── example.yaml              # Template — copy and customize
-    └── corthex.yaml              # CORTHEX v2 preset
+    ├── example.yaml
+    └── corthex.yaml
 ```
 
 ---
 
-## Quick Start
+## Installation
 
-### Prerequisites
-
-1. **Claude Code** (CLI or Desktop) — [Install](https://docs.anthropic.com/en/docs/claude-code)
-2. **BMAD Method** (optional but recommended) — `npx bmad init`
-3. **Playwright MCP** (for E2E/UXUI pipelines) — configure in `.mcp.json`
-
-### Installation
+### As Git Submodule (recommended)
 
 ```bash
-# Clone the repo
+# In your project root
+git submodule add https://github.com/kodonghui/kdh-pipelines.git .kdh-pipelines
+
+# Symlink skills to Claude Code skills directory
+for skill in .kdh-pipelines/skills/*/; do
+  name=$(basename "$skill")
+  ln -sf "$(pwd)/$skill" "$HOME/.claude/skills/$name"
+done
+```
+
+### Direct Copy
+
+```bash
 git clone https://github.com/kodonghui/kdh-pipelines.git
-
-# Copy pipeline files to your Claude Code commands directory
-cp kdh-pipelines/pipelines/*.md ~/.claude/commands/
-
-# (Optional) Copy core docs for reference
-cp -r kdh-pipelines/core/ ~/.claude/skills/kdh-core/
+cp -r kdh-pipelines/skills/* ~/.claude/skills/
 ```
-
-### First Run
-
-```bash
-# In your project directory, run Claude Code
-claude
-
-# Start planning a new project
-> /kdh-full-auto-pipeline planning
-
-# Or develop a specific story
-> /kdh-full-auto-pipeline 3-1
-
-# Or run a code review
-> /kdh-code-review-full-auto
-```
-
-### Project Configuration
-
-```bash
-# Copy and customize the preset template
-cp kdh-pipelines/presets/example.yaml presets/my-project.yaml
-```
-
-The pipeline auto-detects most project settings (Step 0: Project Auto-Scan), but presets let you customize credentials, URLs, and pipeline-specific options.
 
 ---
 
@@ -212,22 +210,38 @@ The pipeline auto-detects most project settings (Step 0: Project Auto-Scan), but
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **v9.4** | 2026-03-30 | EARS requirements, Contract Stage 6.5, Wiring Stories, Integration Gate, Hono RPC auto-detect |
-| v9.2 | 2026-03-22 | Minimum Cycle Check, Devil's Advocate, Score Variance, Orchestrator Checklist |
-| v9.1 | 2026-03-18 | Party-log verification, Score convergence detection, Anti-patterns 7-12 |
-| v9.0 | 2026-03-10 | Full rewrite: BMAD real names, party mode per step, user gates |
+| **v10.0** | 2026-03-31 | Complete redesign: 1 monolith → 7 skills. Generator≠Evaluator. Fresh context. TDD. /kdh-go one-command. |
+| v9.4 | 2026-03-30 | EARS requirements, Contract Stage 6.5, Wiring Stories, Hono RPC |
+| v9.2 | 2026-03-22 | Minimum Cycle Check, Devil's Advocate, Score Variance |
+| v9.1 | 2026-03-18 | Party-log verification, Anti-patterns 7-12 |
+| v9.0 | 2026-03-10 | Full rewrite: BMAD real names, party mode per step |
+
+---
+
+## Research Reports
+
+v10 design was informed by 5 deep research reports:
+
+1. [Agent Harness Engineering](_research/agent-harness-analysis-2026-03-31.md) — Model=CPU, Context=RAM, Harness=OS
+2. [Superpowers + GSD + Awesome](_research/superpowers-gsd-awesome-analysis-2026-03-31.md) — TDD, clean context, ecosystem
+3. [revfactory/harness](_research/revfactory-harness-analysis-2026-03-31.md) — 6 team patterns, +60% quality
+4. [Hermes Agent](_research/hermes-agent-analysis-2026-03-31.md) — Self-improving agent, Telegram integration
+5. [Pretext](_research/pretext-analysis-2026-03-31.md) — DOM-free text layout (Phase 2)
 
 ---
 
 ## Production Results
 
-Tested on [CORTHEX v2](https://github.com/kodonghui/corthex-v2) — a monorepo with 8 packages, 82 route files, ~543 API endpoints:
+**CORTHEX v2** (8 packages, 82 routes, ~543 endpoints):
+- 29 epics, 167 stories completed
+- 10,154+ tests generated via TDD
+- 29 integration bugs found → led to Contract Stage 6.5
+- 3-theme UXUI redesign (43/43 pages PASS)
 
-- **29 epics, 167 stories** completed through the pipeline
-- **10,154+ tests** generated via TDD workflow
-- **29 integration bugs** found and fixed (root cause → led to v9.4 Contract Stage)
-- **3-theme UXUI redesign** with mobile responsive (43/43 pages PASS)
-- **Chrome E2E**: 15-part test suite, all bugs resolved
+**CORTHEX v3** (in progress):
+- 7 epics, 47 stories planned (Phase 1)
+- 60+ shared contract types defined
+- 6 sprints with automated party mode review
 
 ---
 
@@ -241,4 +255,6 @@ MIT
 
 - [BMAD Method](https://github.com/bmadcode/BMAD-METHOD) — Multi-agent development methodology
 - [Everything Claude Code](https://github.com/affaan-m/everything-claude-code) — ECC skills and agents
+- [Superpowers](https://github.com/obra/superpowers) — TDD + verification patterns
+- [revfactory/harness](https://github.com/revfactory/harness) — Team pattern architecture
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — Anthropic's CLI for Claude
