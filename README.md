@@ -1,8 +1,8 @@
-# KDH Pipeline Suite v10
+# KDH Pipeline Suite v10.1
 
 **AI-powered software development pipelines for Claude Code.** Built on [BMAD Method](https://github.com/bmadcode/BMAD-METHOD) + [Everything Claude Code](https://github.com/affaan-m/everything-claude-code) + latest research (Superpowers, GSD, Ralph Wiggum, revfactory/harness).
 
-7 modular skills that automate the entire software lifecycle — from product brief to E2E testing — using multi-agent teams with real-time peer review.
+10 modular skills that automate the entire software lifecycle — from product brief to E2E testing — using multi-agent teams with D1-D6 rubric-enforced peer review.
 
 ---
 
@@ -35,14 +35,16 @@ v9.x had one 1,060-line monolith skill that was too large for AI to follow relia
 
 | Skill | Lines | Pattern | What It Does |
 |-------|-------|---------|-------------|
-| **`/kdh-go`** | 177 | Dispatcher | **One command to rule them all.** Auto-detects state, runs everything. |
+| **`/kdh-go`** | 195 | Dispatcher | **One command to rule them all.** Auto-detects state + CONDITIONAL reviews. |
 | **`/kdh-plan`** | 234 | Pipeline | BMAD Stage 0-8 planning with party mode + GATE steps |
-| **`/kdh-build`** | 217 | Producer | TDD story implementation (Generator role) |
-| **`/kdh-review`** | 227 | Producer-Reviewer | Party mode code review (Evaluator role, separate agent) |
-| **`/kdh-sprint`** | 172 | Supervisor | Sprint orchestration — dependency resolution + parallel dispatch |
-| **`/kdh-e2e`** | 233 | Evaluator | Playwright browser testing — 5 user journeys per sprint |
-| **`/kdh-gate`** | 61 | Human-in-loop | CEO decision points — no tech jargon, A/B/C choices |
+| **`/kdh-build`** | 227 | Producer | TDD story implementation (Generator role) + review state pre-check |
+| **`/kdh-review`** | 339 | Producer-Reviewer | **D1-D6 rubric-enforced** party mode review + auto-fail gate + re-review loop |
+| **`/kdh-sprint`** | 206 | Supervisor | Sprint orchestration + CONDITIONAL hard-blocking + review summary |
+| **`/kdh-e2e`** | 243 | Evaluator | Playwright browser testing — 5 user journeys per sprint |
+| **`/kdh-gate`** | 86 | Human-in-loop | CEO decision points + review escalation + sprint review reporting |
 | **`/kdh-research`** | 59 | Research | Deep multi-source research with citations |
+| **`/kdh-code-review-full-auto`** | 1029 | 8-Phase | Universal PR-level code review + auto-fix (separate from /kdh-review) |
+| **`/kdh-playwright-e2e-full-auto-24-7-tmux`** | 639 | 24/7 Loop | Continuous E2E testing loop (legacy, use /kdh-e2e for sprints) |
 
 ### Skill Interaction Flow
 
@@ -115,12 +117,27 @@ Every story goes through structured peer review by BMAD agents:
     ├── quinn: QA + test quality review
     └── john: Product requirements review
     ↓
-    Cross-talk (critics discuss disagreements)
+    Cross-talk (critics discuss disagreements — empty = REJECTED)
     ↓
-    Score ≥ 7.5 → PASS
-    Score < 7.5 → CONDITIONAL (fix + re-review)
-    Any score < 3 → auto-FAIL
+    D1-D6 weighted average ≥ 7.5 → PASS
+    6.0-7.5 → CONDITIONAL (fix → re-review, max 3 attempts)
+    < 6.0 → FAIL
+    Any dimension < 3 → AUTO-FAIL
+    Auto-fail conditions (hallucination, security, build break) → AUTO-FAIL
 ```
+
+### v10.1: D1-D6 Rubric Enforcement
+
+v10.0 had a generic `Score: X/10` template. Reviewers invented custom dimensions. v10.1 forces the exact 6-dimension rubric from `critic-rubric.md`:
+
+| Dimension | Code Review Focus | Winston (A) | Quinn (B) | John (C) |
+|-----------|------------------|-------------|----------|---------|
+| D1 Specificity | Test names, error codes, line refs | 15% | 10% | **20%** |
+| D2 Completeness | All ACs met, edge cases tested | 15% | **25%** | **20%** |
+| D3 Accuracy | Types match contracts, DB matches schema | **25%** | 15% | 15% |
+| D4 Implementability | tsc passes, tests pass, wiring works | **20%** | 10% | 15% |
+| D5 Consistency | Contract imports, naming conventions | 15% | 15% | 10% |
+| D6 Risk Awareness | Security, scalability, deployment | 10% | **25%** | **20%** |
 
 **Key principle: Generator ≠ Evaluator.** The agent that writes code NEVER reviews its own code. This eliminates self-bias (confirmed by Anthropic's 3-agent research).
 
@@ -167,7 +184,9 @@ kdh-pipelines/
 │   ├── kdh-sprint/SKILL.md      # Sprint orchestrator
 │   ├── kdh-e2e/SKILL.md         # E2E browser testing
 │   ├── kdh-gate/SKILL.md        # CEO decision protocol
-│   └── kdh-research/SKILL.md    # Deep research
+│   ├── kdh-research/SKILL.md    # Deep research
+│   ├── kdh-code-review-full-auto/SKILL.md  # Universal PR-level code review
+│   └── kdh-playwright-e2e-full-auto-24-7-tmux/SKILL.md  # 24/7 E2E loop (legacy)
 ├── core/                         # Shared protocols (referenced by skills)
 │   ├── party-mode.md
 │   ├── scoring.md
@@ -210,7 +229,8 @@ cp -r kdh-pipelines/skills/* ~/.claude/skills/
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **v10.0** | 2026-03-31 | Complete redesign: 1 monolith → 7 skills. Generator≠Evaluator. Fresh context. TDD. /kdh-go one-command. |
+| **v10.1** | 2026-03-31 | Quality gate overhaul: D1-D6 rubric enforced, auto-fail gate, CONDITIONAL hard-blocking, cross-talk rejection, review summary reporting. 10 skills. |
+| v10.0 | 2026-03-31 | Complete redesign: 1 monolith → 7 skills. Generator≠Evaluator. Fresh context. TDD. /kdh-go one-command. |
 | v9.4 | 2026-03-30 | EARS requirements, Contract Stage 6.5, Wiring Stories, Hono RPC |
 | v9.2 | 2026-03-22 | Minimum Cycle Check, Devil's Advocate, Score Variance |
 | v9.1 | 2026-03-18 | Party-log verification, Anti-patterns 7-12 |

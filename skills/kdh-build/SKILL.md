@@ -24,6 +24,16 @@ GSD 적용: 파일 기반 상태 전달 (메시지 기억 의존 금지)
 
 ---
 
+## Phase -1: Review State Verification (10s)
+
+구현 시작 전 의존성 리뷰 상태 확인:
+```
+1. Read sprint-status.yaml → 이 스토리의 blockedBy 확인
+2. 의존 스토리 중 review_state: conditional/auto-fail/escalated → BLOCK
+   "스토리 {dep-id}의 리뷰가 미해결입니다. {this-id} 빌드 불가."
+3. 전부 review_state: passed 또는 null → 진행
+```
+
 ## Prerequisites
 
 구현 시작 전 반드시 읽어야 하는 파일:

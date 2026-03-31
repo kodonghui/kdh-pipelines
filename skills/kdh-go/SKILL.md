@@ -48,6 +48,19 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
    - E2E 완료 + GATE 안 함 → /kdh-gate sprint-verify
    - 전부 완료 → 다음 스프린트 존재? → /kdh-sprint {N+1}
    - 전체 Phase 완료 → "Phase 1 완료!" 보고
+
+5.5 리뷰 상태 확인 (5번보다 우선):
+   sprint-status.yaml 전체 스캔:
+   - review_state: conditional 있음 →
+     "스토리 {id}가 검토 조건부 통과 상태입니다. 수정이 필요합니다."
+     → /kdh-sprint {N} (CONDITIONAL 해결부터)
+   - review_state: auto-fail 있음 →
+     "스토리 {id}에 심각한 문제가 발견됐습니다. 확인이 필요합니다."
+     → /kdh-gate review-escalation
+   - review_state: escalated 있음 →
+     "스토리 {id}가 에스컬레이션 상태입니다."
+     → /kdh-gate review-escalation
+   - 전부 passed 또는 null → 5번 정상 진행
 ```
 
 ## Phase 1: Execute
@@ -152,11 +165,16 @@ EOF
   "Sprint {N} 이어서 합니다. 스토리 {M}개 남았어요."
 
 스토리 완료:
-  "스토리 {id} 완료. 리뷰 점수: {X.X}/10. ({N}/{M} 진행)"
+  "스토리 {id} 완료. 리뷰 평균: {X.X}/10. ({N}/{M} 진행)"
 
 Sprint 완료:
   "Sprint {N} 끝! {M}개 스토리, 평균 리뷰 {X.X}/10.
+   - 잘한 것: {최고 차원 한국어명} (평균 {X.X})
+   - 개선 필요: {최저 차원 한국어명} (평균 {X.X})
+   - 재리뷰: {N}건, 에스컬레이션: {N}건
    브라우저에서 확인해주세요." (GATE)
+   
+차원 한국어명: D1=구체성, D2=완전성, D3=정확성, D4=실행가능성, D5=일관성, D6=리스크인식
 
 Phase 완료:
   "Phase 1 전부 끝났습니다! 

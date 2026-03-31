@@ -66,10 +66,28 @@ for each batch (최대 3 stories parallel):
     - 완료 대기 (타임아웃: 15min)
     - 결과 확인: sprint-status.yaml → reviewed: true?
 
-  Step 4: Result Processing
-    - PASS → 다음 스토리로
-    - CONDITIONAL → 수정 build spawn → 재 review (최대 2회)
-    - FAIL → sprint-status.yaml에 기록, 사장님 판단 필요 시 GATE
+  Step 4: Result Processing (HARD ENFORCEMENT)
+    PASS:
+      → sprint-status.yaml: review_state: passed
+      → 다음 스토리 진행
+
+    CONDITIONAL (BLOCKING LOOP — 미해결 시 다음 스토리 진행 금지):
+      a. sprint-status.yaml: review_state: conditional
+      b. party-logs/{sprint}-{story}-fixes-needed.md 생성됨
+      c. 이 스토리 resolve 될 때까지 sprint 일시정지
+      d. /kdh-build {story-id} fix-mode spawn (fixes-needed.md 읽고 해당 이슈만 수정)
+      e. /kdh-review {story-id} --re-review spawn (새 에이전트, D1-D6 재채점)
+      f. 결과: PASS → 진행. 여전히 CONDITIONAL → review_attempt++
+      g. review_attempt >= 3 → review_state: escalated → /kdh-gate review-escalation
+      h. CRITICAL: 이 스토리 미해결 시 다음 스토리 진행 절대 금지
+
+    FAIL:
+      → sprint-status.yaml: review_state: failed
+      → /kdh-gate 호출 (사장님 판단)
+
+    AUTO-FAIL:
+      → sprint-status.yaml: review_state: auto-fail
+      → /kdh-gate auto-fail 즉시 호출
 
   Step 5: Unblock
     - 이 스토리에 의존하던 스토리들 → blocked 해제
@@ -98,7 +116,16 @@ for each batch (최대 3 stories parallel):
    → 실패 있으면 수정
 
 4. /kdh-e2e 호출 → E2E 검증
-5. /kdh-gate sprint-verify 호출 → 사장님 브라우저 확인
+
+5. Sprint Review Summary 생성:
+   party-logs/{sprint}-review-summary.md:
+   - 스토리별: 3명 리뷰어 D1-D6 점수 + 가중 평균
+   - 차원별 Sprint 평균: D1~D6 전체 평균
+   - 재리뷰 현황: N건 (어떤 스토리, 몇 회)
+   - 에스컬레이션: N건
+   - Cross-talk 하이라이트: top 3 합의 이슈
+
+6. /kdh-gate sprint-verify 호출 → 사장님에게 리뷰 요약 + 브라우저 확인
    - `계속` 모드면 자동 PASS
 ```
 
@@ -106,11 +133,18 @@ for each batch (최대 3 stories parallel):
 
 ```
 1. sprint-status.yaml 업데이트:
+   스토리별: review_state, review_attempt, review_scores (D1-D6 per reviewer), review_avg
    sprint_N:
      status: completed
      completed_at: {timestamp}
      stories_completed: N
-     review_avg_score: X.X
+     review_summary:
+       overall_avg: X.X
+       dimension_avgs: { d1: X.X, d2: X.X, d3: X.X, d4: X.X, d5: X.X, d6: X.X }
+       stories_passed_first_try: N
+       stories_needed_re_review: N
+       stories_auto_failed: N
+       stories_escalated: N
      e2e_result: PASS/FAIL
 
 2. git commit + push:

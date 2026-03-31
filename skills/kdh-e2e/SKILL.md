@@ -24,6 +24,16 @@ Anthropic 3-Agent 패턴: 독립 Evaluator
 
 ---
 
+## Pre-Phase 0: Review Gate (소프트 — 차단 아님)
+
+```
+sprint-status.yaml 스캔:
+- review_state != passed 인 스토리 존재?
+  → WARNING: "스토리 {id} 리뷰 미해결. E2E 결과가 정확하지 않을 수 있습니다."
+  → cycle-report.md에 경고 기록
+- 차단하지 않음 (E2E는 리뷰와 다른 종류의 검증)
+```
+
 ## Prerequisites
 
 ```
