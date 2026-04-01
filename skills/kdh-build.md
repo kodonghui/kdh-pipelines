@@ -49,6 +49,23 @@ GSD 적용: 파일 기반 상태 전달 (메시지 기억 의존 금지)
 
 ---
 
+## Phase 0.5: Dependent Story Discovery (v12)
+
+```
+1. sprint-status.yaml에서 이 스토리에 의존하는 스토리 찾기:
+   for story in stories: if story.depends_on includes this.id → DEPENDENT
+
+2. 이 스토리가 export하는 모듈을 import하는 파일 찾기:
+   grep -rl "from '.*{this-story-module}'" packages/ → importers
+
+3. party-logs/{sprint}-{story}-dependents.md 생성:
+   "이 스토리 변경 시 영향받는 곳: {list}"
+
+4. Phase 5 (Commit) 시:
+   의존 스토리의 테스트 파일만 추가 실행
+   RED 있으면 → 커밋 전에 경고
+```
+
 ## Phase 0: Story Load (30s)
 
 ```

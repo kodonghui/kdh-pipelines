@@ -58,7 +58,7 @@ CEO 명령: Party mode 절대 생략 금지
 | D3 정확성 | 타입=contract, DB=schema, imports 정상 | 전부 일치 | 타입 불일치, 잘못된 참조 |
 | D4 실행가능성 | 컴파일, 테스트 통과, 와이어링 작동 | tsc 0, test GREEN | 빌드 깨짐, 테스트 FAIL |
 | D5 일관성 | contract import, 네이밍, API envelope | 인라인 타입 0, 컨벤션 준수 | 인라인 타입, 스타일 불일치 |
-| D6 리스크인식 | 보안 취약점, 확장성, 배포 우려 식별 | 리스크 전부 식별 + 대안 | 명백한 보안 구멍 놓침 |
+| D6 리스크인식 | 보안, 확장성, 배포, **통합 영향** 식별 | 리스크 전부 식별 + 대안 + 타 스토리 영향 범위 | 보안 구멍, 공유 컴포넌트 영향 미파악, localhost fallback |
 
 ---
 
@@ -99,6 +99,33 @@ CEO 명령: Party mode 절대 생략 금지
 4. 파일 크기 체크:
    - 800줄 초과 파일 → WARNING
    - 50줄 초과 함수 → WARNING
+```
+
+## Phase 1.5: Quick Integration Check (v12)
+
+```
+1. 공유 모듈 변경 감지:
+   이 스토리가 수정한 파일 중 다른 파일이 import하는 것:
+   for file in changed_files:
+     importers = grep -rl "from '.*$(basename $file)'" packages/
+     if importers.length > 0:
+       integration_alert: "{file} is imported by {importers.length} files"
+
+2. 의존 스토리 테스트 실행:
+   해당 importer 파일의 테스트만 실행
+   RED 있으면 → Party Mode에 "통합 이슈 발견" 전달
+
+3. 환경변수 검증:
+   새로 추가된 process.env.XXX:
+     .env.example에 없으면 → WARNING
+     fallback이 localhost면 → WARNING
+
+4. D6 통합 체크리스트 (Party Mode에 전달):
+   □ 공유 컴포넌트(auth, routing, middleware) 변경 → 영향 범위?
+   □ 새 환경변수 → 프로덕션에 설정 가능?
+   □ 사용자 타입/역할/권한 가정 변경?
+
+결과 → Phase 2 Party Mode에 전달 (D6 채점 시 참고)
 ```
 
 ## Phase 2: Party Mode Review (5min)

@@ -92,6 +92,15 @@ for each batch (최대 3 stories parallel):
   Step 5: Unblock
     - 이 스토리에 의존하던 스토리들 → blocked 해제
     - 다음 배치에 포함
+
+  Step 5.5: Batch Integration Review (v12)
+    IF batch_completed_count >= 3 OR last_batch_in_sprint:
+      Agent spawn: /kdh-integration batch
+      입력: 이번 Batch의 스토리 ID 목록
+      결과:
+        PASS → 다음 Batch
+        WARNING → 기록 후 진행
+        FAIL → 해당 스토리 CONDITIONAL 되돌림
 ```
 
 ## Phase 2: Sprint Wrap-up
@@ -115,7 +124,12 @@ for each batch (최대 3 stories parallel):
    bun test
    → 실패 있으면 수정
 
-4. /kdh-e2e 호출 → E2E 검증 (v11: HARD BLOCKING — FAIL이면 Sprint 완료 불가)
+4. /kdh-integration sprint → Sprint 간 통합 리뷰 (v12: E2E 전 필수)
+     - PASS → E2E 진행
+     - WARNING → E2E에 추가 체크포인트 전달
+     - FAIL → 수정 필수 (E2E 진행 불가)
+
+5. /kdh-e2e 호출 → E2E 검증 (v11: HARD BLOCKING — FAIL이면 Sprint 완료 불가)
      - E2E FAIL → P0/P1 버그 수정 필수 → 재실행
      - E2E 스킵 = Sprint FAIL (더 이상 "백로그" 허용 안 됨)
      - E2E PASS 후에만 sprint-verify 진행

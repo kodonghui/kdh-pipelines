@@ -62,7 +62,15 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
      → /kdh-gate review-escalation
    - 전부 passed 또는 null → 5번 정상 진행
 
-5.7 E2E 상태 확인 (v11 신규):
+5.8 통합 상태 확인 (v12):
+   sprint-status.yaml에서 integration_state 확인:
+   - integration_state: fail →
+     "스토리 간 충돌이 발견됐어요. 수정이 필요합니다."
+     → /kdh-sprint {N} (통합 이슈 해결)
+   - integration_state: warning →
+     정상 진행 (E2E에서 추가 확인)
+
+5.7 E2E 상태 확인 (v11):
    sprint-status.yaml에서 현재 Sprint의 e2e_result 확인:
    - Sprint 완료(stories 전부 completed) + e2e_result: null →
      "Sprint {N}이 완료됐는데 E2E 테스트를 안 돌렸어요."
