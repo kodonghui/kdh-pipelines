@@ -170,49 +170,59 @@ Phase A: Build (dev 리드)
   오케스트레이터: sprint-status.yaml 확인 → status: built?
 
 Phase B: Review (winston/quinn/john 병렬 — 오케스트레이터가 지시)
-  오케스트레이터 → SendMessage 3명에게 동시 (아래 전문 그대로):
+  오케스트레이터 → SendMessage 3명에게 동시 (아래 영어 전문 그대로):
 
-    "스토리 {story-id} 리뷰. 변경 파일: {목록}.
+    "You are {name}, reviewing story {id} for CORTHEX v3.
+    Read your persona first: _bmad/bmm/agents/{file}.md
+    Files changed: {list}
 
-    ## Step 1: Auto-Fail 체크 (먼저 — YES면 즉시 중단)
-    - [ ] 하드코딩 시크릿 없음
-    - [ ] SQL injection / XSS 없음
-    - [ ] tsc 에러 없음
-    - [ ] 데이터 손실 위험 없음
-    - [ ] 인라인 타입 없음 (@corthex/shared만 사용)
-    YES → party-log에 AUTO-FAIL 기록 후 보고.
+    ## Step 1: Auto-Fail Gate
+    Check ALL files for: hardcoded secrets, SQL injection, XSS, tsc errors, inline types (must use @corthex/shared).
+    If ANY found → write AUTO-FAIL with file:line evidence and STOP.
 
-    ## Step 2: 변경 파일 전부 Read 도구로 읽기
+    ## Step 2: Evidence Collection (Chain-of-Thought — MANDATORY before scoring)
+    For each changed file, verify line by line. Write your analysis:
+      file.ts:15 — AuthUser import from @corthex/shared ✓ matches contracts/auth.ts
+      file.ts:42 — db.select().from(sessions) ✓ matches schema/sessions.ts
+      file.ts:71 — expiresAt uses > instead of >= ✗ OFF-BY-ONE at exact expiry
+    MUST be written BEFORE Step 4. No evidence = invalid review.
 
-    ## Step 3: D1-D6 채점 (이 테이블 그대로 party-log에)
+    ## Step 3: Finding Generation (for each ✗ from Step 2)
+    Format EXACTLY:
+      [D{N}] [{CRITICAL|HIGH|MEDIUM|LOW}] file:line — description
+      Expected: {what should happen}
+      Actual: {what happens now}
+      Impact: {why this matters}
+      Fix: {specific code change, e.g. change > to >= on line 71}
 
-    | 차원 | 점수 | 가중치 | 가중점수 | 근거 (file:line 필수) |
-    |------|------|--------|----------|---------------------|
-    | D1 구체성 | /10 | {%} | | {테스트명, 에러코드, 줄번호} |
-    | D2 완전성 | /10 | {%} | | {AC 충족, 엣지 케이스} |
-    | D3 정확성 | /10 | {%} | | {타입=contract, DB=schema} |
-    | D4 실행가능성 | /10 | {%} | | {tsc, test 통과 확인} |
-    | D5 일관성 | /10 | {%} | | {contract import, 네이밍} |
-    | D6 리스크인식 | /10 | {%} | | {보안, 확장성, 통합} |
+    ## Step 4: Dimension Scoring (4-point scale, based on Steps 2-3)
+    | Dim | Score | Weight | Evidence Summary (1 line from Step 2) |
+    |-----|-------|--------|--------------------------------------|
+    | D1 Specificity  | /4 | {w}% | |
+    | D2 Completeness | /4 | {w}% | |
+    | D3 Accuracy     | /4 | {w}% | |
+    | D4 Buildability | /4 | {w}% | |
+    | D5 Consistency  | /4 | {w}% | |
+    | D6 Risk         | /4 | {w}% | |
 
-    가중치: winston D1=15 D2=15 D3=25 D4=20 D5=15 D6=10
-            quinn   D1=10 D2=25 D3=15 D4=10 D5=15 D6=25
-            john    D1=20 D2=20 D3=15 D4=15 D5=10 D6=20
-    가중 평균 = (D1×w1+...+D6×w6)/100. 계산식 표시.
-    D < 3 → AUTO-FAIL.
+    4=EXCELLENT(0 issues) 3=GOOD(LOW/MEDIUM only) 2=NEEDS_WORK(≥1 HIGH) 1=FAIL(CRITICAL)
+    Weighted avg = (D1×w1+...+D6×w6)/100. Show calculation.
 
-    ## Step 4: 이슈 목록
-    형식: [D{N} {차원명}] [{CRITICAL|HIGH|MEDIUM|LOW}] {설명} — {path}:{line}
+    Weights: winston D1=15 D2=15 D3=25 D4=20 D5=15 D6=10
+             quinn   D1=10 D2=25 D3=15 D4=10 D5=15 D6=25
+             john    D1=20 D2=20 D3=15 D4=15 D5=10 D6=20
 
-    ## Step 5: Cross-talk (의무)
-    다른 critic 2명에게 SendMessage: 핵심 이슈 1개.
-    받은 후 party-log에 ## Cross-talk 섹션:
-    - {이름}이 지적한 {이슈}: {동의/반박 + 이유}
+    ## Step 5: Cross-talk (mandatory)
+    SendMessage to other 2 critics: your #1 finding + reasoning.
+    After receiving theirs, add to party-log:
+      ## Cross-talk
+      - {name} found {issue}: I {agree/disagree} because {reason}
 
-    ## Step 6: party-logs/sprint-{N}-{story-id}-{본인이름}.md 작성
-    ## Step 7: 완료 보고"
+    ## Step 6: Write to _bmad-output/party-logs/sprint-{N}-{story}-{yourname}.md
+    mkdir -p _bmad-output/party-logs first.
+    ## Step 7: Report completion to orchestrator."
 
-  각 critic: Auto-fail → 파일 읽기 → D1-D6 채점 → 이슈 → cross-talk → party-log
+  각 critic: Auto-fail → Evidence Collection(CoT) → Findings(Fix포함) → 4-point scoring → cross-talk → party-log
 
   오케스트레이터 체크리스트 (BLOCKING):
     [ ] party-logs/sprint-{N}-{story-id}-winston.md 존재
@@ -226,7 +236,7 @@ Phase B: Review (winston/quinn/john 병렬 — 오케스트레이터가 지시)
   점수 분산 체크: stdev < 0.5 → 경고 + 1명 독립 재채점 요청
 
 Phase C: 판정 + 커밋/수정
-  PASS (3명 모두 ≥ 7.0 AND 평균 ≥ 7.0):
+  PASS (3명 모두 ≥ 3.0/4 AND 평균 ≥ 3.0/4 AND CRITICAL findings = 0):
     → 오케스트레이터 커밋:
       git add {변경 파일}
       git commit: "feat({epic}): {story-id} — {title}

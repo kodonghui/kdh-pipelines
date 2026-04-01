@@ -118,9 +118,10 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
    GPT-5.4 fresh session. CEO가 Codex 작업 과정을 tmux에서 실시간 확인.
    Codex 실패 시 → Claude Agent fallback (kdh-integration 참조)
 
-4. 리뷰는 3명 파티 모드 필수 (winston, quinn, john):
-   각각 독립 관점 (설계, QA, 요구사항)
-   D1-D6 채점 → 7.0 이상 PASS
+4. 리뷰는 3명 팀 에이전트 파티 모드 필수 (winston, quinn, john):
+   Finding-First + CoT(Evidence Collection) + 4-point scale (영어 프롬프트)
+   각 finding에 Expected/Actual/Impact/Fix 포함 → dev가 읽고 바로 수정
+   PASS: 평균 ≥ 3.0/4 AND CRITICAL findings 0건
 
 5. UI 스토리는 반드시 Subframe + CEO 디자인 시스템:
    Subframe 프로젝트: fe1d14ed3033
