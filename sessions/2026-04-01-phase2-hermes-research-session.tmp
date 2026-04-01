@@ -1,0 +1,98 @@
+# Session: 2026-04-01 (6th session — Phase 2 리서치)
+
+**Started:** ~23:50 UTC (2026-03-31)
+**Last Updated:** ~00:15 UTC (2026-04-01)
+**Project:** /home/ubuntu/corthex-v3
+**Topic:** Phase 2 AI 에이전트 런타임 리서치 — Hermes Agent vs OpenClaw vs Claude Agent SDK 비교 분석
+
+---
+
+## What We Are Building
+
+CORTHEX v3 Phase 2의 핵심 기능: **AI 에이전트가 실제로 일하는 시스템**. Phase 1은 조직 관리(회원가입, 회사, 부서, 직원, AI 에이전트 등록)를 완성했고, Phase 2에서는 등록된 AI 에이전트가 실제로 대화하고, 업무를 수행하고, 스스로 진화하는 런타임을 구축.
+
+CEO의 핵심 비전:
+1. Hermes Agent를 그대로 가져와서 AI 에이전트 런타임으로 사용
+2. 각 인간 직원이 자신의 Claude OAuth CLI 토큰을 가짐
+3. 한 직원의 모든 AI 에이전트는 그 직원의 OAuth 토큰을 공유
+4. 에이전트 간 협업, 멀티턴 대화, 자동 진화 시스템 활용
+
+이 세션에서는 이 비전을 뒷받침할 기술 리서치를 수행.
+
+---
+
+## What WORKED (with evidence)
+
+- **Hermes Agent 로컬 소스코드 분석** — confirmed by: `~/.hermes/hermes-agent/` 전체 읽기 (README, AGENTS.md, config.yaml, run_agent.py, delegate_tool.py, auth.py, RELEASE_v0.6.0.md)
+- **Hermes Profiles 기능 확인** — confirmed by: RELEASE_v0.6.0.md에서 "Profiles — Multi-Instance Hermes" 확인. `hermes profile create/list/switch/delete/export/import` CLI 명령어 존재.
+- **Hermes Credential Pools 확인** — confirmed by: `auth.py:620-641`에서 `read_credential_pool()`, `write_credential_pool()` 함수 직접 확인. provider별 다중 인증 정보 저장/로테이션.
+- **Hermes 자동 진화 확인** — confirmed by: `run_agent.py:8190-8206`에서 `_spawn_background_review(review_skills=True)` 백그라운드 스킬 생성 로직 확인. 별도 레포 `hermes-agent-self-evolution` (GEPA optimizer, ICLR 2026 Oral).
+- **OpenClaw 343K Stars 확인** — confirmed by: 리서치 에이전트 #2의 GitHub API 조회 결과 (343,160 stars, 67,861 forks)
+- **Claude Agent SDK 문서 확인** — confirmed by: WebFetch로 `platform.claude.com/docs/en/agent-sdk/overview` 전문 읽기. Subagents, MCP, Hooks, Sessions 지원.
+- **리서치 리포트 완성** — confirmed by: `_research/hermes-openclaw-agent-runtime-2026-03-31.md` 저장 완료 (15+ 소스)
+
+---
+
+## What Did NOT Work (and why)
+
+- **리서치 에이전트 JSONL 출력 파싱** — failed because: 에이전트 출력 파일이 JSONL 형식이고 73K+ 토큰이어서 직접 Read 불가. `tail` + JSON 파서로 마지막 assistant 메시지 추출 시도했으나 메시지가 content list 형태가 아닌 구조. 결국 에이전트 완료 알림의 `result` 필드에서 전체 결과를 확인함.
+
+---
+
+## What Has NOT Been Tried Yet
+
+- Hermes Profile을 실제로 CORTHEX 서버에서 프로그래밍적으로 생성하는 통합 PoC
+- Hermes Gateway에 웹 어댑터 추가 (CORTHEX 채팅 UI용)
+- Hermes credential_pool에 Claude OAuth 토큰을 자동 주입하는 per-profile sync 확장
+- CORTHEX members 테이블과 Hermes profiles 간 매핑 구현
+- Hermes MCP Server 모드를 활용한 CORTHEX↔Hermes 통신
+- LiteLLM을 중간 프록시로 사용하는 멀티테넌트 구조
+- Phase 2 PRD 작성 (기획 파이프라인)
+- Phase 1 폴리싱 (`any` 타입 교체, requirePermission 와이어링, 에러 핸들링)
+
+---
+
+## Current State of Files
+
+| File | Status | Notes |
+|------|--------|-------|
+| `_research/hermes-openclaw-agent-runtime-2026-03-31.md` | ✅ Complete | Hermes vs OpenClaw vs Claude Agent SDK 비교 리포트 |
+| `~/.claude/projects/-home-ubuntu-corthex-v3/memory/project_phase2_hermes_runtime.md` | ✅ Complete | Phase 2 Hermes 런타임 결정 메모리 |
+| `~/.claude/projects/-home-ubuntu-corthex-v3/memory/MEMORY.md` | ✅ Modified | Hermes 런타임 메모리 항목 추가 |
+
+---
+
+## Decisions Made
+
+- **Phase 2 런타임 = Hermes Agent** — reason: CEO 제안 + 리서치로 확정. Profiles(멀티인스턴스 격리), Credential Pools(토큰 관리), 자동 진화(GEPA/ICLR), 멀티플랫폼, MCP 전부 갖춤. 이미 이 VPS에 설치되어 동작 중.
+- **OpenClaw 불필요** — reason: Hermes가 상위호환. `hermes claw migrate` 마이그레이션 도구 내장. OpenClaw은 로컬 데몬 기반이라 멀티테넌트에 부적합.
+- **Claude Agent SDK는 보완재** — reason: Hermes의 코드 작업 실행 엔진으로 활용 가능. 독자적으로는 메모리/진화/멀티플랫폼 없음.
+- **직원별 Claude 계정 필수** — reason: CEO가 "당근" 확인. 각 직원이 자기 Claude 계정 + OAuth CLI 토큰을 가짐.
+- **멀티테넌트 구조: Hermes Profile per agent** — reason: 한 직원의 여러 에이전트 = 여러 Profile, 같은 credential_pool 공유.
+
+---
+
+## Blockers & Open Questions
+
+- **Anthropic ToS 회색 지대** — Claude Agent SDK 문서에 "Anthropic does not allow third party developers to offer claude.ai login or rate limits for their products." 우리 경우 내부 사용이라 해당 안 될 수 있지만 확인 필요.
+- **Hermes Profile CRUD를 프로그래밍적으로 하는 방법** — CLI(`hermes profile create`)만 확인. Python API로 직접 호출하는 방법 조사 필요.
+- **CORTHEX 웹 UI에서 에이전트 대화** — Hermes Gateway에 웹 어댑터가 있는지, 아니면 MCP Server 모드를 써야 하는지 결정 필요.
+- **Phase 1 CEO 브라우저 확인** — CEO가 회사 가서 확인 중. 결과에 따라 Phase 2 시작 시점 결정.
+
+---
+
+## Exact Next Step
+
+CEO가 회사에서 Phase 1을 브라우저로 확인하고 돌아오면:
+1. Phase 1 OK → Phase 2 기획 시작 (/kdh-plan 또는 직접 PRD)
+2. Phase 1 문제 발견 → 해당 이슈 수정 우선
+3. Phase 2 기획 시 핵심 문서: `_research/hermes-openclaw-agent-runtime-2026-03-31.md`를 기반으로 "CORTHEX + Hermes 통합 아키텍처" PRD 작성
+
+---
+
+## Environment & Setup Notes
+
+- Phase 1: 74/74 tests pass, tsc 0 errors, deployed on main (commit bce8593)
+- Hermes Agent: `~/.hermes/hermes-agent/` v0.6.0 (2026-03-30), Telegram gateway active
+- Token sync: `~/.hermes/sync-claude-token.sh` (cron 5분마다, systemctl --user 수정 완료)
+- 리서치 리포트: `_research/hermes-openclaw-agent-runtime-2026-03-31.md`

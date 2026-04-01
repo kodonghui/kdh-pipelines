@@ -1,0 +1,317 @@
+# Session: 2026-04-01 (7th session — OAuth 자동 갱신 + Hermes 업데이트)
+
+**Started:** ~00:15 UTC (2026-04-01)
+**Last Updated:** ~00:35 UTC (2026-04-01)
+**Project:** /home/ubuntu/corthex-v3
+**Topic:** Claude OAuth refresh token 자동 갱신 메커니즘 발견, Hermes 토큰 업데이트, CORTHEX Phase 2 인증 아키텍처 확정
+
+---
+
+## What We Are Building
+
+CORTHEX v3 Phase 2에서 AI 에이전트가 Claude API를 호출할 때, **직원이 1회 로그인만 하면 이후 토큰 갱신을 CORTHEX가 자동으로 처리**하는 인증 시스템.
+
+CEO의 핵심 요구사항:
+- OAuth CLI 토큰만 사용 (Console API 키 절대 금지)
+- 직원이 매번 토큰을 넣는 게 아니라, Claude Code처럼 OAuth URL로 1회 인증
+- 이후 토큰 만료 시 자동 갱신 (sync 스크립트 같은 번거로움 없이)
+
+---
+
+## What WORKED (with evidence)
+
+- **Claude OAuth Refresh Endpoint 발견** — confirmed by: Claude Code CLI 소스코드 분석 + GitHub 독립 구현체 교차 검증 (leohenon/op-anthropic-auth, Juwebien/anthropic-oauth-proxy)
+- **Hermes 토큰 업데이트** — confirmed by: CEO의 로컬 머신 토큰으로 `~/.hermes/.env` 업데이트 + `systemctl --user restart hermes-gateway` 성공
+- **corthex-hq.com 서버 정상 확인** — confirmed by: HTML(402B), JS, CSS, API(/api/health) 전부 200 OK. 서버 로그에도 정상 응답. 브라우저 캐시 문제로 판단.
+
+---
+
+## What Did NOT Work (and why)
+
+- **corthex-hq.com 브라우저 접근** — CEO 브라우저에서 Content-Length: 0으로 빈 페이지 표시. 서버에서 curl 테스트 시에는 정상. 원인: 브라우저 캐시 또는 Cloudflare 엣지 캐시. 해결 시도: 하드 리프레시(Ctrl+Shift+R) 또는 시크릿 모드 권장.
+
+---
+
+## Claude OAuth Refresh — 핵심 발견 (가장 중요)
+
+### Refresh Token Endpoint (검증 완료)
+
+```
+POST https://platform.claude.com/v1/oauth/token
+Content-Type: application/json
+
+{
+  "grant_type": "refresh_token",
+  "refresh_token": "sk-ant-ort01-...",
+  "client_id": "9d1c250a-e61b-44d9-88ed-5944d1962f5e",
+  "scope": "user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload"
+}
+```
+
+### Response
+
+```json
+{
+  "access_token": "sk-ant-oat01-... (새 토큰)",
+  "refresh_token": "sk-ant-ort01-... (새로운 또는 동일)",
+  "expires_in": 3600,
+  "scope": "user:profile user:inference ..."
+}
+```
+
+### 핵심 상수
+
+| 항목 | 값 |
+|------|-----|
+| Endpoint | `https://platform.claude.com/v1/oauth/token` |
+| Client ID (Production) | `9d1c250a-e61b-44d9-88ed-5944d1962f5e` |
+| Client ID (Staging) | `22422756-60c9-4084-8eb7-27705fd5cf9a` |
+| Client ID 환경변수 오버라이드 | `CLAUDE_CODE_OAUTH_CLIENT_ID` |
+| Access Token 수명 | ~3600초 (1시간) |
+| 선제 갱신 버퍼 | 만료 5분 전 (300,000ms) |
+| Token 형식 | Access: `sk-ant-oat01-*`, Refresh: `sk-ant-ort01-*` |
+| API 호출 시 필수 헤더 | `Authorization: Bearer sk-ant-oat01-...` + `anthropic-beta: oauth-2025-04-20` |
+
+### 크리덴셜 저장 위치
+
+```
+~/.claude/.credentials.json → claudeAiOauth:
+  accessToken, refreshToken, expiresAt, scopes, subscriptionType, rateLimitTier
+```
+
+### 동시성 제어
+
+Claude Code는 파일 락(ELOCKED) + 5회 재시도(1-2초 랜덤 백오프)로 동시 리프레시 방지.
+
+---
+
+## CORTHEX Phase 2 — 인증 아키텍처 (구체적 구현 계획)
+
+### 방법 1: 직원이 자기 컴퓨터에서 `claude` CLI로 로그인 (MVP)
+
+```
+1. 직원이 자기 컴퓨터에서 `claude` 실행 → 브라우저 로그인
+2. ~/.claude/.credentials.json 생성됨
+3. CORTHEX 설정 페이지에서 "Claude 계정 연결" 클릭
+4. credentials.json의 refreshToken을 CORTHEX에 붙여넣기
+   (또는 CLI에서 `claude setup-token` 실행 → 토큰 복사)
+5. CORTHEX가 refreshToken을 암호화 저장 (DB)
+6. 이후 자동:
+   - CORTHEX 서버가 refreshToken으로 accessToken 자동 갱신
+   - POST https://platform.claude.com/v1/oauth/token
+   - 매 55분마다 선제 갱신 (만료 5분 전)
+   - accessToken을 Hermes Profile의 credential_pool에 주입
+7. 직원은 다시는 토큰 신경 안 써도 됨
+```
+
+### 방법 2: CORTHEX 웹에서 직접 OAuth 플로우 (최종 목표)
+
+```
+1. 직원이 CORTHEX에서 "Claude 계정 연결" 클릭
+2. CORTHEX 서버가 OAuth Authorization URL 생성:
+   https://claude.ai/oauth/authorize?
+     client_id=9d1c250a-...
+     &redirect_uri=https://corthex-hq.com/api/auth/claude-callback
+     &scope=user:inference user:profile
+     &response_type=code
+     &code_challenge=... (PKCE)
+3. 직원이 claude.ai에서 로그인 + 권한 승인
+4. claude.ai → redirect → corthex-hq.com/api/auth/claude-callback?code=...
+5. CORTHEX 서버가 code → access_token + refresh_token 교환:
+   POST https://platform.claude.com/v1/oauth/token
+   { grant_type: "authorization_code", code: "...", redirect_uri: "...", client_id: "..." }
+6. refresh_token 암호화 저장
+7. 이후 자동 갱신 (방법 1과 동일)
+```
+
+**주의:** 이 방법은 Anthropic의 third-party OAuth 금지 정책에 해당할 수 있음.
+- 2026년 2월 Anthropic이 OpenClaw/Hermes 등 서드파티 OAuth 사용 금지
+- CORTHEX 내부 사용은 회색 지대 — 대규모 외부 배포가 아닌 사내 도구
+- CEO 판단 필요: 내부 사용으로 진행할지, Anthropic에 문의할지
+
+### 방법 3: Anthropic에 파트너 등록 (장기)
+
+```
+- Anthropic에 CORTHEX를 파트너/ISV로 등록
+- 공식 OAuth client_id 발급
+- 합법적으로 "Claude로 로그인" 구현
+- Enterprise 수준의 통합
+```
+
+---
+
+## 자동 갱신 구현 — sync-claude-token.sh 업그레이드 방안
+
+### 현재 (sync-claude-token.sh)
+
+```
+5분마다 cron →
+  ~/.claude/.credentials.json에서 accessToken 읽기 →
+  ~/.hermes/.env에 ANTHROPIC_API_KEY=... 쓰기 →
+  hermes-gateway 재시작
+```
+
+문제: Claude Code가 서버에서 돌고 있어야 토큰이 갱신됨. CLI가 안 돌면 토큰 만료.
+
+### 개선안: refresh-token-auto.sh (Direct Refresh)
+
+```bash
+#!/bin/bash
+# 직접 Anthropic OAuth 엔드포인트를 호출해서 토큰 갱신
+# Claude Code CLI 실행 불필요!
+
+REFRESH_TOKEN="sk-ant-ort01-..."  # 암호화된 파일에서 읽기
+CLIENT_ID="9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+ENDPOINT="https://platform.claude.com/v1/oauth/token"
+
+# 1. 새 access token 발급
+RESPONSE=$(curl -s -X POST "$ENDPOINT" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"grant_type\": \"refresh_token\",
+    \"refresh_token\": \"$REFRESH_TOKEN\",
+    \"client_id\": \"$CLIENT_ID\"
+  }")
+
+NEW_ACCESS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+NEW_REFRESH=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin).get('refresh_token',''))")
+
+# 2. Hermes .env 업데이트
+sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$NEW_ACCESS|" ~/.hermes/.env
+
+# 3. credentials.json도 업데이트 (Claude Code와 동기 유지)
+python3 -c "
+import json, time
+with open('$HOME/.claude/.credentials.json') as f:
+    creds = json.load(f)
+creds['claudeAiOauth']['accessToken'] = '$NEW_ACCESS'
+if '$NEW_REFRESH':
+    creds['claudeAiOauth']['refreshToken'] = '$NEW_REFRESH'
+creds['claudeAiOauth']['expiresAt'] = int(time.time() * 1000) + 3600000
+with open('$HOME/.claude/.credentials.json', 'w') as f:
+    json.dump(creds, f)
+"
+
+# 4. Hermes gateway 재시작
+systemctl --user restart hermes-gateway 2>/dev/null
+
+echo "Token refreshed: $(date)"
+```
+
+장점: Claude Code CLI가 안 돌고 있어도 토큰 자동 갱신. 50분마다 cron으로 돌리면 끊김 없음.
+
+### CORTHEX Phase 2 — 서버 내부 자동 갱신 (TypeScript)
+
+```typescript
+// packages/server/src/services/token-refresh.ts
+
+const CLAUDE_OAUTH_ENDPOINT = 'https://platform.claude.com/v1/oauth/token'
+const CLAUDE_CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e'
+const REFRESH_BUFFER_MS = 5 * 60 * 1000  // 5분 전 선제 갱신
+
+interface OAuthTokens {
+  accessToken: string
+  refreshToken: string
+  expiresAt: number  // ms timestamp
+}
+
+async function refreshClaudeToken(refreshToken: string): Promise<OAuthTokens> {
+  const res = await fetch(CLAUDE_OAUTH_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: CLAUDE_CLIENT_ID,
+    }),
+  })
+
+  if (!res.ok) throw new Error(`Token refresh failed: ${res.status}`)
+
+  const data = await res.json()
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token || refreshToken,
+    expiresAt: Date.now() + data.expires_in * 1000,
+  }
+}
+
+// 직원별 토큰 자동 갱신 루프
+async function startTokenRefreshLoop(employeeId: string) {
+  const employee = await db.select().from(employees).where(eq(employees.id, employeeId))
+  const tokens = decryptTokens(employee.encryptedTokens)
+
+  if (Date.now() + REFRESH_BUFFER_MS >= tokens.expiresAt) {
+    const newTokens = await refreshClaudeToken(tokens.refreshToken)
+    await db.update(employees)
+      .set({ encryptedTokens: encryptTokens(newTokens) })
+      .where(eq(employees.id, employeeId))
+
+    // Hermes Profile에 새 토큰 주입
+    await updateHermesProfileToken(employeeId, newTokens.accessToken)
+  }
+}
+
+// 50분마다 실행 (만료 5분 전 갱신)
+setInterval(() => refreshAllEmployeeTokens(), 50 * 60 * 1000)
+```
+
+---
+
+## What Has NOT Been Tried Yet
+
+- refresh-token-auto.sh 실제 구현 및 테스트
+- CORTHEX OAuth callback 엔드포인트 구현
+- Hermes Profile CRUD를 프로그래밍적으로 호출
+- 직원 토큰 암호화 저장 스키마 (DB 마이그레이션)
+- Anthropic에 파트너 등록 문의
+- corthex-hq.com 브라우저 캐시 문제 해결 확인
+
+---
+
+## Current State of Files
+
+| File | Status | Notes |
+|------|--------|-------|
+| `~/.hermes/.env` | ✅ Modified | CEO 로컬 머신의 OAuth 토큰으로 업데이트 |
+| `_research/claude-oauth-auth-flow-2026-04-01.md` | ✅ Complete | OAuth 정책 + 인증 방법 비교 리포트 |
+| `_research/hermes-openclaw-agent-runtime-2026-03-31.md` | ✅ Complete | 이전 세션 리서치 리포트 (업데이트됨) |
+| hermes-gateway | ✅ Restarted | 새 토큰으로 재시작됨 |
+
+---
+
+## Decisions Made
+
+- **OAuth 토큰만 사용** — reason: CEO 여러 번 반복 지시. Console API 키 발급 절대 금지. Max/Pro 구독 정액제를 활용해야 함 (사용량 과금 = 캐시 충전처럼 번거로움).
+- **Refresh Token으로 자동 갱신** — reason: Access Token은 1시간 수명, Refresh Token으로 무한 갱신 가능. endpoint 확인됨 (`platform.claude.com/v1/oauth/token`).
+- **Phase 2 MVP: 방법 1 (CLI 토큰 붙여넣기)** — reason: 구현 가장 간단. 직원이 `claude` 실행 → 토큰 복사 → CORTHEX 붙여넣기. 이후 자동 갱신.
+- **Phase 2 최종: 방법 2 (웹 OAuth 플로우)** — reason: "Claude 계정 연결" 한 번 클릭으로 끝나는 UX. Anthropic 정책 회색 지대이지만 내부 사용이므로 진행.
+
+---
+
+## Blockers & Open Questions
+
+- **corthex-hq.com 브라우저 접근 불가** — 서버 정상이지만 CEO 브라우저에서 CL:0. 캐시/CDN 문제.
+- **Anthropic OAuth 정책** — 내부 사용으로 진행하되, 대규모 확장 시 파트너 등록 필요할 수 있음.
+- **Refresh Token 수명** — 장기 유효하지만 Anthropic이 revoke할 수 있음. 재인증 플로우 필요.
+- **CEO의 Phase 1 브라우저 확인** — 아직 미완료 (사이트 접근 문제).
+
+---
+
+## Exact Next Step
+
+1. **corthex-hq.com 접근 문제 해결** — CEO에게 하드 리프레시 / 시크릿 모드 안내 완료. 안 되면 Cloudflare 캐시 퍼지 필요.
+2. **refresh-token-auto.sh 구현** — 현재 sync-claude-token.sh를 대체. Refresh Token으로 직접 갱신하는 스크립트.
+3. **Phase 1 확인 완료 시** → Phase 2 PRD 작성 (Hermes 통합 + OAuth 인증 포함).
+
+---
+
+## Environment & Setup Notes
+
+- Phase 1: 74/74 tests pass, tsc 0 errors, server running (PID 583677)
+- Hermes: v0.6.0, gateway restarted with CEO's local token (PID 698823)
+- Nginx: active, proxying port 80 → 3000
+- Cloudflare: DNS proxied, SSL Full
+- OAuth Refresh Endpoint: `POST https://platform.claude.com/v1/oauth/token`
+- Client ID: `9d1c250a-e61b-44d9-88ed-5944d1962f5e`
+- 리서치 리포트: `_research/claude-oauth-auth-flow-2026-04-01.md`

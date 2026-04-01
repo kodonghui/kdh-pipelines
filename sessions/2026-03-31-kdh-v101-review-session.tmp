@@ -1,0 +1,107 @@
+# Session: 2026-03-31 (4th session)
+
+**Started:** ~14:00 UTC
+**Last Updated:** ~14:45 UTC
+**Project:** /home/ubuntu/corthex-v3
+**Topic:** KDH v10.1 품질 게이트 강화 + Sprint 1 D1-D6 재리뷰 PASS
+
+---
+
+## What We Are Building
+
+kdh 스킬 시리즈 v10.1 업그레이드. Sprint 0/1 리뷰에서 발견된 5가지 품질 구멍(채점 루브릭 무시, 재검증 미실행, cross-talk 빈칸, auto-fail 미적용, 스킬 간 연결 끊김)을 전 스킬에 걸쳐 수정. Sprint 1을 새 D1-D6 루브릭으로 재리뷰하여 7.93/10 PASS 확보.
+
+---
+
+## What WORKED (with evidence)
+
+- **kdh-review v10.1 D1-D6 강제 템플릿** — Sprint 1 재리뷰에서 3명 전원 D1-D6 양식 사용 확인 (party-logs/sprint1-re-review-*.md)
+- **Cross-talk 실질 내용** — 3명 모두 다른 리뷰어 이름 인용 + 동의/반박 기록 (이전: 전부 빈 placeholder)
+- **Sprint 1 재리뷰 PASS** — winston 7.95, quinn 7.35, john 8.50 → avg 7.93 (이전: 6.9 CONDITIONAL)
+- **테스트 인프라 수정** — bunfig.toml 루트 추가로 67/67 pass (이전: 11/31, 35% pass rate)
+- **tsc 0 에러** — server, admin, shared 전 패키지
+- **kdh-pipelines v10.1 push** — 커밋 832a85e, 10개 스킬, README 업데이트
+- **옛날 명령어 정리** — kdh-full-auto-pipeline, kdh-uxui-redesign 삭제, 새 7개 추가 (양쪽 디렉토리)
+- **critic-rubric.md 적용 범위 업데이트** — /kdh-review 추가
+
+---
+
+## What Did NOT Work (and why)
+
+- **Async preload for test setup** — `setup.ts`에서 `await envFile.text()`는 Bun preload에서 모듈 import를 blocking하지 않음. `readFileSync`로 동기식 변환 필요.
+- **Proxy 패턴으로 lazy DB init** — `connection.ts`에 Proxy를 넣어봤으나 Drizzle 내부 메서드 호출에서 깨짐. 원복함.
+- **루트 bunfig.toml 없이 `bun test`** — packages/server/bunfig.toml만 있으면 프로젝트 루트에서 `bun test` 시 preload 안 읽힘.
+- **Broadcast shutdown_request** — `SendMessage to="*"` with structured JSON은 broadcast 불가. 개별 전송 필요.
+
+---
+
+## What Has NOT Been Tried Yet
+
+- Sprint 2 D1-D6 리뷰 (회사 + 부서 관리, 9개 스토리: 2-1~2-6, 6-6, 6-7, W-2)
+- Sprint 3-5 리뷰
+- `/kdh-go 계속` 밤새 모드 (Ralph Loop 추천)
+- 프론트엔드 테스트 추가 (Quinn 지적 — Sprint 2 백로그)
+- sprint-status.yaml에 review_state/review_scores 실제 데이터 기록 (스키마는 정의됨, 데이터는 아직)
+- kdh-code-review-full-auto 리팩토링 (kdh-review와 중복 제거)
+
+---
+
+## Current State of Files
+
+| File | Status | Notes |
+|------|--------|-------|
+| `~/.claude/skills/kdh-review/SKILL.md` | ✅ Complete | v10.1 — D1-D6 강제, auto-fail, cross-talk 거부, 재검증 루프 (339줄) |
+| `~/.claude/skills/kdh-sprint/SKILL.md` | ✅ Complete | v10.1 — CONDITIONAL 하드블로킹, 리뷰 요약 생성 (206줄) |
+| `~/.claude/skills/kdh-go/SKILL.md` | ✅ Complete | v10.1 — CONDITIONAL 감지, D1-D6 보고 (195줄) |
+| `~/.claude/skills/kdh-gate/SKILL.md` | ✅ Complete | v10.1 — 리뷰 GATE 2개, sprint-verify 요약 (86줄) |
+| `~/.claude/skills/kdh-build/SKILL.md` | ✅ Complete | v10.1 — Phase -1 리뷰 상태 사전 확인 (227줄) |
+| `~/.claude/skills/kdh-e2e/SKILL.md` | ✅ Complete | v10.1 — Pre-Phase 0 소프트 게이트 (243줄) |
+| `~/.claude/skills/kdh-code-review-full-auto/SKILL.md` | ✅ Complete | 역할 구분 테이블 추가 (1029줄) |
+| `bunfig.toml` | ✅ Complete | 루트 preload 설정 |
+| `packages/server/src/__tests__/setup.ts` | ✅ Complete | 동기식 env 로딩 |
+| `_bmad-output/party-logs/sprint1-re-review-winston.md` | ✅ Complete | 7.95/10 PASS |
+| `_bmad-output/party-logs/sprint1-re-review-quinn.md` | ✅ Complete | 7.35/10 PASS |
+| `_bmad-output/party-logs/sprint1-re-review-john.md` | ✅ Complete | 8.50/10 PASS |
+| `_bmad-output/planning-artifacts/critic-rubric.md` | ✅ Complete | /kdh-review 적용 범위 추가 |
+| `kodonghui/kdh-pipelines` (GitHub) | ✅ Complete | v10.1 커밋 832a85e push 완료 |
+| Sprint 2 stories (2-1~2-6, 6-6, 6-7, W-2) | 🗒️ Not Started | 코드 일부 존재, D1-D6 리뷰 필요 |
+
+---
+
+## Decisions Made
+
+- **D1-D6 코드 리뷰 기준 별도 정의** — 기획용과 코드용은 같은 차원이지만 맥락이 다름 (예: D1 구체성 = 기획에선 파일경로/hex값, 코드에선 테스트명/에러코드)
+- **Cross-talk 빈칸 = 리뷰 거부** — placeholder 텍스트 감지 시 즉시 REJECT
+- **Auto-fail = Phase 3.5로 독립 게이트** — Phase 3 Score Evaluation 이후 별도 검증 단계
+- **CONDITIONAL = 하드 블로킹** — 다음 스토리 진행 절대 금지, 재리뷰 필수
+- **테스트 인프라: bunfig.toml 루트** — packages/server/ 하위만으로는 `bun test` 루트 실행 시 안 읽힘
+- **Sprint 1 프론트엔드 테스트 = Sprint 2 백로그** — John의 주장 수용: v2 실패 원인은 "작동하는 기능 없음"이지 "테스트 없음"이 아님
+- **kdh-review vs kdh-code-review-full-auto 공존** — 스토리 레벨 vs PR 레벨로 역할 분리, 서로 대체 아님
+
+---
+
+## Blockers & Open Questions
+
+- **프론트엔드 테스트 0개** — Quinn이 계속 지적. Sprint 2에서 추가 필요 (적어도 AuthProvider, ProtectedRoute)
+- **sprint-status.yaml review 데이터 없음** — 스키마는 플랜에 정의됐지만 실제 스토리에 review_state 등이 아직 기록 안 됨. Sprint 2 리뷰 시 kdh-review/kdh-sprint가 자동으로 기록할 예정.
+- **ecc-3h, ecc-12h 명령어 유지** — 사장님이 삭제 거부. 원격 스케줄로 대체됐지만 commands/에 남겨둠.
+
+---
+
+## Exact Next Step
+
+1. Sprint 2 D1-D6 리뷰 시작 (9개 스토리: 2-1~2-6, 6-6, 6-7, W-2)
+2. 방법: TeamCreate → winston/quinn/john spawn → D1-D6 템플릿 → cross-talk → 점수 확정
+3. 또는 Ralph Loop: `while true; do claude -p "/kdh-go 계속"; sleep 5; done`
+4. Sprint 2 끝나면 Sprint 3, 4, 5 이어서
+
+---
+
+## Environment & Setup Notes
+
+- Sprint 1 재리뷰 팀: `sprint1-d16-review` (정리 완료 — winston/john shutdown, quinn 대기)
+- 테스트: `bun test` 루트에서 67/67 pass (bunfig.toml preload 필수)
+- tsc: 3 패키지 전부 0 에러
+- Git: main 브랜치, 최신 커밋 ee1e612, push 완료
+- Hermes: systemd active, 텔레그램 @corthex_intern_bot 연결
+- kdh-pipelines: v10.1 push 완료 (832a85e)
