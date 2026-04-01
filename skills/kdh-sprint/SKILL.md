@@ -170,16 +170,49 @@ Phase A: Build (dev 리드)
   오케스트레이터: sprint-status.yaml 확인 → status: built?
 
 Phase B: Review (winston/quinn/john 병렬 — 오케스트레이터가 지시)
-  오케스트레이터 → SendMessage 3명에게 동시:
-    "스토리 {story-id} 리뷰. 변경 파일: {목록}.
-     1. 변경 파일 전부 읽기
-     2. D1-D6 채점 (kdh-review 스킬의 템플릿 사용)
-     3. party-logs/sprint-{N}-{story-id}-{본인이름}.md 작성
-     4. 다른 critic 2명에게 SendMessage로 핵심 의견 1개 공유 (cross-talk)
-     5. cross-talk 반영 후 최종 점수 party-log에 업데이트
-     6. 완료 보고"
+  오케스트레이터 → SendMessage 3명에게 동시 (아래 전문 그대로):
 
-  각 critic: 독립 리뷰 → party-log 작성 → cross-talk → 최종 점수
+    "스토리 {story-id} 리뷰. 변경 파일: {목록}.
+
+    ## Step 1: Auto-Fail 체크 (먼저 — YES면 즉시 중단)
+    - [ ] 하드코딩 시크릿 없음
+    - [ ] SQL injection / XSS 없음
+    - [ ] tsc 에러 없음
+    - [ ] 데이터 손실 위험 없음
+    - [ ] 인라인 타입 없음 (@corthex/shared만 사용)
+    YES → party-log에 AUTO-FAIL 기록 후 보고.
+
+    ## Step 2: 변경 파일 전부 Read 도구로 읽기
+
+    ## Step 3: D1-D6 채점 (이 테이블 그대로 party-log에)
+
+    | 차원 | 점수 | 가중치 | 가중점수 | 근거 (file:line 필수) |
+    |------|------|--------|----------|---------------------|
+    | D1 구체성 | /10 | {%} | | {테스트명, 에러코드, 줄번호} |
+    | D2 완전성 | /10 | {%} | | {AC 충족, 엣지 케이스} |
+    | D3 정확성 | /10 | {%} | | {타입=contract, DB=schema} |
+    | D4 실행가능성 | /10 | {%} | | {tsc, test 통과 확인} |
+    | D5 일관성 | /10 | {%} | | {contract import, 네이밍} |
+    | D6 리스크인식 | /10 | {%} | | {보안, 확장성, 통합} |
+
+    가중치: winston D1=15 D2=15 D3=25 D4=20 D5=15 D6=10
+            quinn   D1=10 D2=25 D3=15 D4=10 D5=15 D6=25
+            john    D1=20 D2=20 D3=15 D4=15 D5=10 D6=20
+    가중 평균 = (D1×w1+...+D6×w6)/100. 계산식 표시.
+    D < 3 → AUTO-FAIL.
+
+    ## Step 4: 이슈 목록
+    형식: [D{N} {차원명}] [{CRITICAL|HIGH|MEDIUM|LOW}] {설명} — {path}:{line}
+
+    ## Step 5: Cross-talk (의무)
+    다른 critic 2명에게 SendMessage: 핵심 이슈 1개.
+    받은 후 party-log에 ## Cross-talk 섹션:
+    - {이름}이 지적한 {이슈}: {동의/반박 + 이유}
+
+    ## Step 6: party-logs/sprint-{N}-{story-id}-{본인이름}.md 작성
+    ## Step 7: 완료 보고"
+
+  각 critic: Auto-fail → 파일 읽기 → D1-D6 채점 → 이슈 → cross-talk → party-log
 
   오케스트레이터 체크리스트 (BLOCKING):
     [ ] party-logs/sprint-{N}-{story-id}-winston.md 존재
