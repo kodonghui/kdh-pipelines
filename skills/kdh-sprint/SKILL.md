@@ -3,7 +3,7 @@ name: kdh-sprint
 description: "Sprint Orchestrator — 스프린트 전체를 관리. 스토리별 build→review 사이클 + 의존성 + E2E 검증."
 ---
 
-# KDH Sprint — Sprint Orchestrator
+# KDH Sprint v11 — Sprint Orchestrator
 
 스프린트 전체를 관리하는 오케스트레이터.
 스토리 의존성 분석 → 병렬 배치 → build/review 사이클 → E2E 검증.
@@ -22,6 +22,31 @@ GSD 적용: 파일 기반 상태 관리 (sprint-status.yaml)
 ```
 
 ---
+
+## Phase -1: 팀 부트스트랩 (v13 — 필수, 30초)
+
+이 Phase는 선택이 아닙니다. TeamCreate 없이 Phase 0 진행 금지.
+
+```
+1. TeamCreate("sprint-{N}")
+   → ~/.claude/teams/sprint-{N}/ 디렉토리 생성됨
+   → tmux에 팀 공간 생성 (사장님 눈에 보임)
+
+2. 팀 존재 확인:
+   ls ~/.claude/teams/sprint-{N}/config.json → 존재해야 함
+   없으면 → 중단. "TeamCreate 실패. 진행 불가." 보고.
+
+3. pipeline-state.yaml 업데이트:
+   sprint_{N}.team_created: true
+   sprint_{N}.team_name: "sprint-{N}"
+
+4. 이 시점부터 감독의 역할 (절대 규칙):
+   ✅ 파일 읽기 (sprint-status.yaml, 계약서, 스키마 등)
+   ✅ 스토리를 팀 에이전트에게 위임 (Agent 도구로 소환)
+   ✅ 진행 상황 모니터링 (TaskList, TaskGet)
+   ✅ Bash 실행 (tsc, bun test, git 등)
+   ❌ packages/*/src/ 직접 수정 금지 (Hook이 차단)
+```
 
 ## Phase 0: Sprint Load (1min)
 
@@ -54,21 +79,33 @@ for each batch (최대 3 stories parallel):
     - git commit: "chore: claim story {story-id}"
     - 다른 에이전트가 같은 스토리 잡는 것 방지
 
-  Step 2: Build (Generator)
+  Step 2: Build (Generator) — 커밋 안 함
     - Agent spawn: /kdh-build {story-id}
     - mode: bypassPermissions (자동 실행)
     - 완료 대기 (타임아웃: 30min)
-    - 결과 확인: sprint-status.yaml → status: completed?
+    - 결과 확인: sprint-status.yaml → status: built? (completed 아님!)
+    - ★ 빌더는 git commit 안 함. 코드만 작성.
 
-  Step 3: Review (Evaluator)
+  Step 3: Review (Evaluator) — 빌드 직후, 커밋 전
     - Agent spawn: /kdh-review {story-id}
     - mode: bypassPermissions
     - 완료 대기 (타임아웃: 15min)
-    - 결과 확인: sprint-status.yaml → reviewed: true?
+    - 결과 확인: sprint-status.yaml → review_state?
+
+  Step 3.5: 커밋 (리뷰 PASS 후에만 — 오케스트레이터가 직접)
+    ★★★ 이 단계가 없으면 커밋 금지 ★★★
+    리뷰 PASS 확인 후:
+    - git add {빌더가 변경한 파일들}
+    - git commit: "feat({epic}): {story-id} — {title}
+      - TDD: {N} tests, reviewed by winston/quinn/john
+      - Review avg: {X.X}/10"
+    - sprint-status.yaml: status → completed (built → completed로 변경)
+    - git push origin main
 
   Step 4: Result Processing (HARD ENFORCEMENT)
     PASS:
-      → sprint-status.yaml: review_state: passed
+      → Step 3.5 커밋 실행
+      → sprint-status.yaml: review_state: passed, status: completed
       → 다음 스토리 진행
 
     CONDITIONAL (BLOCKING LOOP — 미해결 시 다음 스토리 진행 금지):
@@ -92,7 +129,62 @@ for each batch (최대 3 stories parallel):
   Step 5: Unblock
     - 이 스토리에 의존하던 스토리들 → blocked 해제
     - 다음 배치에 포함
+
+  Step 5.5: Batch Integration Review (v12)
+    IF batch_completed_count >= 3 OR last_batch_in_sprint:
+      Agent spawn: /kdh-integration batch
+      입력: 이번 Batch의 스토리 ID 목록
+      결과:
+        PASS → 다음 Batch
+        WARNING → 기록 후 진행
+        FAIL → 해당 스토리 CONDITIONAL 되돌림
 ```
+
+### v13 스토리 실행 패턴 (감독은 위임만)
+
+각 스토리에 대해:
+
+Step A: Builder 소환
+  Agent 도구 사용:
+    name: "builder-{story-id}"
+    team_name: "sprint-{N}"
+    prompt: "당신은 CORTHEX v3 프로젝트의 빌더 에이전트입니다.
+             
+             프로젝트 경로: /home/ubuntu/corthex-v3
+             
+             스토리 {story-id}: {story-title}
+             
+             수행할 작업:
+             1. _bmad-output/planning-artifacts/epics-and-stories.md에서 스토리 상세 읽기
+             2. packages/shared/src/contracts/ 에서 관련 계약서 읽기
+             3. packages/server/src/db/schema/ 에서 관련 스키마 읽기
+             4. TDD: 테스트 먼저 작성 (RED)
+             5. 구현 (GREEN)
+             6. 타입 체크: bunx tsc --noEmit -p packages/server/tsconfig.json
+             7. 테스트 실행: bun test
+             8. 완료 후 sprint-status.yaml 에서 스토리 status를 'completed'로 변경
+             
+             모든 타입은 @corthex/shared에서 import. 인라인 타입 금지."
+
+Step B: Reviewer 소환 (Builder 완료 후)
+  Agent 도구 사용:
+    name: "reviewer-{story-id}"
+    team_name: "sprint-{N}"
+    prompt: "당신은 CORTHEX v3 프로젝트의 리뷰어 에이전트입니다.
+             
+             스토리 {story-id}의 코드 리뷰를 수행합니다.
+             빌더와 다른 에이전트로서 독립적 관점을 제공합니다.
+             
+             수행할 작업:
+             1. git diff로 이번 스토리 변경사항 확인
+             2. 3명의 리뷰 서브에이전트 소환 (Agent 도구):
+                - winston: 설계/아키텍처 관점
+                - quinn: 테스트/QA 관점  
+                - john: 요구사항/사용자 관점
+             3. 각 리뷰어가 party-logs/{sprint}-{story}-{이름}.md 작성
+             4. D1-D6 채점 (구체성, 완전성, 정확성, 실행가능성, 일관성, 리스크인식)
+             5. 평균 7.0 이상 → PASS, 미만 → CONDITIONAL
+             6. sprint-status.yaml에 review_state 업데이트"
 
 ## Phase 2: Sprint Wrap-up
 
@@ -115,7 +207,15 @@ for each batch (최대 3 stories parallel):
    bun test
    → 실패 있으면 수정
 
-4. /kdh-e2e 호출 → E2E 검증
+4. /kdh-integration sprint → Sprint 간 통합 리뷰 (v12: E2E 전 필수)
+     - PASS → E2E 진행
+     - WARNING → E2E에 추가 체크포인트 전달
+     - FAIL → 수정 필수 (E2E 진행 불가)
+
+5. /kdh-e2e 호출 → E2E 검증 (v11: HARD BLOCKING — FAIL이면 Sprint 완료 불가)
+     - E2E FAIL → P0/P1 버그 수정 필수 → 재실행
+     - E2E 스킵 = Sprint FAIL (더 이상 "백로그" 허용 안 됨)
+     - E2E PASS 후에만 sprint-verify 진행
 
 5. Sprint Review Summary 생성:
    party-logs/{sprint}-review-summary.md:

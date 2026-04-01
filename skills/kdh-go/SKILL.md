@@ -61,6 +61,81 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
      "스토리 {id}가 에스컬레이션 상태입니다."
      → /kdh-gate review-escalation
    - 전부 passed 또는 null → 5번 정상 진행
+
+5.8 통합 상태 확인 (v12):
+   sprint-status.yaml에서 integration_state 확인:
+   - integration_state: fail →
+     "스토리 간 충돌이 발견됐어요. 수정이 필요합니다."
+     → /kdh-sprint {N} (통합 이슈 해결)
+   - integration_state: warning →
+     정상 진행 (E2E에서 추가 확인)
+
+5.7 E2E 상태 확인 (v11):
+   sprint-status.yaml에서 현재 Sprint의 e2e_result 확인:
+   - Sprint 완료(stories 전부 completed) + e2e_result: null →
+     "Sprint {N}이 완료됐는데 E2E 테스트를 안 돌렸어요."
+     → /kdh-e2e 강제 호출
+   - e2e_result: fail →
+     "Sprint {N} E2E에서 버그가 발견됐어요."
+     → 버그 목록 보여주고 /kdh-sprint {N} (E2E 버그 수정)
+```
+
+## ★★★ 절대 규칙 — 이것을 어기면 CEO가 전체 삭제함 ★★★
+
+```
+이 규칙은 CEO가 3번 코드 전체 삭제 후 직접 지시한 것이다.
+"선언"이 아니라 "실행 흐름 자체"에 박혀있다. 건너뛸 수 없다.
+
+1. 감독(이 세션)은 packages/*/src/ 에 Write/Edit 절대 금지.
+   - .ts, .tsx, .css, .json 등 모든 구현 파일
+   - "간단한 수정", "한 줄 고치기", "import 정리" 포함 — 전부 금지
+   - 깨진 빌드 수정도 직접 안 함 → 팀 에이전트가 함
+
+2. 코딩이 필요하면 반드시 이 순서:
+   TeamCreate("sprint-{N}")
+   → Agent(name: "builder-{story}", team_name: "sprint-{N}")
+   → 팀 에이전트가 코드 작성
+   → Agent(name: "reviewer-{story}", team_name: "sprint-{N}")
+   → 리뷰어가 3명 파티 모드로 리뷰
+   이 순서를 건너뛰면 안 됨.
+
+3. 코드 리뷰 시 Codex CLI 세컨드 오피니언 필수 (tmux 실시간):
+   # Codex 창 열기 (CEO가 실시간으로 봄)
+   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
+   tmux select-pane -t $CODEX_PANE -T "codex-reviewer"
+   # Codex한테 리뷰 보내기
+   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
+     --sandbox read-only -o {output}.md -C /home/ubuntu/corthex-v3 \
+     <<'"'"'PROMPT'"'"'
+   [리뷰 프롬프트]
+   PROMPT' C-m
+   # 완료 대기 → 결과 읽기 → Codex 창 닫기
+   GPT-5.4 fresh session. CEO가 Codex 작업 과정을 tmux에서 실시간 확인.
+   Codex 실패 시 → Claude Agent fallback (kdh-integration 참조)
+
+4. 리뷰는 3명 파티 모드 필수 (winston, quinn, john):
+   각각 독립 관점 (설계, QA, 요구사항)
+   D1-D6 채점 → 7.0 이상 PASS
+
+5. UI 스토리는 반드시 Subframe + CEO 디자인 시스템:
+   Subframe 프로젝트: fe1d14ed3033
+   디자인 기준: Linear 다크 미니멀 + Genesis 프리미엄 + 한국 기업 세련됨
+   색상 테마: CEO가 정한 테마 (벚꽃, Toss 라이트/다크, 라벤더 등)
+   Subframe MCP로 디자인 → React 코드 내보내기 → 빌더가 적용
+   UI 스토리에서 Subframe 안 쓰면 = 자동 FAIL
+   참고: memory/feedback_design_taste.md, memory/reference_subframe_project.md
+
+6. 감독이 할 수 있는 것:
+   ✅ Read, Grep, Glob (파일 읽기)
+   ✅ Bash (tsc, bun test, git, curl 등)
+   ✅ sprint-status.yaml, pipeline-state.yaml 수정
+   ✅ party-logs/, _bmad-output/ 파일 작성
+   ✅ TeamCreate, Agent, TaskCreate, SendMessage
+   ✅ GATE 질문 (사장님에게)
+
+이 규칙의 이유: CEO가 3번 전체 삭제. 감독이 직접 코딩하면
+코드 품질이 파이프라인을 무시하고 떨어짐. 팀 에이전트는
+fresh context로 실행되어 편향 없이 작업함.
 ```
 
 ## Phase 1: Execute
@@ -69,14 +144,34 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
 
 ```
 Action Map:
-  NEED_PLANNING    → /kdh-plan {stage}
-  NEED_CONTRACTS   → /kdh-plan stage-6.5
-  NEED_SPRINT_PLAN → /kdh-plan stage-7
-  SPRINT_IN_PROGRESS → /kdh-sprint {N}
-  NEED_E2E         → /kdh-e2e
-  NEED_GATE        → /kdh-gate {type}
-  NEXT_SPRINT      → /kdh-sprint {N+1}
-  PHASE_COMPLETE   → 보고 + 대기
+  NEED_PLANNING      → /kdh-plan {stage}
+  NEED_CONTRACTS     → /kdh-plan stage-6.5
+  NEED_SPRINT_PLAN   → /kdh-plan stage-7
+  SPRINT_IN_PROGRESS → 아래 "Sprint 실행 흐름" 참조
+  NEED_E2E           → /kdh-e2e
+  NEED_GATE          → /kdh-gate {type}
+  NEXT_SPRINT        → 아래 "Sprint 실행 흐름" 참조
+  PHASE_COMPLETE     → 보고 + 대기
+```
+
+### Sprint 실행 흐름 → kdh-sprint 위임
+
+```
+★★★ kdh-go는 자체 Sprint 흐름을 실행하지 않는다 ★★★
+★★★ 반드시 kdh-sprint 스킬의 흐름을 따른다 ★★★
+
+SPRINT_IN_PROGRESS 또는 NEXT_SPRINT 상태면:
+  → /kdh-sprint {N} 호출 (이 스킬이 전부 관리)
+
+kdh-sprint가 관리하는 것:
+  1. TeamCreate
+  2. 스토리별: Build(커밋 안 함) → Review(3명 파티) → PASS 후 커밋
+  3. Batch 통합 리뷰
+  4. tsc + test + E2E
+  5. Sprint 완료 보고
+
+kdh-go가 직접 Builder/Reviewer를 소환하면 안 된다.
+kdh-go는 상태 판단 + kdh-sprint 호출만 한다.
 ```
 
 ## Phase 2: Loop (계속 모드)
