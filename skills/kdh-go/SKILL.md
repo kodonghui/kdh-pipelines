@@ -91,13 +91,18 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
    - "간단한 수정", "한 줄 고치기", "import 정리" 포함 — 전부 금지
    - 깨진 빌드 수정도 직접 안 함 → 팀 에이전트가 함
 
-2. 코딩이 필요하면 반드시 이 순서:
+2. 코딩이 필요하면 반드시 이 순서 (v15 "한 팀 = 한 스토리"):
    TeamCreate("sprint-{N}")
-   → Agent(name: "builder-{story}", team_name: "sprint-{N}")
-   → 팀 에이전트가 코드 작성
-   → Agent(name: "reviewer-{story}", team_name: "sprint-{N}")
-   → 리뷰어가 3명 파티 모드로 리뷰
-   이 순서를 건너뛰면 안 됨.
+   → 스토리마다 4명 팀 에이전트 소환:
+     dev-{story} (빌더), winston-{story}, quinn-{story}, john-{story}
+     전부 team_name: "sprint-{N}" 필수. 서브에이전트 금지.
+   → dev가 빌드 (커밋 안 함)
+   → 오케스트레이터가 winston/quinn/john에게 SendMessage로 리뷰 지시
+   → critics끼리 cross-talk (SendMessage)
+   → PASS → 오케스트레이터 커밋
+   → CONDITIONAL → dev에게 수정 지시 → 재리뷰
+   → 4명 전원 shutdown → 다음 스토리
+   이 순서를 건너뛰면 안 됨. 별도 reviewer 에이전트 없음.
 
 3. 코드 리뷰 시 Codex CLI 세컨드 오피니언 필수 (tmux 실시간):
    # Codex 창 열기 (CEO가 실시간으로 봄)

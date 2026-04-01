@@ -140,51 +140,84 @@ for each batch (최대 3 stories parallel):
         FAIL → 해당 스토리 CONDITIONAL 되돌림
 ```
 
-### v13 스토리 실행 패턴 (감독은 위임만)
+### v15 스토리 실행 패턴 — "한 팀 = 한 스토리" (벤치마크 기반)
+
+★★★ 별도 reviewer 에이전트 없음. 오케스트레이터가 critics를 직접 관리. ★★★
+★★★ 4명 전부 팀 에이전트 (team_name 필수). 서브에이전트 금지. ★★★
 
 각 스토리에 대해:
 
-Step A: Builder 소환
-  Agent 도구 사용:
-    name: "builder-{story-id}"
-    team_name: "sprint-{N}"
-    prompt: "당신은 CORTHEX v3 프로젝트의 빌더 에이전트입니다.
-             
-             프로젝트 경로: /home/ubuntu/corthex-v3
-             
-             스토리 {story-id}: {story-title}
-             
-             수행할 작업:
-             1. _bmad-output/planning-artifacts/epics-and-stories.md에서 스토리 상세 읽기
-             2. packages/shared/src/contracts/ 에서 관련 계약서 읽기
-             3. packages/server/src/db/schema/ 에서 관련 스키마 읽기
-             4. TDD: 테스트 먼저 작성 (RED)
-             5. 구현 (GREEN)
-             6. 타입 체크: bunx tsc --noEmit -p packages/server/tsconfig.json
-             7. 테스트 실행: bun test
-             8. 완료 후 sprint-status.yaml 에서 스토리 status를 'completed'로 변경
-             
-             모든 타입은 @corthex/shared에서 import. 인라인 타입 금지."
+Phase 0: 팀 에이전트 4명 소환 (전부 team_name: "sprint-{N}")
+  dev = Agent(name: "dev-{story-id}", team_name: "sprint-{N}", mode: "bypassPermissions",
+              prompt: "kdh-build 스킬 내용 + 스토리 컨텍스트")
+  winston = Agent(name: "winston-{story-id}", team_name: "sprint-{N}", mode: "bypassPermissions",
+              prompt: "아키텍처 리뷰어. _bmad/bmm/agents/architect.md 페르소나 먼저 읽기.
+                       리뷰 지시 올 때까지 대기.")
+  quinn = Agent(name: "quinn-{story-id}", team_name: "sprint-{N}", mode: "bypassPermissions",
+              prompt: "QA 리뷰어. _bmad/bmm/agents/qa.md 페르소나 먼저 읽기.
+                       리뷰 지시 올 때까지 대기.")
+  john = Agent(name: "john-{story-id}", team_name: "sprint-{N}", mode: "bypassPermissions",
+              prompt: "요구사항 리뷰어. _bmad/bmm/agents/pm.md 페르소나 먼저 읽기.
+                       리뷰 지시 올 때까지 대기.")
+  → tmux에 4개 창 보임 (CEO 확인 가능)
 
-Step B: Reviewer 소환 (Builder 완료 후)
-  Agent 도구 사용:
-    name: "reviewer-{story-id}"
-    team_name: "sprint-{N}"
-    prompt: "당신은 CORTHEX v3 프로젝트의 리뷰어 에이전트입니다.
-             
-             스토리 {story-id}의 코드 리뷰를 수행합니다.
-             빌더와 다른 에이전트로서 독립적 관점을 제공합니다.
-             
-             수행할 작업:
-             1. git diff로 이번 스토리 변경사항 확인
-             2. 3명의 리뷰 서브에이전트 소환 (Agent 도구):
-                - winston: 설계/아키텍처 관점
-                - quinn: 테스트/QA 관점  
-                - john: 요구사항/사용자 관점
-             3. 각 리뷰어가 party-logs/{sprint}-{story}-{이름}.md 작성
-             4. D1-D6 채점 (구체성, 완전성, 정확성, 실행가능성, 일관성, 리스크인식)
-             5. 평균 7.0 이상 → PASS, 미만 → CONDITIONAL
-             6. sprint-status.yaml에 review_state 업데이트"
+Phase A: Build (dev 리드)
+  오케스트레이터 → SendMessage(to: "dev-{story-id}",
+    "스토리 {story-id} 빌드 시작. kdh-build 스킬대로 TDD.
+     완료 후 변경 파일 목록 보고. git commit 금지.")
+  dev: 파일 읽기 → 테스트 작성(RED) → 구현(GREEN) → tsc → test
+  dev 완료 → 오케스트레이터에게 idle 알림 (자동)
+  오케스트레이터: sprint-status.yaml 확인 → status: built?
+
+Phase B: Review (winston/quinn/john 병렬 — 오케스트레이터가 지시)
+  오케스트레이터 → SendMessage 3명에게 동시:
+    "스토리 {story-id} 리뷰. 변경 파일: {목록}.
+     1. 변경 파일 전부 읽기
+     2. D1-D6 채점 (kdh-review 스킬의 템플릿 사용)
+     3. party-logs/sprint-{N}-{story-id}-{본인이름}.md 작성
+     4. 다른 critic 2명에게 SendMessage로 핵심 의견 1개 공유 (cross-talk)
+     5. cross-talk 반영 후 최종 점수 party-log에 업데이트
+     6. 완료 보고"
+
+  각 critic: 독립 리뷰 → party-log 작성 → cross-talk → 최종 점수
+
+  오케스트레이터 체크리스트 (BLOCKING):
+    [ ] party-logs/sprint-{N}-{story-id}-winston.md 존재
+    [ ] party-logs/sprint-{N}-{story-id}-quinn.md 존재
+    [ ] party-logs/sprint-{N}-{story-id}-john.md 존재
+    [ ] 각 로그에 D1-D6 테이블 6행 존재
+    [ ] 각 로그에 Cross-talk 섹션 존재 (placeholder 아님)
+    하나라도 없으면 → 해당 critic에게 재작성 요청
+
+  오케스트레이터: 3개 party-log 읽기 → 가중 평균 계산
+  점수 분산 체크: stdev < 0.5 → 경고 + 1명 독립 재채점 요청
+
+Phase C: 판정 + 커밋/수정
+  PASS (3명 모두 ≥ 7.0 AND 평균 ≥ 7.0):
+    → 오케스트레이터 커밋:
+      git add {변경 파일}
+      git commit: "feat({epic}): {story-id} — {title}
+        - TDD: {N} tests, reviewed by winston/quinn/john
+        - Review avg: {X.X}/10"
+      git push origin main
+    → sprint-status.yaml: status → completed, review_state → passed
+
+  CONDITIONAL (평균 < 7.0 OR 1명이라도 < 7.0):
+    → party-logs/sprint-{N}-{story-id}-fixes-needed.md 생성
+    → 오케스트레이터 → SendMessage(to: "dev-{story-id}",
+        "수정 필요. fixes-needed.md 읽고 해당 이슈만 수정.
+         수정 완료 후 보고.")
+    → dev 수정 → 오케스트레이터에게 보고
+    → Phase B 재실행 (critics에게 재리뷰 지시)
+    → 최대 2회. 3회 실패 → ESCALATE → /kdh-gate review-escalation
+    ★ CONDITIONAL 미해결 시 다음 스토리 진행 절대 금지 ★
+
+  AUTO-FAIL (D < 3 또는 보안/빌드 문제):
+    → /kdh-gate auto-fail 즉시 호출
+
+Phase D: Cleanup
+  오케스트레이터 → 4명 전원 shutdown_request
+  → 다음 스토리로
 
 ## Phase 2: Sprint Wrap-up
 

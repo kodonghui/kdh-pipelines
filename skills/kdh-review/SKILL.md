@@ -3,7 +3,91 @@ name: kdh-review
 description: "Story Reviewer (Evaluator) — BMAD party mode + D1-D6 루브릭 강제. Generator ≠ Evaluator."
 ---
 
-# KDH Review v10.1 — Story Reviewer (Evaluator)
+## v15 절대 규칙: 3명 팀 에이전트 파티 모드 필수 (서브에이전트 금지)
+
+CEO 명령: "파티 모드 빼먹으면 전부 삭제한다."
+1명이 혼자 리뷰하면 파이프라인 위반. 리뷰 무효.
+
+★★★ 서브에이전트 금지. 반드시 팀 에이전트 (team_name 필수). ★★★
+서브에이전트는 SendMessage 못 함 → cross-talk 불가 → 회의 불가.
+
+3명은 오케스트레이터(kdh-sprint)가 직접 팀 에이전트로 소환:
+  - winston: Agent(name: "winston-{story}", team_name: "sprint-{N}")
+  - quinn: Agent(name: "quinn-{story}", team_name: "sprint-{N}")
+  - john: Agent(name: "john-{story}", team_name: "sprint-{N}")
+
+★ 별도 reviewer 에이전트 없음. 오케스트레이터가 critics를 직접 관리. ★
+
+각각 party-logs/sprint-{N}-{story}-{이름}.md 작성 필수.
+
+검증 (BLOCKING — 오케스트레이터 체크리스트):
+  [ ] party-logs/sprint-{N}-{story}-winston.md 존재
+  [ ] party-logs/sprint-{N}-{story}-quinn.md 존재
+  [ ] party-logs/sprint-{N}-{story}-john.md 존재
+  [ ] 각 로그에 D1-D6 테이블 6행 존재
+  [ ] 각 로그에 Cross-talk 섹션 존재 (placeholder 아님)
+  하나라도 없으면 → 해당 critic에게 재작성 요청
+
+## Phase 0.5: Codex 세컨드 오피니언 (파티 모드 전, tmux 실시간)
+
+3명 파티 모드 전에 Codex(GPT-5.4)한테 독립 리뷰를 먼저 받는다.
+Codex 결과를 3명 리뷰어에게 참고 자료로 전달.
+CEO가 tmux에서 Codex 작업을 실시간으로 봄.
+
+```
+1. Codex tmux 창 열기:
+   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
+   tmux select-pane -t $CODEX_PANE -T "codex-story-reviewer"
+
+2. Codex한테 스토리 리뷰 보내기:
+   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
+     --sandbox read-only \
+     -o _bmad-output/party-logs/{sprint}-{story}-codex-opinion.md \
+     -C /home/ubuntu/corthex-v3 <<'"'"'PROMPT'"'"'
+   Code review for story {story-id}: {story-title}.
+   Read the git diff for this story.
+   Focus: contract compliance, type safety, auth flow, test coverage.
+   DO NOT modify source code — analysis only.
+   PROMPT' C-m
+
+3. 완료 대기 → 결과 파일 읽기 → Codex 창 닫기
+4. Codex 실패 시 → 스킵 (파티 모드만으로 진행)
+```
+
+Codex 의견은 참고 자료. 최종 판정은 3명 파티 모드의 D1-D6 평균.
+
+## 제대로 된 파티 모드 (v15 — 벤치마크 복원)
+
+```
+1. 오케스트레이터가 3명 팀 에이전트에게 SendMessage로 리뷰 지시
+2. 각 에이전트 (병렬):
+   a. 페르소나 파일 읽기 (_bmad/bmm/agents/{name}.md)
+   b. 변경된 파일 읽기
+   c. D1-D6 채점 + file:line 증거
+   d. party-log 작성
+3. Cross-talk (의무):
+   - 각 critic → 다른 2명에게 SendMessage (핵심 의견 1개)
+   - party-log에 "## Cross-talk" 섹션 추가 (받은 의견 + 반응)
+   - placeholder 텍스트 = 거부 → 재작성 요구
+4. 최종 점수 확정 (cross-talk 반영)
+5. 오케스트레이터: 3개 party-log 읽기 → 평균 계산
+6. 점수 분산 체크: stdev < 0.5 → 1명 독립 재채점 요청
+
+CONDITIONAL (평균 < 7.0 OR 1명이라도 < 7.0):
+  → fixes-needed.md 생성
+  → 오케스트레이터가 dev에게 SendMessage (수정 지시)
+  → dev 수정 후 → Phase B 재실행 (critics 재리뷰)
+  → 최대 2회. 3회 실패 → ESCALATE.
+```
+
+절대 유지:
+  - 3명 별도 팀 에이전트 (서브에이전트 금지, 1명이 3역할 금지)
+  - D1-D6 채점 + file:line 증거 필수
+  - Cross-talk 의무 (SendMessage로)
+  - Auto-fail 체크 (보안, 빌드 깨짐, 타입 오류 등)
+  - CONDITIONAL 루프 (dev 수정 → 재리뷰)
+
+# KDH Review v11 — Story Reviewer (Evaluator)
 
 구현 완료된 스토리를 **별도 에이전트**로 리뷰하는 Evaluator 전용 스킬.
 **구현한 에이전트와 리뷰하는 에이전트는 반드시 다르다 (자기 편향 제거).**
@@ -58,7 +142,7 @@ CEO 명령: Party mode 절대 생략 금지
 | D3 정확성 | 타입=contract, DB=schema, imports 정상 | 전부 일치 | 타입 불일치, 잘못된 참조 |
 | D4 실행가능성 | 컴파일, 테스트 통과, 와이어링 작동 | tsc 0, test GREEN | 빌드 깨짐, 테스트 FAIL |
 | D5 일관성 | contract import, 네이밍, API envelope | 인라인 타입 0, 컨벤션 준수 | 인라인 타입, 스타일 불일치 |
-| D6 리스크인식 | 보안 취약점, 확장성, 배포 우려 식별 | 리스크 전부 식별 + 대안 | 명백한 보안 구멍 놓침 |
+| D6 리스크인식 | 보안, 확장성, 배포, **통합 영향** 식별 | 리스크 전부 식별 + 대안 + 타 스토리 영향 범위 | 보안 구멍, 공유 컴포넌트 영향 미파악, localhost fallback |
 
 ---
 
@@ -99,6 +183,33 @@ CEO 명령: Party mode 절대 생략 금지
 4. 파일 크기 체크:
    - 800줄 초과 파일 → WARNING
    - 50줄 초과 함수 → WARNING
+```
+
+## Phase 1.5: Quick Integration Check (v12)
+
+```
+1. 공유 모듈 변경 감지:
+   이 스토리가 수정한 파일 중 다른 파일이 import하는 것:
+   for file in changed_files:
+     importers = grep -rl "from '.*$(basename $file)'" packages/
+     if importers.length > 0:
+       integration_alert: "{file} is imported by {importers.length} files"
+
+2. 의존 스토리 테스트 실행:
+   해당 importer 파일의 테스트만 실행
+   RED 있으면 → Party Mode에 "통합 이슈 발견" 전달
+
+3. 환경변수 검증:
+   새로 추가된 process.env.XXX:
+     .env.example에 없으면 → WARNING
+     fallback이 localhost면 → WARNING
+
+4. D6 통합 체크리스트 (Party Mode에 전달):
+   □ 공유 컴포넌트(auth, routing, middleware) 변경 → 영향 범위?
+   □ 새 환경변수 → 프로덕션에 설정 가능?
+   □ 사용자 타입/역할/권한 가정 변경?
+
+결과 → Phase 2 Party Mode에 전달 (D6 채점 시 참고)
 ```
 
 ## Phase 2: Party Mode Review (5min)
@@ -192,14 +303,21 @@ Step 4: Final Scoring
   Final weighted average를 orchestrator에게 전달.
 ```
 
-## Phase 3: Score Evaluation
+## Phase 3: Score Evaluation (v11 — 평균 escape 제거)
 
 ```
 1. 가중 평균 점수 계산: (winston.weighted_avg + quinn.weighted_avg + john.weighted_avg) / 3
-2. 판정:
-   - avg >= 7.5 → PASS
-   - avg >= 6.0, < 7.5 → CONDITIONAL (수정 후 재리뷰)
+2. 개별 minimum 체크 (v11 신규):
+   - 3명 모두 개별 가중 평균 >= 7.0 필수
+   - 어떤 1명이라도 < 7.0 → CONDITIONAL (평균이 7.5 이상이어도!)
+   
+3. 판정 (v11):
+   - 3명 모두 >= 7.0 AND avg >= 7.5 → PASS
+   - 1명이라도 < 7.0 OR avg 6.0~7.5 → CONDITIONAL (수정 후 재리뷰)
    - avg < 6.0 → FAIL (재구현 필요)
+   
+   CEO override: /kdh-gate에서 "일단 넘어가" 선택 가능
+   → sprint-status.yaml에 ceo_override: true 기록
 
 3. Score Variance 체크:
    - 3명 가중평균 표준편차 < 0.5 → "의심스러운 합의" 경고

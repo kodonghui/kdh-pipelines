@@ -3,21 +3,25 @@ name: kdh-build
 description: "Story Builder (Generator) — 스토리 1개를 TDD로 구현. Fresh context. Contract import 강제."
 ---
 
-## v13 절대 규칙: 팀 에이전트로만 실행
+## v15 절대 규칙: 팀 에이전트 + 빌드 후 대기
 
-이 스킬은 반드시 팀 에이전트(Agent 도구로 소환된 팀원)로 실행해야 합니다.
-오케스트레이터(메인 세션)가 직접 실행하면 안 됩니다.
-CEO가 3번 코드 전체 삭제함 — 감독이 직접 코딩하면 사형.
+이 스킬은 반드시 팀 에이전트(Agent 도구로 소환된 팀원)로 실행.
+오케스트레이터가 직접 실행하면 안 됨. CEO가 4번 코드 전체 삭제.
 
 실행 방법:
-→ TeamCreate("sprint-{N}") 로 팀 생성
-→ Agent(name: "builder-{story}", team_name: "sprint-{N}") 로 빌더 소환
-→ 빌더가 이 스킬을 실행
+→ TeamCreate("sprint-{N}")
+→ Agent(name: "dev-{story}", team_name: "sprint-{N}") 로 소환
+→ dev가 이 스킬 실행
+
+★ 빌드 완료 후 종료하지 않는다. 리뷰 결과 대기. ★
+★ CONDITIONAL이면 SendMessage로 수정 지시가 온다. ★
+★ git commit/push 절대 금지. 오케스트레이터만 커밋. ★
 
 # KDH Build — Story Builder (Generator)
 
-스토리 1개를 TDD 방식으로 구현하는 Generator 전용 스킬.
-**이 스킬은 구현만 한다. 리뷰는 /kdh-review가 별도 에이전트로 수행.**
+스토리 1개를 TDD 방식으로 구현하는 Generator.
+빌드 완료 후 같은 팀의 critics (winston, quinn, john)가 리뷰.
+수정 요청 오면 fix-mode로 해당 이슈만 수정.
 
 ## When to Use
 
@@ -297,13 +301,22 @@ FORBIDDEN (자동 FAIL):
 
 ---
 
-## Fresh Context 규칙 (Ralph Wiggum)
+## 빌드 후 대기 규칙 (v15 — 벤치마크 기반)
 
 ```
-- 이 스킬이 끝나면 에이전트는 종료된다
-- 다음 스토리는 새 에이전트가 처리한다
-- 상태 전달은 오직 파일로 (sprint-status.yaml, git history)
-- 대화 기억에 의존하지 않는다
+- 빌드 완료 후 종료하지 않는다
+- 오케스트레이터가 리뷰 결과를 SendMessage로 전달할 때까지 대기
+- CONDITIONAL → SendMessage로 수정 지시 받음 → 해당 이슈만 수정 (fix-mode)
+- PASS → 오케스트레이터가 shutdown_request 보냄 → 종료
+- 다음 스토리는 새 dev 에이전트 (fresh context per story 유지)
+- 상태 전달은 파일로 (sprint-status.yaml, party-logs/)
+
+fix-mode:
+  1. party-logs/sprint-{N}-{story}-fixes-needed.md 읽기
+  2. 지적된 이슈만 수정 (다른 코드 건드리지 않음)
+  3. tsc + test 재실행
+  4. sprint-status.yaml: status → built (다시)
+  5. 오케스트레이터에게 보고 (idle 알림 자동)
 ```
 
 ---
