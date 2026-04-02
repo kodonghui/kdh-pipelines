@@ -1,9 +1,19 @@
 ---
 name: 'kdh-code-review-full-auto'
-description: 'Universal full-auto code review + auto-fix pipeline v3.0. 8 phases: Static Gate → Visual/E2E → Risk → 3-Critic Party → Verdict → Auto-Fix → Re-Review → Final. Works on ANY project. Usage: /kdh-code-review-full-auto [PR-url|commit-range|changed-files]'
+description: '⚠️ DEPRECATED — kdh-full-auto-pipeline Phase F + Codex로 흡수됨. Sprint 스토리 리뷰는 kdh-review + Codex 사용.'
 ---
 
-# KDH Code Review Full-Auto Pipeline v3.0 (Universal)
+# ⚠️ DEPRECATED: kdh-code-review-full-auto → kdh-full-auto-pipeline Phase F
+
+**이 스킬은 폐기되었습니다.**
+- Sprint 스토리 리뷰: kdh-review (3명 파티 + D1-D6) + Codex 세컨드 오피니언
+- 통합 리뷰: kdh-integration (batch + sprint)
+- PR 리뷰: kdh-full-auto-pipeline Phase F
+아래 내용은 참고용으로만 유지합니다.
+
+---
+
+# KDH Code Review Full-Auto Pipeline v3.0 (ARCHIVED)
 
 8-phase automated code review + auto-fix: Static Gate → Visual/E2E Gate → Risk Classification → AI 3-Critic Party → Resolution → Auto-Fix → Re-Review → Final Verdict.
 Integrates Playwright visual regression, axe-core accessibility, Lighthouse performance, BMAD party mode, and automated remediation loop.

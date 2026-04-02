@@ -13,6 +13,29 @@ description: "Story Builder (Generator) — 스토리 1개를 TDD로 구현. Fre
 → Agent(name: "dev-{story}", team_name: "sprint-{N}") 로 소환
 → dev가 이 스킬 실행
 
+## ★ 오케스트레이터 필독: 에이전트 프롬프트 규칙 ★
+
+오케스트레이터가 dev 에이전트를 소환할 때:
+1. 이 SKILL.md의 규칙을 요약하지 말고 핵심 규칙 원문을 프롬프트에 포함
+2. 특히 다음은 반드시 포함:
+   - git commit/push 금지
+   - Contract import 강제 (@corthex/shared)
+   - TDD (RED→GREEN→REFACTOR)
+   - UI 스토리 → Subframe 코드가 이미 있음 (오케스트레이터가 MCP로 준비)
+   - status: "built" (completed 아님)
+3. "~가 안 되면 ~로 대체" 식 fallback 프롬프트 금지
+4. "~가 안 되면 즉시 중단하고 보고" 식 프롬프트 사용
+
+## ★ Subframe = 오케스트레이터가 한다 (dev 에이전트 아님) ★
+
+Subframe MCP는 오케스트레이터만 접근 가능.
+UI 스토리 흐름:
+1. 오케스트레이터: Subframe MCP로 디자인 + 컴포넌트 코드 내보내기
+2. 오케스트레이터: GATE → CEO 디자인 확인
+3. 오케스트레이터: packages/admin/src/subframe/ 에 파일 작성
+4. dev 에이전트: Subframe 코드 위에 비즈니스 로직 구현 (페이지 조립, API 연결 등)
+dev 에이전트한테 "Subframe 써라" 지시 금지 — MCP 접근 안 됨.
+
 ★ 빌드 완료 후 종료하지 않는다. 리뷰 결과 대기. ★
 ★ CONDITIONAL이면 SendMessage로 수정 지시가 온다. ★
 ★ git commit/push 절대 금지. 오케스트레이터만 커밋. ★
@@ -174,7 +197,9 @@ GSD 적용: 파일 기반 상태 전달 (메시지 기억 의존 금지)
 **v11 핵심: "눌러봤냐?" — 코드 리뷰 전에 브라우저에서 확인.**
 
 ```
-스킵 조건: story type = API-only → 이 Phase 건너뜀
+스킵 조건 (둘 다 해당하면 건너뜀):
+   - story type = API-only → 이 Phase 건너뜀
+   - Sprint Zero(0-*) 스토리 → UI 없음, 건너뜀
 
 1. Dev server 확인:
    - curl http://localhost:3000/api/health → alive?
@@ -279,6 +304,24 @@ Subframe 프로젝트: fe1d14ed3033
   3. 내보낸 코드를 프로젝트에 적용
   4. /kdh-gate page-design 호출 (사장님 확인)
   5. `계속` 모드면 자동 진행 (기본 선택)
+
+★★★ Subframe MCP 실패 시 → 즉시 중단. 오케스트레이터에게 보고.
+  대안 없음. fallback 금지. Subframe 없이 UI 코드 작성 = 자동 FAIL.
+  오케스트레이터는 CEO에게 GATE 질문 (Subframe 문제 해결 or 스토리 스킵).
+  수동 Tailwind, 수동 React = 전부 금지.
+  UI는 반드시 Subframe 컴포넌트(@/ui/components/*)로 구현. ★★★
+
+## 오케스트레이터 프롬프트 규칙 (v17)
+
+빌더 프롬프트 작성 시 절대 금지:
+  ❌ "~가 안 되면 ~로 대체"
+  ❌ "~가 없으면 수동으로"
+  ❌ "fallback으로 ~"
+  ❌ "if X fails, use Y instead"
+
+대신:
+  ✅ "~가 안 되면 즉시 중단하고 보고"
+  ✅ "~없이 진행 = 자동 FAIL"
 ```
 
 ---

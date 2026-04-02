@@ -3,7 +3,7 @@ name: kdh-e2e
 description: "E2E 검증 — Sprint 끝에 Playwright로 전체 유저 저니 테스트. 스크린샷 증거 저장."
 ---
 
-# KDH E2E — End-to-End Verification
+# KDH E2E v11 — End-to-End Verification
 
 Sprint 끝에 전체 유저 저니를 Playwright로 브라우저 테스트.
 기존 kdh-playwright-e2e 2개(tmux/vs)를 통합 + 간소화.
@@ -47,19 +47,36 @@ sprint-status.yaml 스캔:
 ## Phase 0: Pre-flight (30s)
 
 ```
-1. Dev server 상태 확인:
-   - curl http://localhost:5173 → Vite dev server alive?
-   - 안 켜져 있으면: cd packages/admin && bun run dev & (백그라운드)
+1. 로컬 서버 상태 확인:
+   - curl http://localhost:3000/api/health → production mode alive?
+   - 안 켜져 있으면: cd packages/server && NODE_ENV=production bun src/index.ts &
    - 5초 대기 후 재확인
 
-2. API server 상태 확인:
-   - curl http://localhost:3000/api/health
-   - 안 켜져 있으면: cd packages/server && bun run dev & 
-   - 5초 대기 후 재확인
+2. 프로덕션 URL 상태 확인 (v11 신규):
+   - curl -s https://corthex-hq.com/api/health → 프로덕션 alive?
+   - 응답 body에 "Content-Length" 텍스트 있으면 → INFRA-FAIL (nginx 버그)
+   - JS 번들 확인: curl -s https://corthex-hq.com/assets/*.js | tail -c 50 → "Content-Length" 없는지
 
 3. 이전 E2E 결과 읽기:
    - _qa-e2e/playwright-e2e/cycle-report.md
    - 미해결 버그 = 이번 사이클 우선 타겟
+```
+
+## Phase 0.5: Infrastructure Check (v11 신규, BLOCKING)
+
+```
+1. Nginx 상태:
+   - systemctl is-active nginx → active?
+   - curl -sD - http://127.0.0.1:80/ -H "Host: corthex-hq.com" → 정상 응답?
+   - response body에 "Content-Length: 0" 텍스트 있으면 → INFRA-FAIL
+   - nginx config에 proxy_http_version 1.1 있는지 확인
+
+2. Cloudflare 상태:
+   - curl -sI https://corthex-hq.com/ → HTTP 200?
+   - JS/CSS 파일도 200으로 로드되는지 확인
+   - JS 파일 끝에 "Content-Length: 0" 없는지 확인
+
+3. INFRA-FAIL → 수정 후 재실행 (E2E 진행 불가)
 ```
 
 ## Phase 1: API Smoke Test (1min)
@@ -161,7 +178,7 @@ P0/P1 자동 수정 시도:
   1. 관련 파일 읽기
   2. 원인 파악 → 최소 수정
   3. tsc 체크 → 테스트 체크
-  4. 2회 시도 실패 → ESCALATED
+  4. 합리적 시도 후 진행 안 되면 → ESCALATED
 
 수정 규칙:
   - 인증/미들웨어 수정 금지

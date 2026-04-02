@@ -25,36 +25,14 @@ CEO 명령: "파티 모드 빼먹으면 전부 삭제한다."
   [ ] party-logs/sprint-{N}-{story}-quinn.md 존재
   [ ] party-logs/sprint-{N}-{story}-john.md 존재
   [ ] 각 로그에 D1-D6 테이블 6행 존재
-  [ ] 각 로그에 Cross-talk 섹션 존재 (placeholder 아님)
+  (Cross-talk 섹션은 optional — blocking 아님)
   하나라도 없으면 → 해당 critic에게 재작성 요청
 
-## Phase 0.5: Codex 세컨드 오피니언 (파티 모드 전, tmux 실시간)
+## Note: Codex는 kdh-sprint에서 관리
 
-3명 파티 모드 전에 Codex(GPT-5.4)한테 독립 리뷰를 먼저 받는다.
-Codex 결과를 3명 리뷰어에게 참고 자료로 전달.
-CEO가 tmux에서 Codex 작업을 실시간으로 봄.
-
-```
-1. Codex tmux 창 열기:
-   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
-   tmux select-pane -t $CODEX_PANE -T "codex-story-reviewer"
-
-2. Codex한테 스토리 리뷰 보내기:
-   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
-     --sandbox read-only \
-     -o _bmad-output/party-logs/{sprint}-{story}-codex-opinion.md \
-     -C /home/ubuntu/corthex-v3 <<'"'"'PROMPT'"'"'
-   Code review for story {story-id}: {story-title}.
-   Read the git diff for this story.
-   Focus: contract compliance, type safety, auth flow, test coverage.
-   DO NOT modify source code — analysis only.
-   PROMPT' C-m
-
-3. 완료 대기 → 결과 파일 읽기 → Codex 창 닫기
-4. Codex 실패 시 → 스킵 (파티 모드만으로 진행)
-```
-
-Codex 의견은 참고 자료. 최종 판정은 3명 파티 모드의 D1-D6 평균.
+Codex 세컨드 오피니언은 kdh-sprint Phase B.5에서 실행됨 (스토리 레벨 1회).
+kdh-review는 3명 팀 에이전트 파티 모드 리뷰만 담당. 중복 Codex 실행 금지.
+배치/스프린트 레벨 통합 Codex는 kdh-integration에서 꼼꼼히 실행됨.
 
 ## 제대로 된 파티 모드 (v15 — 벤치마크 복원)
 
@@ -77,7 +55,7 @@ CONDITIONAL (평균 < 3.0/4 OR 1명이라도 < 3.0/4 OR CRITICAL finding):
   → fixes-needed.md 생성
   → 오케스트레이터가 dev에게 SendMessage (수정 지시)
   → dev 수정 후 → Phase B 재실행 (critics 재리뷰)
-  → 최대 2회. 3회 실패 → ESCALATE.
+  → 리뷰 CONDITIONAL: 수정 후 재리뷰 (합리적 시도 후 진행 판단은 오케스트레이터가 자체 결정)
 ```
 
 절대 유지:
@@ -280,7 +258,8 @@ Weighted avg = (D1×w1+...+D6×w6)/100 = {result}
 - {other critic} found {issue}: I {agree/disagree} because {reason}
 
 ### Final: {weighted avg}/4 → {PASS|CONDITIONAL|FAIL|AUTO-FAIL}
-PASS: avg ≥ 3.0 AND each critic ≥ 3.0 AND 0 CRITICAL findings
+PASS: avg ≥ 3.0/4 (= 7.5/10) AND each critic ≥ 3.0/4 AND 0 CRITICAL findings
+Report to orchestrator: overall = (avg / 4) × 10 → "리뷰 평균: X.X/10"
 ```
 
 **템플릿 준수 규칙:**
@@ -304,6 +283,13 @@ Step 3: Cross-talk (1 round — 빈칸 거부)
 Step 4: Final Scoring
   Each agent updates their D1-D6 table (cross-talk 반영 가능).
   Final weighted average를 orchestrator에게 전달.
+
+Step 4.5: 오케스트레이터 형식 검증 (BLOCKING)
+  각 party-log에서:
+  1. "| D1" ~ "| D6" 6행 존재? → NO면 재작성 요구
+  2. 각 점수가 "/4" 형식? → "/10", "/100" 등 다른 형식 = 재작성 요구
+  3. "Weighted avg = " 계산식 존재? → NO면 재작성 요구
+  4. 하나라도 실패 → SendMessage: "4-point scale (/4)로 재작성해주세요."
 ```
 
 ## Phase 3: Score Evaluation (v11 — 평균 escape 제거)
@@ -315,10 +301,10 @@ Step 4: Final Scoring
    - 어떤 1명이라도 < 3.0/4 → CONDITIONAL
    - CRITICAL finding 1개라도 → CONDITIONAL
    
-3. 판정 (v11):
-   - 3명 모두 >= 7.0 AND avg >= 7.5 → PASS
-   - 1명이라도 < 7.0 OR avg 6.0~7.5 → CONDITIONAL (수정 후 재리뷰)
-   - avg < 6.0 → FAIL (재구현 필요)
+3. 판정 (v17 — 4-point scale 통일):
+   - 3명 모두 >= 3.0/4 AND avg >= 3.0/4 AND CRITICAL 0건 → PASS
+   - avg < 3.0/4 OR 1명이라도 < 3.0/4 OR CRITICAL → CONDITIONAL (수정 후 재리뷰)
+   - AUTO-FAIL 조건 해당 → FAIL (재구현 필요)
    
    CEO override: /kdh-gate에서 "일단 넘어가" 선택 가능
    → sprint-status.yaml에 ceo_override: true 기록
@@ -345,7 +331,7 @@ Step 4: Final Scoring
 ```
 1. 각 리뷰어의 D1-D6 점수 스캔:
    - 어떤 차원이든 점수 < 3 존재? → AUTO-FAIL 발동
-   - 기록: "{reviewer}가 D{N}에 {score}/10 → 자동 불합격"
+   - 기록: "{reviewer}가 D{N}에 {score}/4 → 자동 불합격"
 
 2. 각 리뷰어의 Auto-Fail Check 섹션 확인:
    - "YES" 체크된 항목 존재? → AUTO-FAIL 발동

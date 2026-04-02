@@ -1,9 +1,17 @@
 ---
 name: kdh-sprint
-description: "Sprint Orchestrator — 스프린트 전체를 관리. 스토리별 build→review 사이클 + 의존성 + E2E 검증."
+description: "⚠️ DEPRECATED — kdh-full-auto-pipeline sprint 모드로 흡수됨. /kdh-full-auto-pipeline sprint {N} 사용할 것."
 ---
 
-# KDH Sprint v11 — Sprint Orchestrator
+# ⚠️ DEPRECATED: kdh-sprint → kdh-full-auto-pipeline sprint 모드
+
+**이 스킬은 폐기되었습니다. `/kdh-full-auto-pipeline sprint {N}`을 사용하세요.**
+Sprint 실행 로직은 kdh-full-auto-pipeline에 통합되었습니다.
+아래 내용은 참고용으로만 유지합니다.
+
+---
+
+# KDH Sprint v11 — Sprint Orchestrator (ARCHIVED)
 
 스프린트 전체를 관리하는 오케스트레이터.
 스토리 의존성 분석 → 병렬 배치 → build/review 사이클 → E2E 검증.
@@ -147,9 +155,25 @@ for each batch (최대 3 stories parallel):
 
 각 스토리에 대해:
 
+Phase -0.5: 에이전트 소환 전 체크리스트 (BLOCKING — 하나라도 NO면 소환 금지)
+  [ ] 스토리 타입 확인: API / UI / Full-stack / Wiring
+  [ ] UI 스토리면 → Subframe 디자인 완료? (오케스트레이터가 MCP로 직접)
+  [ ] UI 스토리면 → GATE(CEO 디자인 확인) 완료?
+  [ ] 의존 스토리 전부 completed?
+  [ ] kdh-build SKILL.md 읽었나? → 에이전트 프롬프트에 규칙 전문 포함 필수
+
+  UI 스토리 흐름 (API 스토리는 스킵):
+    1. 오케스트레이터가 Subframe MCP로 디자인 (list_pages, design_page, get_component_info)
+    2. CEO에게 GATE: 디자인 확인 (스크린샷 또는 Subframe URL)
+    3. CEO 승인 → 컴포넌트 코드 내보내기 (get_component_info)
+    4. 오케스트레이터가 packages/admin/src/subframe/ 에 파일 작성
+    5. 그 다음에 dev 에이전트 소환 (Subframe 코드 위에 비즈니스 로직 구현)
+
 Phase 0: 팀 에이전트 4명 소환 (전부 team_name: "sprint-{N}")
+  ★ dev 프롬프트에 kdh-build SKILL.md 규칙 전문을 포함해야 한다 ★
+  ★ 요약하지 말고 원문 그대로. 규칙 빠뜨리면 CEO가 삭제함 ★
   dev = Agent(name: "dev-{story-id}", team_name: "sprint-{N}", mode: "bypassPermissions",
-              prompt: "kdh-build 스킬 내용 + 스토리 컨텍스트")
+              prompt: "kdh-build SKILL.md 전문 + 스토리 컨텍스트")
   winston = Agent(name: "winston-{story-id}", team_name: "sprint-{N}", mode: "bypassPermissions",
               prompt: "아키텍처 리뷰어. _bmad/bmm/agents/architect.md 페르소나 먼저 읽기.
                        리뷰 지시 올 때까지 대기.")
@@ -212,11 +236,12 @@ Phase B: Review (winston/quinn/john 병렬 — 오케스트레이터가 지시)
              quinn   D1=10 D2=25 D3=15 D4=10 D5=15 D6=25
              john    D1=20 D2=20 D3=15 D4=15 D5=10 D6=20
 
-    ## Step 5: Cross-talk (mandatory)
-    SendMessage to other 2 critics: your #1 finding + reasoning.
-    After receiving theirs, add to party-log:
+    ## Step 5: Cross-talk (선택 — blocking 아님)
+    Optional: SendMessage to other 2 critics with your #1 finding.
+    If received, add to party-log:
       ## Cross-talk
       - {name} found {issue}: I {agree/disagree} because {reason}
+    Cross-talk 없어도 리뷰 진행 가능. 오케스트레이터는 cross-talk 대기 없이 진행.
 
     ## Step 6: Write to _bmad-output/party-logs/sprint-{N}-{story}-{yourname}.md
     mkdir -p _bmad-output/party-logs first.
@@ -229,11 +254,62 @@ Phase B: Review (winston/quinn/john 병렬 — 오케스트레이터가 지시)
     [ ] party-logs/sprint-{N}-{story-id}-quinn.md 존재
     [ ] party-logs/sprint-{N}-{story-id}-john.md 존재
     [ ] 각 로그에 D1-D6 테이블 6행 존재
-    [ ] 각 로그에 Cross-talk 섹션 존재 (placeholder 아님)
     하나라도 없으면 → 해당 critic에게 재작성 요청
+    (Cross-talk 섹션은 optional — blocking 아님)
 
   오케스트레이터: 3개 party-log 읽기 → 가중 평균 계산
   점수 분산 체크: stdev < 0.5 → 경고 + 1명 독립 재채점 요청
+
+Phase B.5: Codex 세컨드 오피니언 (Phase B 완료 후, Phase C 전)
+  ★★★ 이 단계를 건너뛰면 커밋 금지 ★★★
+  ★★★ Codex FAIL → 수정 후 재실행 → PASS까지 커밋 금지 ★★★
+  ★★★ "범위 밖" 핑계로 Codex 지적 무시 금지 ★★★
+
+  1. Codex tmux 창 열기:
+     CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
+     tmux select-pane -t $CODEX_PANE -T "codex-reviewer"
+
+  2. Codex한테 리뷰 보내기:
+     tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
+       --sandbox read-only \
+       -o _bmad-output/party-logs/sprint-{N}-{story}-codex.md \
+       -C /home/ubuntu/corthex-v3 <<'"'"'PROMPT'"'"'
+     Review story {id}: {title}. Files: {list}.
+     Focus: contract compliance, type safety, test coverage.
+     PROMPT' C-m
+
+  3. 완료 대기 (타임아웃 5분) → 결과 읽기
+  4. Codex 창 닫기: tmux kill-pane -t $CODEX_PANE
+  
+  5. Codex 판정 처리 (스토리 레벨 — 최대 1회 재실행):
+     PASS → Phase C 진행
+     FAIL/CONDITIONAL → 아래 수정 루프 실행 (★ 최대 1회 ★):
+       a. Codex 지적 사항을 fixes-needed.md에 추가
+       b. dev에게 수정 지시 (Codex 지적 + 3명 리뷰어 지적 통합)
+       c. dev 수정 완료
+       d. Codex 재실행 1회 (새 tmux 창, fresh session)
+       e. PASS → Phase C 진행
+       f. 여전히 FAIL → 맥락상 명백히 해당 안 되는 지적은 자체 스킵
+          스킵 시 sprint-status.yaml에 사유 기록. CEO에게 묻지 않음.
+          배치/스프린트 레벨 통합 Codex(kdh-integration)에서 잡아줌.
+       ★ 맥락상 명백히 해당 안 되는 지적 예 ★
+         예: 프로덕션 DB 없는 Phase 1에서 "마이그레이션 위험" → 스킵
+         예: CEO가 이미 승인한 방향에 대한 지적 → 스킵
+         예: Sprint 0 스키마 스토리에서 "UI 접근성" 지적 → 스킵
+     
+  6. Codex 실행 실패(인증/타임아웃) → 중단 + CEO에게 보고.
+     자동 스킵 금지. Claude Agent fallback 금지.
+     CEO가 '스킵 OK' → sprint-status.yaml에 codex_skipped: true 기록.
+     CEO 응답 없으면 → 대기. 자동 진행 금지.
+
+Phase B.9: 오케스트레이터 체크리스트 (하나라도 NO → Phase C 진입 금지)
+  [ ] party-logs 3개 존재 (winston, quinn, john)
+  [ ] 각 로그에 4-point D1-D6 테이블 6행 (/4 형식만 허용. /10, /100 = 재작성)
+  [ ] 각 로그에 "Weighted avg = " 계산식 존재
+  [ ] Codex 세컨드 오피니언 파일 존재 (sprint-{N}-{story}-codex.md)
+  (Cross-talk 섹션은 optional — blocking 아님)
+  [ ] UI 스토리 → Subframe MCP 사용 확인 (수동 Tailwind = 거부)
+  형식 불일치 시 → SendMessage: "4-point scale (/4)로 재작성해주세요."
 
 Phase C: 판정 + 커밋/수정
   PASS (3명 모두 ≥ 3.0/4 AND 평균 ≥ 3.0/4 AND CRITICAL findings = 0):
@@ -245,14 +321,14 @@ Phase C: 판정 + 커밋/수정
       git push origin main
     → sprint-status.yaml: status → completed, review_state → passed
 
-  CONDITIONAL (평균 < 7.0 OR 1명이라도 < 7.0):
+  CONDITIONAL (평균 < 3.0/4 OR 1명이라도 < 3.0/4 OR CRITICAL finding):
     → party-logs/sprint-{N}-{story-id}-fixes-needed.md 생성
     → 오케스트레이터 → SendMessage(to: "dev-{story-id}",
         "수정 필요. fixes-needed.md 읽고 해당 이슈만 수정.
          수정 완료 후 보고.")
     → dev 수정 → 오케스트레이터에게 보고
     → Phase B 재실행 (critics에게 재리뷰 지시)
-    → 최대 2회. 3회 실패 → ESCALATE → /kdh-gate review-escalation
+    → PASS 나올 때까지 반복 (횟수 제한 없음). ESCALATE 없음 — 끝까지 고친다.
     ★ CONDITIONAL 미해결 시 다음 스토리 진행 절대 금지 ★
 
   AUTO-FAIL (D < 3 또는 보안/빌드 문제):
@@ -284,6 +360,8 @@ Phase D: Cleanup
    → 실패 있으면 수정
 
 4. /kdh-integration sprint → Sprint 간 통합 리뷰 (v12: E2E 전 필수)
+     - kdh-integration 내부에서 Codex 실행됨 (Batch + Sprint 레벨)
+     - Codex FAIL → 수정 후 Codex 재실행 → PASS까지 반복 (fallback 금지)
      - PASS → E2E 진행
      - WARNING → E2E에 추가 체크포인트 전달
      - FAIL → 수정 필수 (E2E 진행 불가)
@@ -337,7 +415,7 @@ Phase D: Cleanup
 - 최대 3개 스토리 동시 실행
 - 같은 파일을 수정하는 스토리끼리는 순차 실행
 - Wiring 스토리(W-*)는 관련 스토리 전부 완료 후 실행
-- Sprint Zero(0-*)는 반드시 순차 (기반 설정이므로)
+- Sprint Zero도 의존성 없는 스토리는 병렬 실행 (0-1, 0-3, 0-4, 0-6은 동시 가능)
 ```
 
 ## 경쟁 조건 방지
