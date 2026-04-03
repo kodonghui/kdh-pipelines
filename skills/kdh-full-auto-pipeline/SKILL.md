@@ -92,6 +92,51 @@ Phase:   "Phase 1 전부 끝났습니다! 기능 5개 완성."
 
 ---
 
+## Step -1 (ALL Modes): Tool Readiness Check
+
+파이프라인 시작 전 필수 도구 사용 가능 여부 검증. 하나라도 실패하면 CEO에게 보고 후 대기.
+
+```
+1. Codex CLI:
+   - `which codex` → 설치 확인
+   - `codex --version` → 버전 확인
+   - 실패 시: `sudo npm install -g @openai/codex` 시도
+   - 여전히 실패 → 🚩 BLOCK: "Codex 미설치. CEO 보고."
+
+2. Codex 인증:
+   - `codex exec "echo hello" --timeout 10` → 응답 확인
+   - 실패 시: `codex login` 필요
+   - 여전히 실패 → 🚩 BLOCK: "Codex 인증 실패. CEO 보고."
+
+3. Subframe MCP (UI Story가 있는 Stage에서만):
+   - Subframe MCP 도구 목록 확인 (mcp__plugin_subframe_subframe__*)
+   - 없으면: "Subframe MCP 미연결"
+   - UI Story가 없는 Stage면 → ⚠️ WARNING만, BLOCK 아님
+   - UI Story가 있는 Stage면 → 🚩 BLOCK
+
+4. Helper Script:
+   - `test -x ~/.claude/scripts/codex-review.sh` → 실행 권한 확인
+   - 없으면: 생성 (SKILL.md 참조)
+
+5. design-references.md:
+   - `test -f _bmad-output/design-references.md` → 5개 테마 URL 존재 확인
+   - 없으면: ⚠️ WARNING "테마 참조 파일 없음"
+
+출력:
+  ✅ Codex CLI: v0.118.0
+  ✅ Codex 인증: OK
+  ✅/⚠️ Subframe MCP: [연결됨/미연결]
+  ✅ Helper script: OK
+  ✅ Design references: OK
+
+판정:
+  → ALL ✅ → Step 0 진행
+  → ANY 🚩 → **파이프라인 시작 금지. fallback 없음. CEO 보고 후 문제 해결 때까지 대기.**
+  → "설치 시도" 같은 자동 복구 하지 마. 안 되면 그냥 멈춰.
+```
+
+---
+
 ## Step 0 (ALL Modes): Project Auto-Scan
 
 Run this BEFORE any other step. Results are cached in `project-context.yaml` at project root.
