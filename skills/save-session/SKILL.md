@@ -51,6 +51,32 @@ The legacy filename `YYYY-MM-DD-session.tmp` is still valid, but new session fil
 
 Write every section honestly. Do not skip sections — write "Nothing yet" or "N/A" if a section genuinely has no content. An incomplete file is worse than an honest empty section.
 
+### Step 4b: Write update log
+
+After saving the session file, also update the daily update log:
+
+1. Check if `_bmad-output/update-log/YYYY-MM-DD.md` exists (use today's date)
+2. If not, create it with header: `# Update Log — YYYY-MM-DD`
+3. Append a new section with the current session's activities:
+
+```markdown
+## Session: [time] — [1-line topic]
+
+### Changes
+- [category]: [what changed]
+- [category]: [what changed]
+
+### Decisions
+- [decision made]
+
+### Next
+- [what's next]
+```
+
+Categories: Features, Bug Fixes, Infrastructure, Planning, Pipeline, Memory, Discussion
+
+This mirrors what `/kdh-ecc-3h` Phase 6 does, but runs at session save time so no work is lost between maintenance cycles.
+
 ### Step 5: Show the file to the user
 
 After writing, display the full contents and ask:
@@ -147,6 +173,22 @@ These prevent the next session from relitigating settled decisions.]
 - **[decision]** — reason: [why this was chosen over alternatives]
 
 If no significant decisions: "No major decisions made this session."
+
+---
+
+## Context (맥락)
+
+[이 세션의 배경과 흐름을 이해하는 데 필요한 맥락.
+다음 세션에서 "왜 이런 상태인지" 이해할 수 있도록 충분히 상세하게.
+단순 사실 나열이 아니라, 의사결정의 흐름과 이유를 포함.]
+
+- **프로젝트 전체 맥락:** [어떤 프로젝트의 어느 단계인지]
+- **이 세션의 맥락:** [어떤 작업을 하다가 어떤 문제가 발생했고, 어떤 결정을 했는지]
+- **파이프라인/프로세스 맥락:** [어떤 파이프라인을 돌리고 있는지, 어떤 버전인지, 어떤 규칙이 적용 중인지]
+- **CEO 지시사항:** [이번 세션에서 CEO가 내린 결정이나 피드백]
+- **감정/분위기 맥락:** [CEO가 화났는지, 급한지, 신중한지 — 다음 세션 톤 설정에 중요]
+
+If this is a fresh project with no prior context: "First session — no prior context."
 
 ---
 
