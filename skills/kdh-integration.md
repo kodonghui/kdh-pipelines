@@ -1,12 +1,21 @@
 ---
 name: kdh-integration
-description: "통합 리뷰 — Story 간 / Sprint 간 코드 통합 검증. Codex CLI second opinion. 재형님 가설 기반 v12."
+description: "통합 리뷰 — Story 간 / Sprint 간 코드 통합 검증. Second Opinion Agent. 재형님 가설 기반 v13."
 ---
 
-# KDH Integration v12 — "같이 붙여봤냐?"
+## Codex 역할 분담 (중요)
+
+- **스토리 레벨 Codex**: kdh-sprint Phase B.5에서 1회 실행 (최대 1회 재실행)
+- **배치/스프린트 레벨 Codex**: kdh-integration에서 실행 — 여기서 꼼꼼히 돌림
+- 스토리별 Codex에서 놓친 것은 배치/스프린트 Codex가 잡는다.
+- 중복 실행 금지 — kdh-integration은 통합 검증에 집중.
+
+---
+
+# KDH Integration v13 — "같이 붙여봤냐?"
 
 Story 단독 리뷰(Level 1)로는 못 잡는 통합 버그를 잡는다.
-Codex CLI로 second opinion을 받아 Claude의 blind spot을 보완.
+독립 Claude 에이전트로 second opinion을 받아 blind spot을 보완.
 
 ## When to Use
 
@@ -21,8 +30,8 @@ Level 2 (Batch): "이 스토리들이 서로 안 깨뜨리나?"
 Level 3 (Sprint): "이번 Sprint가 이전 Sprint를 안 깨뜨리나?"
 
 Claude = 1차 분석 (자동 검증 스크립트)
-Codex CLI = 2차 의견 (fresh session, 읽기 전용)
-Claude = 최종 판정 (Codex 의견 + 자체 분석 종합)
+Second Opinion Agent = 2차 의견 (독립 Claude 에이전트, fresh context, 읽기 전용)
+Claude = 최종 판정 (Second Opinion + 자체 분석 종합)
 ```
 
 ---
@@ -30,13 +39,9 @@ Claude = 최종 판정 (Codex 의견 + 자체 분석 종합)
 ## Prerequisites
 
 ```
-1. Codex CLI 인증 확인 (필수 — 없으면 중지):
-   npx @openai/codex login status
-   → 인증 안 됨 → 작업 즉시 중지
-   → CEO에게: "Codex CLI 로그인이 필요합니다. ! npx @openai/codex login 실행해주세요."
-
-2. sprint-status.yaml 읽기 가능
-3. git history 접근 가능
+1. sprint-status.yaml 읽기 가능
+2. git history 접근 가능
+3. Agent 도구 사용 가능 (Second Opinion 에이전트 소환용)
 ```
 
 ---
@@ -85,28 +90,59 @@ Claude = 최종 판정 (Codex 의견 + 자체 분석 종합)
      fallback이 localhost면 → WARNING
 ```
 
-### Phase 1.5: Codex Second Opinion
+### Phase 1.5: 세컨드 오피니언 — Codex CLI (1차) + Claude Agent (백업)
 
 ```
-1. diff 생성:
-   git diff {batch-start}..HEAD > /tmp/batch-{N}-diff.txt
+1차: Codex CLI (npx @openai/codex) exec 모드 — GPT-5.4 fresh session, 별도 모델 독립 시각
+2차: Codex 실패 시 Claude Agent fallback
 
-2. Codex CLI 호출 (fresh session, 읽기 전용):
-   npx @openai/codex exec -q \
-     "Review this diff for integration issues between multiple features.
-      Focus on:
-      1. Shared component changes that affect other modules
-      2. Middleware chain consistency  
-      3. Auth flow correctness across routes
-      4. Environment variable usage and fallbacks
-      5. Type signature changes in exported modules
-      List each issue with file:line reference." \
-     < /tmp/batch-{N}-diff.txt > /tmp/codex-batch-{N}.txt
+인증: ~/.codex/auth.json (device-auth 방식, 이미 완료)
+모드: exec (비대화형, TTY 불필요)
+세션: 매번 fresh session (편향 방지 — 영속 세션 안 씀)
 
-3. 결과 저장:
-   party-logs/{sprint}-batch-{N}-codex-opinion.md
+--- Codex CLI (1차 시도) — tmux 실시간 패턴 (CEO가 봄) ---
 
-4. Claude가 Codex 의견 + Phase 1 자체 분석 종합
+1. git diff {batch-start}..HEAD > /tmp/batch-diff.txt
+
+2. Codex tmux 창 열기 + 리뷰 보내기 (Bash 도구):
+   # Codex 창 열기 — CEO가 실시간으로 작업 과정을 봄
+   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
+   tmux select-pane -t $CODEX_PANE -T "codex-batch-reviewer"
+
+   # Codex한테 통합 리뷰 보내기
+   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
+     --sandbox read-only \
+     -o _bmad-output/party-logs/{sprint}-batch-{N}-second-opinion.md \
+     -C /home/ubuntu/corthex-v3 <<'"'"'PROMPT'"'"'
+   Integration review for batch {N}.
+   Read /tmp/batch-diff.txt and analyze for cross-story integration issues.
+   Focus: shared component changes, middleware consistency, auth flow,
+   env vars, type signature changes.
+   DO NOT modify source code — read-only analysis only.
+   PROMPT' C-m
+
+3. 완료 대기 (프롬프트 복귀 확인):
+   while ! tmux capture-pane -t $CODEX_PANE -p | grep -q '❯'; do sleep 3; done
+
+4. 결과 파일 읽기 (-o 플래그로 자동 저장됨) → Phase 2로 이동
+
+5. Codex 창 닫기: tmux kill-pane -t $CODEX_PANE
+
+--- Codex 실패 시 (인증/타임아웃) ---
+
+★ Claude Agent fallback 금지 (CLAUDE.md 절대 규칙) ★
+Codex가 못 돌아가면 → 멈추고 CEO에게 보고. 자동 스킵 금지.
+CEO가 '스킵 OK' → sprint-status.yaml에 codex_skipped: true 기록.
+CEO 응답 없으면 → 대기.
+
+--- Codex FAIL 판정 시 ---
+
+★ Codex FAIL → 수정 후 Codex 재실행 → PASS까지 반복 ★
+★ "범위 밖" 핑계로 무시 금지 ★
+1. Codex 지적 사항을 party-logs/{sprint}-batch-{N}-codex-fixes.md에 기록
+2. 해당 스토리 dev에게 수정 지시
+3. dev 수정 → Codex 재실행 (횟수 제한 없음 — PASS까지)
+4. PASS 나올 때까지 끝까지 고친다. ESCALATE 없음.
 ```
 
 ### Phase 2: Dependent Test Re-run
@@ -133,7 +169,7 @@ Claude = 최종 판정 (Codex 의견 + 자체 분석 종합)
 ## Batch {N} Integration Report
 - Stories reviewed: [story-ids]
 - Cross-dependencies found: {N}
-- Codex issues found: {N}
+- Second opinion issues found: {N}
 - Dependent tests: {passed}/{total}
 - Integration warnings: {list}
 - Result: PASS / WARNING / FAIL
@@ -212,19 +248,41 @@ sprint-status.yaml 업데이트:
    main.tsx Route 변경 → ProtectedRoute 조건과 일치하는지
 ```
 
-### Phase 2.5: Codex Sprint Review
+### Phase 2.5: 세컨드 오피니언 — Sprint (Codex 1차 + Claude Agent 백업)
 
 ```
-1. diff 생성:
-   git diff {previous-sprint-end}..HEAD > /tmp/sprint-{N}-diff.txt
+--- Codex CLI (1차 시도) — tmux 실시간 패턴 (CEO가 봄) ---
 
-2. Codex CLI review 모드:
-   npx @openai/codex review < /tmp/sprint-{N}-diff.txt > /tmp/codex-sprint-{N}.txt
+1. git diff {previous-sprint-end}..HEAD > /tmp/sprint-diff.txt
 
-3. 결과 저장:
-   party-logs/{sprint}-sprint-codex-review.md
+2. Codex tmux 창 열기 + 리뷰 보내기 (Bash 도구):
+   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
+   tmux select-pane -t $CODEX_PANE -T "codex-sprint-reviewer"
 
-4. Claude가 종합 판정
+   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
+     --sandbox read-only \
+     -o _bmad-output/party-logs/{sprint}-sprint-second-opinion.md \
+     -C /home/ubuntu/corthex-v3 <<'"'"'PROMPT'"'"'
+   Sprint integration review for sprint {N}.
+   Read /tmp/sprint-diff.txt and analyze regressions against previous sprint.
+   Focus: shared module changes, auth flow consistency, env vars, API envelope format.
+   DO NOT modify source code — read-only analysis only.
+   PROMPT' C-m
+
+3. 완료 대기 → 결과 종합 → tmux kill-pane -t $CODEX_PANE
+
+--- Codex 실패 시 (인증/타임아웃) ---
+
+★ Claude Agent fallback 금지 (CLAUDE.md 절대 규칙) ★
+Codex가 못 돌아가면 → 멈추고 CEO에게 보고. 자동 스킵 금지.
+
+--- Codex FAIL 판정 시 ---
+
+★ Codex FAIL → 수정 후 Codex 재실행 → PASS까지 반복 ★
+1. Codex 지적 사항 기록
+2. 해당 스토리 dev에게 수정 지시
+3. dev 수정 → Codex 재실행 (횟수 제한 없음 — PASS까지)
+4. PASS 나올 때까지 끝까지 고친다. ESCALATE 없음.
 ```
 
 ### Phase 3: Environment & Config Audit
@@ -253,7 +311,7 @@ sprint-status.yaml 업데이트:
 - Regression risks: {N} (직접 {N}, 간접 {N})
 - Assumption drifts: {N}
 - Environment gaps: {N}
-- Codex review issues: {N}
+- Second opinion issues: {N}
 - Result: PASS / WARNING / FAIL
 
 판정:
@@ -268,21 +326,22 @@ sprint-status.yaml 업데이트:
 
 ---
 
-## Codex CLI 호출 규칙
+## Second Opinion 규칙
 
 ```
-1. 항상 fresh session (이전 대화 맥락 없이)
-2. 읽기 전용 (코드 수정 절대 안 함)
-3. exec 모드 (비대화형, 결과만 받음)
-4. Claude가 최종 판정 (Codex는 의견 제시만)
-5. 인증 안 됨 → 즉시 중지 + CEO 알림 (fallback 없음)
+1. Codex CLI (npx codex) — 다른 모델의 독립 시각 제공
+2. Codex 실행 실패 → 멈추고 CEO 보고 (Claude Agent fallback 금지 — CLAUDE.md)
+3. Codex FAIL 판정 → 수정 후 재실행 → PASS까지 반복 (횟수 제한 없음)
+4. 항상 fresh context (이전 대화 맥락 없이)
+5. 읽기 전용 (소스 코드 수정 절대 안 함 — 분석만)
+6. "범위 밖" 핑계로 Codex 지적 무시 금지
 ```
 
 ## Anti-Patterns
 
 ```
-1. Codex에 코드 수정 시키지 않음 — 읽기 전용만
-2. Codex 의견을 무조건 따르지 않음 — Claude가 판단
+1. Second Opinion 에이전트에 코드 수정 시키지 않음 — 읽기 전용만
+2. Second Opinion 의견을 무조건 따르지 않음 — Claude가 판단
 3. false positive에 과민 반응 안 함 — HIGH만 테스트 재실행
 4. 순환 의존성 무한 루프 안 됨 — 최대 1회 재실행, 2회 FAIL → GATE
 5. 전체 파일 다 읽으려 안 함 — 교차점만 분석
@@ -294,9 +353,9 @@ sprint-status.yaml 업데이트:
 
 ```
 party-logs/
-  {sprint}-batch-{N}-integration.md      ← Level 2 Batch 리포트
-  {sprint}-batch-{N}-codex-opinion.md     ← Codex Batch 의견
-  {sprint}-sprint-integration.md          ← Level 3 Sprint 리포트
-  {sprint}-sprint-codex-review.md         ← Codex Sprint 리뷰
-sprint-status.yaml                        ← integration_state, batch_reviews
+  {sprint}-batch-{N}-integration.md           ← Level 2 Batch 리포트
+  {sprint}-batch-{N}-second-opinion.md        ← Second Opinion Batch 의견
+  {sprint}-sprint-integration.md              ← Level 3 Sprint 리포트
+  {sprint}-sprint-second-opinion.md           ← Second Opinion Sprint 리뷰
+sprint-status.yaml                            ← integration_state, batch_reviews
 ```

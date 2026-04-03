@@ -3,10 +3,48 @@ name: kdh-build
 description: "Story Builder (Generator) — 스토리 1개를 TDD로 구현. Fresh context. Contract import 강제."
 ---
 
+## v15 절대 규칙: 팀 에이전트 + 빌드 후 대기
+
+이 스킬은 반드시 팀 에이전트(Agent 도구로 소환된 팀원)로 실행.
+오케스트레이터가 직접 실행하면 안 됨. CEO가 4번 코드 전체 삭제.
+
+실행 방법:
+→ TeamCreate("sprint-{N}")
+→ Agent(name: "dev-{story}", team_name: "sprint-{N}") 로 소환
+→ dev가 이 스킬 실행
+
+## ★ 오케스트레이터 필독: 에이전트 프롬프트 규칙 ★
+
+오케스트레이터가 dev 에이전트를 소환할 때:
+1. 이 SKILL.md의 규칙을 요약하지 말고 핵심 규칙 원문을 프롬프트에 포함
+2. 특히 다음은 반드시 포함:
+   - git commit/push 금지
+   - Contract import 강제 (@corthex/shared)
+   - TDD (RED→GREEN→REFACTOR)
+   - UI 스토리 → Subframe 코드가 이미 있음 (오케스트레이터가 MCP로 준비)
+   - status: "built" (completed 아님)
+3. "~가 안 되면 ~로 대체" 식 fallback 프롬프트 금지
+4. "~가 안 되면 즉시 중단하고 보고" 식 프롬프트 사용
+
+## ★ Subframe = 오케스트레이터가 한다 (dev 에이전트 아님) ★
+
+Subframe MCP는 오케스트레이터만 접근 가능.
+UI 스토리 흐름:
+1. 오케스트레이터: Subframe MCP로 디자인 + 컴포넌트 코드 내보내기
+2. 오케스트레이터: GATE → CEO 디자인 확인
+3. 오케스트레이터: packages/admin/src/subframe/ 에 파일 작성
+4. dev 에이전트: Subframe 코드 위에 비즈니스 로직 구현 (페이지 조립, API 연결 등)
+dev 에이전트한테 "Subframe 써라" 지시 금지 — MCP 접근 안 됨.
+
+★ 빌드 완료 후 종료하지 않는다. 리뷰 결과 대기. ★
+★ CONDITIONAL이면 SendMessage로 수정 지시가 온다. ★
+★ git commit/push 절대 금지. 오케스트레이터만 커밋. ★
+
 # KDH Build — Story Builder (Generator)
 
-스토리 1개를 TDD 방식으로 구현하는 Generator 전용 스킬.
-**이 스킬은 구현만 한다. 리뷰는 /kdh-review가 별도 에이전트로 수행.**
+스토리 1개를 TDD 방식으로 구현하는 Generator.
+빌드 완료 후 같은 팀의 critics (winston, quinn, john)가 리뷰.
+수정 요청 오면 fix-mode로 해당 이슈만 수정.
 
 ## When to Use
 
@@ -159,7 +197,9 @@ GSD 적용: 파일 기반 상태 전달 (메시지 기억 의존 금지)
 **v11 핵심: "눌러봤냐?" — 코드 리뷰 전에 브라우저에서 확인.**
 
 ```
-스킵 조건: story type = API-only → 이 Phase 건너뜀
+스킵 조건 (둘 다 해당하면 건너뜀):
+   - story type = API-only → 이 Phase 건너뜀
+   - Sprint Zero(0-*) 스토리 → UI 없음, 건너뜀
 
 1. Dev server 확인:
    - curl http://localhost:3000/api/health → alive?
@@ -210,39 +250,78 @@ GSD 적용: 파일 기반 상태 전달 (메시지 기억 의존 금지)
 FAIL → 해당 코드 수정 후 재실행
 ```
 
-## Phase 5: Commit + Progress Update
+## Phase 5: 빌드 완료 보고 (커밋 금지 — 리뷰 후에만 커밋)
 
 ```
-1. git add {변경된 파일만 — 구체적으로 나열}
-2. git commit:
-   "feat({epic}): {story-id} — {story title}
+★★★ 빌더는 절대 git commit/push 하지 않는다 ★★★
+커밋은 리뷰 PASS 후 오케스트레이터(kdh-sprint)가 한다.
+이유: 리뷰 전 커밋 = 리뷰 무력화. CEO가 4번 코드 삭제한 원인.
 
-   - TDD: {N} tests (RED→GREEN)
-   - Contract types: imported from @corthex/shared
-   - tsc: 0 errors
-
-   Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>"
-
-3. sprint-status.yaml 업데이트:
-   - 해당 스토리 status: completed
-   - completed_at: {timestamp}
+빌더가 할 것:
+1. sprint-status.yaml 업데이트:
+   - 해당 스토리 status: built (completed 아님!)
+   - built_at: {timestamp}
    - tests_passed: {count}
    - tsc_errors: 0
+   - changed_files: [파일 목록]
 
-4. git push origin main
+2. 오케스트레이터에게 보고:
+   "스토리 {id} 빌드 완료. 테스트 {N}개 통과. tsc 0 에러.
+    변경 파일: {목록}. 리뷰 대기 중."
+
+3. 종료 (커밋하지 않고 종료)
+
+빌더가 하면 안 되는 것:
+  ❌ git add
+  ❌ git commit  
+  ❌ git push
+  ❌ status를 'completed'로 변경 (built까지만)
 ```
 
 ---
 
-## UI Story: Subframe GATE
+## UI Story: Subframe 필수 (선택 아님)
 
-UI가 있는 스토리에서는 디자인 확인이 필요할 수 있다.
+UI/프론트엔드가 있는 스토리는 반드시 Subframe을 사용해야 한다.
+Subframe 안 쓰고 직접 React 짜면 = 자동 FAIL.
 
 ```
-1. Subframe MCP로 컴포넌트/페이지 디자인
-2. /kdh-gate page-design 호출 (사장님 확인)
-3. `계속` 모드면 자동 진행 (기본 선택)
-4. 승인 후 React 코드로 내보내기 → 구현
+CEO 디자인 기준 (절대):
+  - Linear 다크 미니멀 + Genesis 프리미엄 + 한국 기업 세련됨
+  - 색상 테마: CEO가 정한 테마 유지 (벚꽃, Toss 라이트/다크, 라벤더 등)
+  - 테마 변경 가능하게 (커스터마이징)
+  - 참고: memory/feedback_design_taste.md
+
+Subframe 프로젝트: fe1d14ed3033
+  참고: memory/reference_subframe_project.md
+  5개 페이지 디자인이 이미 만들어져 있음 — 무시하지 말 것
+
+실행 순서:
+  1. /subframe:design 으로 Subframe MCP에서 페이지/컴포넌트 디자인
+     - 기존 5개 페이지 디자인 참조
+     - CEO 색상 테마 적용
+  2. /subframe:develop 로 React 코드 내보내기
+  3. 내보낸 코드를 프로젝트에 적용
+  4. /kdh-gate page-design 호출 (사장님 확인)
+  5. `계속` 모드면 자동 진행 (기본 선택)
+
+★★★ Subframe MCP 실패 시 → 즉시 중단. 오케스트레이터에게 보고.
+  대안 없음. fallback 금지. Subframe 없이 UI 코드 작성 = 자동 FAIL.
+  오케스트레이터는 CEO에게 GATE 질문 (Subframe 문제 해결 or 스토리 스킵).
+  수동 Tailwind, 수동 React = 전부 금지.
+  UI는 반드시 Subframe 컴포넌트(@/ui/components/*)로 구현. ★★★
+
+## 오케스트레이터 프롬프트 규칙 (v17)
+
+빌더 프롬프트 작성 시 절대 금지:
+  ❌ "~가 안 되면 ~로 대체"
+  ❌ "~가 없으면 수동으로"
+  ❌ "fallback으로 ~"
+  ❌ "if X fails, use Y instead"
+
+대신:
+  ✅ "~가 안 되면 즉시 중단하고 보고"
+  ✅ "~없이 진행 = 자동 FAIL"
 ```
 
 ---
@@ -265,13 +344,22 @@ FORBIDDEN (자동 FAIL):
 
 ---
 
-## Fresh Context 규칙 (Ralph Wiggum)
+## 빌드 후 대기 규칙 (v15 — 벤치마크 기반)
 
 ```
-- 이 스킬이 끝나면 에이전트는 종료된다
-- 다음 스토리는 새 에이전트가 처리한다
-- 상태 전달은 오직 파일로 (sprint-status.yaml, git history)
-- 대화 기억에 의존하지 않는다
+- 빌드 완료 후 종료하지 않는다
+- 오케스트레이터가 리뷰 결과를 SendMessage로 전달할 때까지 대기
+- CONDITIONAL → SendMessage로 수정 지시 받음 → 해당 이슈만 수정 (fix-mode)
+- PASS → 오케스트레이터가 shutdown_request 보냄 → 종료
+- 다음 스토리는 새 dev 에이전트 (fresh context per story 유지)
+- 상태 전달은 파일로 (sprint-status.yaml, party-logs/)
+
+fix-mode:
+  1. party-logs/sprint-{N}-{story}-fixes-needed.md 읽기
+  2. 지적된 이슈만 수정 (다른 코드 건드리지 않음)
+  3. tsc + test 재실행
+  4. sprint-status.yaml: status → built (다시)
+  5. 오케스트레이터에게 보고 (idle 알림 자동)
 ```
 
 ---
@@ -294,7 +382,7 @@ FORBIDDEN (자동 FAIL):
 ## Output
 
 ```
-sprint-status.yaml          ← 스토리 상태 업데이트
-packages/*/src/**            ← 구현 코드 + 테스트
-git commit                   ← feat({epic}): {story} 커밋
+sprint-status.yaml          ← 스토리 상태: built (not completed)
+packages/*/src/**            ← 구현 코드 + 테스트 (커밋 안 됨, 워킹 디렉토리에만)
+(커밋은 kdh-sprint가 리뷰 PASS 후 수행)
 ```

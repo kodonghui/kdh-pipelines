@@ -3,6 +3,68 @@ name: kdh-review
 description: "Story Reviewer (Evaluator) — BMAD party mode + D1-D6 루브릭 강제. Generator ≠ Evaluator."
 ---
 
+## v15 절대 규칙: 3명 팀 에이전트 파티 모드 필수 (서브에이전트 금지)
+
+CEO 명령: "파티 모드 빼먹으면 전부 삭제한다."
+1명이 혼자 리뷰하면 파이프라인 위반. 리뷰 무효.
+
+★★★ 서브에이전트 금지. 반드시 팀 에이전트 (team_name 필수). ★★★
+서브에이전트는 SendMessage 못 함 → cross-talk 불가 → 회의 불가.
+
+3명은 오케스트레이터(kdh-sprint)가 직접 팀 에이전트로 소환:
+  - winston: Agent(name: "winston-{story}", team_name: "sprint-{N}")
+  - quinn: Agent(name: "quinn-{story}", team_name: "sprint-{N}")
+  - john: Agent(name: "john-{story}", team_name: "sprint-{N}")
+
+★ 별도 reviewer 에이전트 없음. 오케스트레이터가 critics를 직접 관리. ★
+
+각각 party-logs/sprint-{N}-{story}-{이름}.md 작성 필수.
+
+검증 (BLOCKING — 오케스트레이터 체크리스트):
+  [ ] party-logs/sprint-{N}-{story}-winston.md 존재
+  [ ] party-logs/sprint-{N}-{story}-quinn.md 존재
+  [ ] party-logs/sprint-{N}-{story}-john.md 존재
+  [ ] 각 로그에 D1-D6 테이블 6행 존재
+  (Cross-talk 섹션은 optional — blocking 아님)
+  하나라도 없으면 → 해당 critic에게 재작성 요청
+
+## Note: Codex는 kdh-sprint에서 관리
+
+Codex 세컨드 오피니언은 kdh-sprint Phase B.5에서 실행됨 (스토리 레벨 1회).
+kdh-review는 3명 팀 에이전트 파티 모드 리뷰만 담당. 중복 Codex 실행 금지.
+배치/스프린트 레벨 통합 Codex는 kdh-integration에서 꼼꼼히 실행됨.
+
+## 제대로 된 파티 모드 (v15 — 벤치마크 복원)
+
+```
+1. 오케스트레이터가 3명 팀 에이전트에게 SendMessage로 리뷰 지시
+2. 각 에이전트 (병렬):
+   a. 페르소나 파일 읽기 (_bmad/bmm/agents/{name}.md)
+   b. 변경된 파일 읽기
+   c. D1-D6 채점 + file:line 증거
+   d. party-log 작성
+3. Cross-talk (의무):
+   - 각 critic → 다른 2명에게 SendMessage (핵심 의견 1개)
+   - party-log에 "## Cross-talk" 섹션 추가 (받은 의견 + 반응)
+   - placeholder 텍스트 = 거부 → 재작성 요구
+4. 최종 점수 확정 (cross-talk 반영)
+5. 오케스트레이터: 3개 party-log 읽기 → 평균 계산
+6. 점수 분산 체크: stdev < 0.5 → 1명 독립 재채점 요청
+
+CONDITIONAL (평균 < 3.0/4 OR 1명이라도 < 3.0/4 OR CRITICAL finding):
+  → fixes-needed.md 생성
+  → 오케스트레이터가 dev에게 SendMessage (수정 지시)
+  → dev 수정 후 → Phase B 재실행 (critics 재리뷰)
+  → 리뷰 CONDITIONAL: 수정 후 재리뷰 (합리적 시도 후 진행 판단은 오케스트레이터가 자체 결정)
+```
+
+절대 유지:
+  - 3명 별도 팀 에이전트 (서브에이전트 금지, 1명이 3역할 금지)
+  - D1-D6 채점 + file:line 증거 필수
+  - Cross-talk 의무 (SendMessage로)
+  - Auto-fail 체크 (보안, 빌드 깨짐, 타입 오류 등)
+  - CONDITIONAL 루프 (dev 수정 → 재리뷰)
+
 # KDH Review v11 — Story Reviewer (Evaluator)
 
 구현 완료된 스토리를 **별도 에이전트**로 리뷰하는 Evaluator 전용 스킬.
@@ -147,53 +209,57 @@ Step 2: Independent Review (D1-D6 강제 템플릿)
   MUST use the EXACT template below. 커스텀 차원 금지.
 ```
 
-### D1-D6 Review Template (강제 — 이 양식 외 사용 금지)
+### D1-D6 Review Template v16 (Finding-First + CoT + 4-point — MANDATORY)
 
 ```markdown
-## {Agent Name} ({Critic Type}) Review: Story {story-id}
+## {Agent Name} Review: Story {story-id}
 Date: {date} | Sprint: {sprint-N}
 
-### 1. Auto-Fail Check (먼저 평가 — 하나라도 YES면 즉시 중단)
-- [ ] 할루시네이션 없음 (참조한 파일/API/함수 전부 실존 확인)
-- [ ] 보안 구멍 없음 (하드코딩 시크릿, SQL injection, XSS)
-- [ ] 빌드 깨짐 없음 (tsc 통과 확인)
-- [ ] 데이터 손실 위험 없음 (DROP TABLE/COLUMN 없음)
-- [ ] 아키텍처 위반 없음 (engine/ public API 준수)
+### 1. Auto-Fail Gate
+- [ ] No hardcoded secrets
+- [ ] No SQL injection / XSS
+- [ ] No tsc errors
+- [ ] No data loss risk (DROP TABLE etc)
+- [ ] No inline types (must use @corthex/shared)
+Auto-fail triggered? [ ] YES → reason: ___ [ ] NO → continue
 
-Auto-fail 발동? [ ] YES → 사유: ___ [ ] NO → 계속
+### 2. Evidence Collection (Chain-of-Thought — write BEFORE scoring)
+For each changed file, verify line by line:
+  file.ts:15 — AuthUser import ✓ matches contracts/auth.ts
+  file.ts:42 — db query ✓ matches schema/sessions.ts
+  file.ts:71 — expiresAt uses > instead of >= ✗ OFF-BY-ONE
+(This section MUST exist. No evidence = review rejected.)
 
-### 2. Acceptance Criteria 체크
-- [ ] AC1: {description} — 근거: {file:line 또는 테스트명}
-- [ ] AC2: {description} — 근거: {file:line}
-...
+### 3. Acceptance Criteria Check
+- [ ] AC1: {desc} — evidence: {file:line or test name}
+- [ ] AC2: {desc} — evidence: {file:line}
 
-### 3. D1-D6 차원별 점수 (critic-rubric.md 기준)
+### 4. Findings (for each ✗ from Evidence Collection)
+[D{N}] [{CRITICAL|HIGH|MEDIUM|LOW}] file:line — description
+  Expected: {what should happen}
+  Actual: {what happens now}
+  Impact: {why this matters}
+  Fix: {specific code change to resolve}
 
-| 차원 | 점수 | 가중치 | 가중점수 | 근거 (file:line 필수) |
-|------|------|--------|----------|---------------------|
-| D1 구체성 | /10 | {%} | | {구체적 근거} |
-| D2 완전성 | /10 | {%} | | {구체적 근거} |
-| D3 정확성 | /10 | {%} | | {구체적 근거} |
-| D4 실행가능성 | /10 | {%} | | {구체적 근거} |
-| D5 일관성 | /10 | {%} | | {구체적 근거} |
-| D6 리스크인식 | /10 | {%} | | {구체적 근거} |
+### 5. Dimension Scoring (4-point scale)
+| Dim | Score | Weight | Evidence Summary |
+|-----|-------|--------|-----------------|
+| D1 Specificity  | /4 | {%} | {from Evidence Collection} |
+| D2 Completeness | /4 | {%} | {ACs pass/fail count} |
+| D3 Accuracy     | /4 | {%} | {type/schema match count} |
+| D4 Buildability | /4 | {%} | {tsc/test status} |
+| D5 Consistency  | /4 | {%} | {contract compliance} |
+| D6 Risk         | /4 | {%} | {security/integration} |
 
-### 가중 평균: X.XX/10
-계산: (D1×{w1}) + (D2×{w2}) + (D3×{w3}) + (D4×{w4}) + (D5×{w5}) + (D6×{w6}) = {결과}
+4=EXCELLENT(0 issues) 3=GOOD(LOW/MED only) 2=NEEDS_WORK(≥1 HIGH) 1=FAIL(CRITICAL)
+Weighted avg = (D1×w1+...+D6×w6)/100 = {result}
 
-### D < 3 체크
-최저 차원: D{N} = {score}/10
-D < 3 auto-fail 발동? [ ] YES [ ] NO
+### 6. Cross-talk
+- {other critic} found {issue}: I {agree/disagree} because {reason}
 
-### 4. Issues Found (차원 태그 필수)
-1. **[D{N} {차원명}] [{CRITICAL|HIGH|MEDIUM|LOW}]** {설명} — File: {path}:{line}
-2. ...
-
-### 5. Cross-talk (다른 리뷰어 참조 필수 — 빈칸 = 거부)
-- {다른 리뷰어 이름}이 지적한 {이슈}에 대해: {동의/반박 + 이유}
-- {추가 인사이트 또는 다른 리뷰어와의 의견 차이}
-
-### Final: {가중평균}/10 → {PASS|CONDITIONAL|FAIL|AUTO-FAIL}
+### Final: {weighted avg}/4 → {PASS|CONDITIONAL|FAIL|AUTO-FAIL}
+PASS: avg ≥ 3.0/4 (= 7.5/10) AND each critic ≥ 3.0/4 AND 0 CRITICAL findings
+Report to orchestrator: overall = (avg / 4) × 10 → "리뷰 평균: X.X/10"
 ```
 
 **템플릿 준수 규칙:**
@@ -217,6 +283,13 @@ Step 3: Cross-talk (1 round — 빈칸 거부)
 Step 4: Final Scoring
   Each agent updates their D1-D6 table (cross-talk 반영 가능).
   Final weighted average를 orchestrator에게 전달.
+
+Step 4.5: 오케스트레이터 형식 검증 (BLOCKING)
+  각 party-log에서:
+  1. "| D1" ~ "| D6" 6행 존재? → NO면 재작성 요구
+  2. 각 점수가 "/4" 형식? → "/10", "/100" 등 다른 형식 = 재작성 요구
+  3. "Weighted avg = " 계산식 존재? → NO면 재작성 요구
+  4. 하나라도 실패 → SendMessage: "4-point scale (/4)로 재작성해주세요."
 ```
 
 ## Phase 3: Score Evaluation (v11 — 평균 escape 제거)
@@ -224,13 +297,14 @@ Step 4: Final Scoring
 ```
 1. 가중 평균 점수 계산: (winston.weighted_avg + quinn.weighted_avg + john.weighted_avg) / 3
 2. 개별 minimum 체크 (v11 신규):
-   - 3명 모두 개별 가중 평균 >= 7.0 필수
-   - 어떤 1명이라도 < 7.0 → CONDITIONAL (평균이 7.5 이상이어도!)
+   - 3명 모두 개별 가중 평균 >= 3.0/4 필수
+   - 어떤 1명이라도 < 3.0/4 → CONDITIONAL
+   - CRITICAL finding 1개라도 → CONDITIONAL
    
-3. 판정 (v11):
-   - 3명 모두 >= 7.0 AND avg >= 7.5 → PASS
-   - 1명이라도 < 7.0 OR avg 6.0~7.5 → CONDITIONAL (수정 후 재리뷰)
-   - avg < 6.0 → FAIL (재구현 필요)
+3. 판정 (v17 — 4-point scale 통일):
+   - 3명 모두 >= 3.0/4 AND avg >= 3.0/4 AND CRITICAL 0건 → PASS
+   - avg < 3.0/4 OR 1명이라도 < 3.0/4 OR CRITICAL → CONDITIONAL (수정 후 재리뷰)
+   - AUTO-FAIL 조건 해당 → FAIL (재구현 필요)
    
    CEO override: /kdh-gate에서 "일단 넘어가" 선택 가능
    → sprint-status.yaml에 ceo_override: true 기록
@@ -257,7 +331,7 @@ Step 4: Final Scoring
 ```
 1. 각 리뷰어의 D1-D6 점수 스캔:
    - 어떤 차원이든 점수 < 3 존재? → AUTO-FAIL 발동
-   - 기록: "{reviewer}가 D{N}에 {score}/10 → 자동 불합격"
+   - 기록: "{reviewer}가 D{N}에 {score}/4 → 자동 불합격"
 
 2. 각 리뷰어의 Auto-Fail Check 섹션 확인:
    - "YES" 체크된 항목 존재? → AUTO-FAIL 발동

@@ -88,13 +88,24 @@ Team: winston(Writer), dev, quinn, john, bob
 GATES: decisions
 ```
 
-### Stage 5: UX Design
+### Stage 5: UX Design (Subframe 필수)
 ```
 Dir: _bmad/bmm/workflows/3-design-build/plan-ux-design/steps/
 Output: _bmad-output/planning-artifacts/ux-design.md
 Team: sally(Writer), john, winston, quinn
 GATES: design-system, design-directions
-Subframe MCP 사용: 디자인 프로토타입
+
+Subframe 필수 (CEO 절대 규칙):
+  프로젝트 ID: fe1d14ed3033
+  기존 5개 페이지 디자인 참조 (memory/reference_subframe_project.md)
+  /subframe:design → /subframe:develop 워크플로우
+  CLI sync: npx @subframe/cli@latest sync (MCP copy 아님)
+  UI는 반드시 Subframe 컴포넌트로 구현 — import path: @/ui/components/X (수동 React/Tailwind 금지)
+
+CEO 디자인 기준 (memory/feedback_design_taste.md):
+  - Linear 다크 미니멀 + Genesis 프리미엄 + 한국 기업 세련됨
+  - 색상 테마: 벚꽃, Toss 라이트/다크, 라벤더 등 (커스터마이징 가능)
+  - 벤치마크: Linear, Figma, 심팩그룹, 제네시스, 진인프라
 ```
 
 ### Stage 6: Epics & Stories

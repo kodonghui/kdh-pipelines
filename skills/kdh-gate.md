@@ -77,7 +77,7 @@ description: "GATE 프로토콜 — 사장님(CEO) 확인이 필요한 포인트
 1. Read party-logs/{sprint}-review-summary.md
 2. CEO에게 보고 (한국어):
    "Sprint {N} 검토 결과입니다.
-    - 전체 평균: {X.X}/10
+    - 전체 평균: {X.X}/10 (D1-D6 /4 기준에서 변환)
     - 가장 높은 점수: {차원 한국어명} ({X.X})
     - 가장 낮은 점수: {차원 한국어명} ({X.X})
     - 재검토 필요했던 기능: {N}개

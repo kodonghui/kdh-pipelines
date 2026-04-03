@@ -1,12 +1,23 @@
 ---
 name: kdh-go
-description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음 할 일을 알아서 실행. 사장님이 칠 유일한 명령어."
+description: "⚠️ DEPRECATED — /kdh-full-auto-pipeline auto 모드로 흡수됨. /kdh-full-auto-pipeline 또는 /kdh-full-auto-pipeline 계속 사용."
 ---
 
-# KDH Go — 원커맨드 자동 실행
+# ⚠️ DEPRECATED: kdh-go → /kdh-full-auto-pipeline
+
+**이 스킬은 폐기되었습니다.**
+- 자동 감지: `/kdh-full-auto-pipeline` (인자 없이)
+- 밤새 모드: `/kdh-full-auto-pipeline 계속`
+- Sprint 지정: `/kdh-full-auto-pipeline sprint 0`
+
+상태 감지 로직과 계속 모드는 kdh-full-auto-pipeline에 통합되었습니다.
+아래 내용은 참고용으로만 유지합니다.
+
+---
+
+# KDH Go — 원커맨드 자동 실행 (ARCHIVED)
 
 프로젝트 상태를 읽고 다음 할 일을 자동으로 판단해서 실행.
-**사장님이 알아야 할 명령어는 이것 하나.**
 
 ## When to Use
 
@@ -43,10 +54,10 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
    - 있음 → Sprint 상태 읽기
 
 5. Sprint 상태 분석:
-   - 미완료 스토리 있음 → /kdh-sprint {N} (이어서)
+   - 미완료 스토리 있음 → /kdh-full-auto-pipeline sprint {N} (이어서)
    - 스프린트 완료 + E2E 안 함 → /kdh-e2e
    - E2E 완료 + GATE 안 함 → /kdh-gate sprint-verify
-   - 전부 완료 → 다음 스프린트 존재? → /kdh-sprint {N+1}
+   - 전부 완료 → 다음 스프린트 존재? → /kdh-full-auto-pipeline sprint {N+1}
    - 전체 Phase 완료 → "Phase 1 완료!" 보고
 
 5.5 리뷰 상태 확인 (5번보다 우선):
@@ -80,20 +91,112 @@ description: "원커맨드 — 프로젝트 상태를 자동 판단하고 다음
      → 버그 목록 보여주고 /kdh-sprint {N} (E2E 버그 수정)
 ```
 
+## ★★★ 절대 규칙 — 이것을 어기면 CEO가 전체 삭제함 ★★★
+
+```
+이 규칙은 CEO가 3번 코드 전체 삭제 후 직접 지시한 것이다.
+"선언"이 아니라 "실행 흐름 자체"에 박혀있다. 건너뛸 수 없다.
+
+1. 감독(이 세션)은 packages/*/src/ 에 Write/Edit 절대 금지.
+   - .ts, .tsx, .css, .json 등 모든 구현 파일
+   - "간단한 수정", "한 줄 고치기", "import 정리" 포함 — 전부 금지
+   - 깨진 빌드 수정도 직접 안 함 → 팀 에이전트가 함
+
+2. 코딩이 필요하면 반드시 이 순서 (v15 "한 팀 = 한 스토리"):
+   TeamCreate("sprint-{N}")
+   → 스토리마다 4명 팀 에이전트 소환:
+     dev-{story} (빌더), winston-{story}, quinn-{story}, john-{story}
+     전부 team_name: "sprint-{N}" 필수. 서브에이전트 금지.
+   → dev가 빌드 (커밋 안 함)
+   → 오케스트레이터가 winston/quinn/john에게 SendMessage로 리뷰 지시
+   → critics끼리 cross-talk (SendMessage)
+   → PASS → 오케스트레이터 커밋
+   → CONDITIONAL → dev에게 수정 지시 → 재리뷰
+   → 4명 전원 shutdown → 다음 스토리
+   이 순서를 건너뛰면 안 됨. 별도 reviewer 에이전트 없음.
+
+3. 코드 리뷰 시 Codex CLI 세컨드 오피니언 필수 (tmux 실시간):
+   # Codex 창 열기 (CEO가 실시간으로 봄)
+   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
+   tmux select-pane -t $CODEX_PANE -T "codex-reviewer"
+   # Codex한테 리뷰 보내기
+   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
+     --sandbox read-only -o {output}.md -C /home/ubuntu/corthex-v3 \
+     <<'"'"'PROMPT'"'"'
+   [리뷰 프롬프트]
+   PROMPT' C-m
+   # 완료 대기 → 결과 읽기 → Codex 창 닫기
+   GPT-5.4 fresh session. CEO가 Codex 작업 과정을 tmux에서 실시간 확인.
+   ★ Codex 실행 실패(인증/타임아웃) → CEO에게 보고. fallback 금지.
+     CEO가 판단: (A) 재시도 (B) 이번 스토리만 스킵 (C) Codex 없이 진행
+     Codex 지적이 현재 맥락에 명백히 해당 안 되면 → 자체 판단으로 스킵 (CEO에게 안 물음)
+     예: 프로덕션 없는데 "프로덕션 위험" 지적, CEO가 이미 승인한 방향 지적 등
+     스킵 시 sprint-status.yaml에 사유 기록. ★
+
+4. 리뷰는 3명 팀 에이전트 파티 모드 필수 (winston, quinn, john):
+   Finding-First + CoT(Evidence Collection) + 4-point scale (영어 프롬프트)
+   각 finding에 Expected/Actual/Impact/Fix 포함 → dev가 읽고 바로 수정
+   PASS: 평균 ≥ 3.0/4 AND CRITICAL findings 0건
+
+5. UI 스토리는 반드시 Subframe + CEO 디자인 시스템:
+   Subframe 프로젝트: fe1d14ed3033
+   디자인 기준: Linear 다크 미니멀 + Genesis 프리미엄 + 한국 기업 세련됨
+   색상 테마: CEO가 정한 테마 (벚꽃, Toss 라이트/다크, 라벤더 등)
+   Subframe MCP로 디자인 → React 코드 내보내기 → 빌더가 적용
+   UI 스토리에서 Subframe 안 쓰면 = 자동 FAIL
+   참고: memory/feedback_design_taste.md, memory/reference_subframe_project.md
+
+6. 감독이 할 수 있는 것:
+   ✅ Read, Grep, Glob (파일 읽기)
+   ✅ Bash (tsc, bun test, git, curl 등)
+   ✅ sprint-status.yaml, pipeline-state.yaml 수정
+   ✅ party-logs/, _bmad-output/ 파일 작성
+   ✅ TeamCreate, Agent, TaskCreate, SendMessage
+   ✅ GATE 질문 (사장님에게)
+   ✅ Subframe MCP로 디자인 + 내보낸 코드 직접 파일 작성 (packages/admin/src/subframe/)
+     → Subframe은 감독이 직접 한다 (MCP 접근 + CEO 실시간 소통 필요)
+     → dev 에이전트는 MCP 못 씀 → 감독이 Subframe 하고 dev한테 결과 전달
+
+이 규칙의 이유: CEO가 3번 전체 삭제. 감독이 직접 코딩하면
+코드 품질이 파이프라인을 무시하고 떨어짐. 팀 에이전트는
+fresh context로 실행되어 편향 없이 작업함.
+```
+
 ## Phase 1: Execute
 
 상태 판단 결과에 따라 적절한 스킬 호출:
 
 ```
 Action Map:
-  NEED_PLANNING    → /kdh-plan {stage}
-  NEED_CONTRACTS   → /kdh-plan stage-6.5
-  NEED_SPRINT_PLAN → /kdh-plan stage-7
-  SPRINT_IN_PROGRESS → /kdh-sprint {N}
-  NEED_E2E         → /kdh-e2e
-  NEED_GATE        → /kdh-gate {type}
-  NEXT_SPRINT      → /kdh-sprint {N+1}
-  PHASE_COMPLETE   → 보고 + 대기
+  NEED_PLANNING      → /kdh-plan {stage}
+  NEED_CONTRACTS     → /kdh-plan stage-6.5
+  NEED_SPRINT_PLAN   → /kdh-plan stage-7
+  SPRINT_IN_PROGRESS → 아래 "Sprint 실행 흐름" 참조
+  NEED_E2E           → /kdh-e2e
+  NEED_GATE          → /kdh-gate {type}
+  NEXT_SPRINT        → 아래 "Sprint 실행 흐름" 참조
+  PHASE_COMPLETE     → 보고 + 대기
+```
+
+### Sprint 실행 흐름 → kdh-full-auto-pipeline sprint 모드 위임
+
+```
+★★★ kdh-go는 자체 Sprint 흐름을 실행하지 않는다 ★★★
+★★★ 반드시 kdh-full-auto-pipeline sprint 모드를 사용한다 ★★★
+★★★ kdh-sprint은 폐기됨 — 사용하지 않는다 ★★★
+
+SPRINT_IN_PROGRESS 또는 NEXT_SPRINT 상태면:
+  → /kdh-full-auto-pipeline sprint {N} 호출
+
+full-auto-pipeline sprint 모드가 관리하는 것:
+  1. TeamCreate
+  2. 스토리별: Build(커밋 안 함) → Review(3명 파티) → Codex → PASS 후 커밋
+  3. Batch 통합 리뷰 (kdh-integration)
+  4. tsc + test + E2E
+  5. Sprint 완료 보고
+
+kdh-go가 직접 Builder/Reviewer를 소환하면 안 된다.
+kdh-go는 상태 판단 + full-auto-pipeline 호출만 한다.
 ```
 
 ## Phase 2: Loop (계속 모드)
@@ -156,6 +259,13 @@ Action Map:
 4. FAIL 스토리 → 1회 재시도 → SKIP
 5. ESCALATED → sprint-status.yaml에 기록
 6. Phase 완료 → 종료 (다음 Phase는 사장님 확인 후)
+
+★★★ 계속 모드 예외 — Codex FAIL ★★★
+Codex FAIL은 자동 진행 금지. 계속 모드에서도 예외 없음.
+Codex: 1회 실행 + 최대 1회 재실행. 맥락상 불필요한 지적은 자체 스킵 (사유 기록).
+"범위 밖" 판단으로 무시 금지 — 단, 프로젝트 맥락상 명백히 해당 안 되면 자체 판단 OK.
+배치/스프린트 Codex(kdh-integration)가 나머지 잡아줌.
+Claude Agent fallback 금지 — Codex가 안 돌아가면 멈춤
 ```
 
 ## Ralph Loop 옵션 (밤샘 최안정)
@@ -182,7 +292,7 @@ EOF
   "Sprint {N} 이어서 합니다. 스토리 {M}개 남았어요."
 
 스토리 완료:
-  "스토리 {id} 완료. 리뷰 평균: {X.X}/10. ({N}/{M} 진행)"
+  "스토리 {id} 완료. 리뷰 평균: {X.X}/4. ({N}/{M} 진행)"
 
 Sprint 완료:
   "Sprint {N} 끝! {M}개 스토리, 평균 리뷰 {X.X}/10.
