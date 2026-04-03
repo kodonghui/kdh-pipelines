@@ -92,47 +92,48 @@ Phase:   "Phase 1 전부 끝났습니다! 기능 5개 완성."
 
 ---
 
-## Step -1 (ALL Modes): Tool Readiness Check
+## Step -1 (ALL Modes): Tool Readiness Check — 초장 검증
 
-파이프라인 시작 전 필수 도구 사용 가능 여부 검증. 하나라도 실패하면 CEO에게 보고 후 대기.
+**파이프라인 시작 전 필수 도구 전부 검증. 하나라도 안 되면 즉시 중지. 자동 복구/fallback 없음.**
 
 ```
 1. Codex CLI:
    - `which codex` → 설치 확인
    - `codex --version` → 버전 확인
-   - 실패 시: `sudo npm install -g @openai/codex` 시도
-   - 여전히 실패 → 🚩 BLOCK: "Codex 미설치. CEO 보고."
+   - 안 되면 → 🚩 BLOCK. 멈춰. CEO 보고. 설치 시도 하지 마.
 
 2. Codex 인증:
-   - `codex exec "echo hello" --timeout 10` → 응답 확인
-   - 실패 시: `codex login` 필요
-   - 여전히 실패 → 🚩 BLOCK: "Codex 인증 실패. CEO 보고."
+   - `codex exec "echo hello"` → 실제 응답 확인
+   - 안 되면 → 🚩 BLOCK. 멈춰. CEO 보고. 자동 로그인 하지 마.
 
-3. Subframe MCP (UI Story가 있는 Stage에서만):
-   - Subframe MCP 도구 목록 확인 (mcp__plugin_subframe_subframe__*)
-   - 없으면: "Subframe MCP 미연결"
-   - UI Story가 없는 Stage면 → ⚠️ WARNING만, BLOCK 아님
-   - UI Story가 있는 Stage면 → 🚩 BLOCK
+3. Subframe MCP (★ 무조건 체크, Stage 무관):
+   - ToolSearch로 subframe 도구 검색
+   - `mcp__plugin_subframe_subframe__authenticate`만 보이면 = 미인증 → 🚩 BLOCK
+   - `mcp__plugin_subframe_subframe__design_page` 등 실제 도구가 보여야 = ✅
+   - 안 되면 → 🚩 BLOCK. 멈춰. CEO에게 "Subframe 브라우저 인증 필요" 보고.
+   - ★ "지금 Stage에서 안 쓰니까 WARNING만" 같은 예외 없음. 초장에 안 되면 멈춤.
 
 4. Helper Script:
    - `test -x ~/.claude/scripts/codex-review.sh` → 실행 권한 확인
-   - 없으면: 생성 (SKILL.md 참조)
+   - 안 되면 → 🚩 BLOCK.
 
 5. design-references.md:
    - `test -f _bmad-output/design-references.md` → 5개 테마 URL 존재 확인
-   - 없으면: ⚠️ WARNING "테마 참조 파일 없음"
+   - 안 되면 → ⚠️ WARNING (BLOCK 아님)
 
 출력:
-  ✅ Codex CLI: v0.118.0
-  ✅ Codex 인증: OK
-  ✅/⚠️ Subframe MCP: [연결됨/미연결]
-  ✅ Helper script: OK
-  ✅ Design references: OK
+  ✅/🚩 Codex CLI: [버전 or FAIL]
+  ✅/🚩 Codex 인증: [OK or FAIL]
+  ✅/🚩 Subframe MCP: [연결됨 or 미인증]
+  ✅/🚩 Helper script: [OK or FAIL]
+  ✅/⚠️ Design references: [OK or MISSING]
 
 판정:
-  → ALL ✅ → Step 0 진행
-  → ANY 🚩 → **파이프라인 시작 금지. fallback 없음. CEO 보고 후 문제 해결 때까지 대기.**
-  → "설치 시도" 같은 자동 복구 하지 마. 안 되면 그냥 멈춰.
+  → 🚩 0개 → Step 0 진행
+  → 🚩 1개라도 → **즉시 중지. 파이프라인 시작하지 않음.**
+     CEO에게 뭐가 안 되는지 보고 → 문제 해결될 때까지 대기.
+     자동 설치/자동 로그인/자동 복구 시도 금지.
+     "나중에 쓰니까 지금은 넘어가자" 금지.
 ```
 
 ---
