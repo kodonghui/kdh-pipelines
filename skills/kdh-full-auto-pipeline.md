@@ -264,67 +264,82 @@ PROHIBITION: Never spawn agents as `critic-a`, `critic-b`, `critic-c` or any gen
 ### Grade C Steps: Writer Solo (변경 없음)
 init, complete 등 Grade C steps는 오케스트레이터가 직접 처리.
 
-### Grade B Steps: Stage Worker + Single Critic
+### Planning Stage 실행 흐름 (v10.4)
+
 ```
-1. Stage Worker (1명): 해당 Stage의 모든 Grade B steps를 연속 작성
-   - 각 step의 BMAD step file을 Read → 내용 작성 → output doc에 APPEND → frontmatter 업데이트
-   - 모든 steps 완료 후 SendMessage [Stage Draft Complete] to team-lead
-2. quinn(QA) 스폰: Stage 전체 output을 한번에 리뷰
-   - party-logs/stage-{N}-batch-quinn.md 작성 (D1-D6 scores)
-   - Grade B steps 중 score < 7.5인 step 지적
-3. Stage Worker가 fixes 적용 → party-logs/stage-{N}-batch-fixes.md 작성
-4. 오케스트레이터 독립 검증:
-   - [ ] quinn party-log 존재
-   - [ ] fixes.md 존재
-   - [ ] 전체 avg >= 7.5
-   → PASS
+Phase A: Stage Worker가 전체 steps 작성 (spawn 1회)
+  - BMAD step file 순서대로 읽고 → output doc에 APPEND
+  - frontmatter stepsCompleted 매 step 업데이트
+  - GATE steps 도달 시: [GATE] 마크 → 오케스트레이터가 CEO에게 전달
+  - 완료 후 SendMessage [Stage Draft Complete]
+
+Phase B: 병렬 독립 리뷰 (spawn 3회, 한 메시지로 동시)
+  - winston(Arch, opus): 아키텍처 정합성, 스키마 정확성, 일관성
+  - quinn(QA, opus for A / sonnet for B): 테스트 가능성, 보안, 에지 케이스, EARS 준수
+  - john(PM, opus for A / sonnet for B): 제품 요구사항 커버리지, AC 추적, 사용자 가치
+  - 각자 party-log 작성 (D1-D6 scoring, 전문 영역 집중)
+  - ★ 리뷰 중 서로 대화 없음 (독립성 보장 = 편향 방지)
+  - 각 critic은 자기 전문 영역만 집중, 전체를 다 보지 않음
+
+Phase C: 상호 검증 — Cross-Validation (spawn 추가 없음)
+  - 각 critic이 다른 2명의 party-log 파일을 Read tool로 읽기
+  - 자신의 party-log에 "## Cross-Validation" 섹션 추가:
+    - 동의하는 발견 1개 (구체적 근거 + 라인 참조)
+    - 반박하는 발견 1개 (구체적 근거 + 대안)
+  - ★ 파일 기반 — SendMessage 불필요, 오케스트레이터 중계 불필요
+
+Phase D: 오케스트레이터 후처리 (spawn 0)
+  - 3개 party-log 읽기 → 이슈 우선순위 정리
+  - Score 계산: avg >= threshold?
+  - FAIL: fixes 목록 작성 → Stage Worker에게 전달 (SendMessage)
+    → Stage Worker fixes 적용 → Phase B 반복 (max retries: Grade A=2, Grade B=1)
+  - PASS: Phase E로 (Grade A) 또는 Phase F로 (Grade B)
+
+Phase E: DA — Grade A만 (spawn 1회, ★ FRESH INSTANCE 필수)
+  - ★ 기존 3명(winston/quinn/john) 중 아무도 아닌 완전히 새로운 에이전트
+  - ★ 이전 리뷰 결과 접근 금지 (party-log 읽기 금지)
+  - PRD EARS 요구사항 + DoD 기준으로만 검증
+  - ≥3 이슈 필수 (0 이슈 = suspicious, 오케스트레이터 직접 리뷰)
+  - DA fixes → Stage Worker 적용
+
+Phase F: 최종 검증 + 커밋 (spawn 0)
+  오케스트레이터 직접 파일 확인 (Grep + Read):
+  - [ ] 모든 steps의 content가 output doc에 존재
+  - [ ] frontmatter stepsCompleted 완전
+  - [ ] 3개 party-log 존재 (winston, quinn, john)
+  - [ ] 각 party-log에 ## Cross-Validation 섹션 존재
+  - [ ] Grade A: DA 파일 존재 (≥3 이슈)
+  - [ ] fixes.md 존재
+  - [ ] avg >= threshold (A: 8.0, B: 7.5)
+  - [ ] GATE decisions 기록됨
+  - [ ] Context snapshot 저장됨
+  - [ ] Compliance YAML 작성됨
+  → 모든 체크 통과 → git commit → 다음 Stage
+  → 하나라도 실패 → REJECT (조건부 PASS 금지)
 ```
 
-### Grade A Steps: Stage Worker + Parallel Critics + DA
-```
-1. Stage Worker (1명): 해당 Stage의 모든 Grade A steps를 연속 작성
-   - Grade B와 동일 방식, Grade A steps만 대상
-   - 완료 후 SendMessage [Grade A Draft Complete] to team-lead
-2. winston(Arch) + quinn(QA) 동시 스폰 (opus 모델):
-   - 각자 독립 리뷰 → party-logs/stage-{N}-gradeA-{name}.md 작성
-   - Cross-talk: 파일 기반 (SendMessage 대신)
-     a. 둘 다 리뷰 작성 완료
-     b. winston이 quinn 파일 읽고 → 자신의 파일에 ## Cross-talk 추가
-     c. quinn이 winston 파일 읽고 → 자신의 파일에 ## Cross-talk 추가
-     d. 오케스트레이터가 두 파일의 ## Cross-talk 존재 확인
-3. DA (Devil's Advocate): quinn이 ≥3 이슈 추가 발견
-   - party-logs/stage-{N}-gradeA-devils-advocate.md
-4. Stage Worker가 fixes 적용
-5. 오케스트레이터 독립 검증:
-   - [ ] winston + quinn party-log 존재
-   - [ ] 각 파일에 ## Cross-talk 존재
-   - [ ] DA 파일 존재 (≥3 이슈)
-   - [ ] fixes.md 존재
-   - [ ] avg >= 8.0
-   → PASS
-```
+### Spawn 수 비교
+
+| Grade | v10.3 (per-step) | v10.4 (per-stage) | 감소 |
+|-------|-----------------|-------------------|------|
+| C | 0 | 0 | — |
+| B (6 steps) | 6×7=42 | 1+3+1=5 | 88% |
+| A (4 steps) | 4×12=48 | 1+3+3+1+1=9 | 81% |
+
+### 절대 규칙 (v10.4 추가)
+
+37. **조건부 PASS 금지.** avg < threshold = FAIL. "다음 Stage에서 해결" 미루기 금지. 해당 Stage에서 해결 or ESCALATE.
+38. **DA는 반드시 fresh instance.** 기존 critic(winston/quinn/john) 겸임 금지. 이전 리뷰 맥락 0인 새 에이전트만. (출처: Metaswarm adversarial reviewer invariant)
+39. **Cross-Validation은 독립 리뷰 후.** 리뷰 중 대화(cross-talk) 금지. 독립 리뷰 완료 → 파일 기반 상호 검증.
+40. **Critic 전문 영역 집중.** "전체를 리뷰하라"가 아니라 각자 담당 영역만. winston=아키텍처, quinn=QA/보안, john=제품/요구사항.
 
 ### GATE Steps (변경 없음)
 Business GATE: 오케스트레이터가 CEO에게 한국어로 질문 → CEO 응답 대기.
 Technical GATE: 자동 통과 + 기록.
 
-### Orchestrator Stage Completion Checklist (v10.4)
-```
-Stage 완료 전 오케스트레이터 MUST verify:
-- [ ] 모든 steps의 content가 output doc에 존재
-- [ ] frontmatter stepsCompleted가 모든 step 포함
-- [ ] Grade B: quinn party-log + fixes 존재
-- [ ] Grade A: winston + quinn party-logs + cross-talk + DA + fixes 존재
-- [ ] GATE decisions 기록됨
-- [ ] Context snapshot 저장됨
-- [ ] Compliance YAML 작성됨
-- [ ] pipeline-state.yaml 업데이트됨
-→ git commit → 다음 Stage
-```
-
-### 기존 Party Mode Protocol (v10.3, 레거시)
+### 기존 Party Mode Protocol (v10.3, Sprint Dev용)
 Sprint Dev(Story 단위) 실행 시에는 기존 per-step 프로토콜 유지.
-Planning(Stage 단위)만 v10.4 Stage-Batch 적용.
+Planning(Stage 단위)만 v10.4 적용.
 
 ### Party-log Naming Standard (v10.1)
 
