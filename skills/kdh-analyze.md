@@ -101,10 +101,10 @@ CEO에게 보여주기 전, **3가지 편향 자가 진단**:
 출력: `## Self-Attack` 섹션 (발견된 편향 + 수정사항)
 ★ 이 섹션이 비어있으면 분석 불완전.
 
-### Stage 6: Codex Cross-Model Verification (선택적)
+### Stage 6: Codex Cross-Model Verification (★ 필수)
 > 비유: 변호사가 작성한 의견서를 다른 법무법인에 보내서 검토받기
 
-**"Ultrathink" 명시 시 또는 복잡한 분석에서만 실행.**
+**모든 /kdh-analyze 실행 시 필수. 간단한 분석도 Codex 검증 거쳐야 함.**
 
 왜: 같은 모델(Claude)이 쓰고 검증하면 self-preference bias 발생 (arxiv 2410.21819).
 다른 모델(GPT-5.4 Codex)이 검증하면 correlated failures를 깨뜨림.
