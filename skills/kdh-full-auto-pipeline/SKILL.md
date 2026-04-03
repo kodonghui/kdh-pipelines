@@ -235,8 +235,10 @@ PROHIBITION: Never spawn agents as `critic-a`, `critic-b`, `critic-c` or any gen
 |------|-------|-----------|
 | Orchestrator (kdh-go, pipeline) | opus | Complex judgment, state management, CEO communication |
 | Dev agent (builder) | sonnet | Best coding model, fast, validated in Sprint 0 |
-| Critics — Grade A (auth, permissions, payments) | opus | Deep architecture analysis needed |
-| Critics — Grade B (CRUD, UI) | sonnet | Fast and sufficient |
+| Critics — Grade A (Planning) | opus | winston(Arch) + quinn(QA), 2명 병렬. DA = quinn 겸임 |
+| Critics — Grade B (Planning) | sonnet | quinn(QA) 1명. 일괄 리뷰 |
+| Critics — Grade A (Sprint Dev) | opus | 기존 유지 (3명) |
+| Critics — Grade B (Sprint Dev) | sonnet | 기존 유지 (3명) |
 | Critics — Grade C (setup) | N/A | Writer Solo, no critics |
 | Codex (second opinion) | GPT-5.4 | External model, independent perspective |
 
@@ -254,65 +256,75 @@ PROHIBITION: Never spawn agents as `critic-a`, `critic-b`, `critic-c` or any gen
 
 ---
 
-## Party Mode Protocol (per step)
+## Party Mode Protocol v10.4 (Stage-Batch)
 
-**Applies to Grade A and B steps only.** Grade C steps use Writer Solo (see above).
+**v10.4 변경 (CEO 승인 2026-04-03):** 기존 "step당 party mode"에서 "stage 일괄 작성 + 일괄 리뷰"로 전환.
+근거: Stage 0~2 회고 결과, step당 7~12회 agent spawn이 오케스트레이터 병목 유발. Stage 2에서 일괄 처리가 품질+속도 모두 우수했음.
 
-Supports variable team sizes (3-5 critics).
+### Grade C Steps: Writer Solo (변경 없음)
+init, complete 등 Grade C steps는 오케스트레이터가 직접 처리.
 
+### Grade B Steps: Stage Worker + Single Critic
 ```
-1. Writer: Read step file with Read tool → write section → save to output doc
-2. Writer: SendMessage [Review Request] to ALL critics BY REAL NAME
-   Include: file path, line range, step file path
-3. Critics (parallel): Read FROM FILE → review → write to party-logs/{stage}-{step}-{name}.md
-4. Critics: Cross-talk with FIXED pairs (1 round, v10.1):
-   Story Dev fixed pairs (3 critics: winston, quinn, john):
-     - winston ↔ quinn: 보안/아키텍처 vs 테스트/품질
-     - quinn ↔ john: 테스트 커버리지 vs 제품 요구사항
-     - john ↔ winston: 제품 방향 vs 아키텍처 제약
-   Planning (4-5 critics): adjacent expertise pairs as before.
-   Cross-talk MUST happen. Each critic SendMessage to assigned peer with top disagreement/concern.
-   Peer responds. Both update their party-logs with "## Cross-talk" section before scoring.
-   ★ pre-commit hook이 Cross-talk 섹션 존재 + 최소 3줄 내용 검증 (WARNING)
-   Critic 프롬프트에 포함할 것:
-     "리뷰 후 {peer_name}에게 SendMessage로 가장 큰 의견 차이 1개 공유.
-      상대방 응답 받은 후 '## Cross-talk' 섹션에 대화 내용 기록."
-5. Critics: SendMessage [Feedback] to Writer BY NAME — "{N} issues. Priority: [top 3]"
-6. Writer: Read ALL critic logs FROM FILE → apply fixes → write party-logs/{stage}-{step}-fixes.md
-7. Writer: SendMessage [Fixes Applied] to ALL critics BY NAME
-8. Critics (parallel): Re-read FROM FILE → verify → SendMessage [Verified] with D1-D6 scores (/4)
-9. Orchestrator converts to /10: overall = (3-critic weighted avg / 4) × 10
-   Report format: "리뷰 평균: 8.2/10 (D1:3.5 D2:3.0 D3:3.5 D4:3.0 D5:3.5 D6:3.0)"
-10. Calculate average + enforce thresholds:
-   - Grade A: avg >= 8.0 required (was 7.0)
-   - Grade B: avg >= 7.5 required (was 7.0)
-   - Avg >= threshold: proceed to Minimum Cycle Check (step 11)
-   - Avg < threshold AND retry < grade_max: Writer rewrites from step 1
-   - Retry >= grade_max: ESCALATE to Orchestrator
-10. Score Variance Check (v9.1):
-   - Calculate standard deviation of all critic scores
-   - If stdev < 0.5 (was 0.3): Orchestrator flags "Suspiciously High Agreement"
-   - At least 1 critic MUST independently re-score without seeing others' scores
-11. Minimum Cycle Check (v9.2 — MANDATORY):
-   - Grade A: MINIMUM 2 full cycles required regardless of scores
-     - Cycle 1: steps 1-8 above (normal review)
-     - Cycle 2: Devil's Advocate mode — 1 designated critic MUST find ≥ 3 issues
-     - If Devil's Advocate finds 0 issues: suspicious, Orchestrator reviews directly
-   - Grade B: MINIMUM 1 full cycle + cross-talk verified
-   - Only after minimum cycles met AND avg >= threshold → PASS
-12. Orchestrator Step Completion Checklist (v9.2 — BLOCKING):
-   Before accepting [Step Complete], Orchestrator MUST verify ALL:
-   - [ ] party-logs/{stage}-{step}-{critic1}.md EXISTS (file, not message)
-   - [ ] party-logs/{stage}-{step}-{critic2}.md EXISTS
-   - [ ] party-logs/{stage}-{step}-{critic3}.md EXISTS
-   - [ ] party-logs/{stage}-{step}-{critic4}.md EXISTS (if 4 critics)
-   - [ ] party-logs/{stage}-{step}-fixes.md EXISTS
-   - [ ] Each critic log contains "## Cross-talk" section
-   - [ ] Score stdev >= 0.5
-   - [ ] Grade A: 2nd cycle completed with Devil's Advocate
-   - [ ] Context snapshot saved
-   ANY item unchecked → REJECT [Step Complete], do NOT proceed
+1. Stage Worker (1명): 해당 Stage의 모든 Grade B steps를 연속 작성
+   - 각 step의 BMAD step file을 Read → 내용 작성 → output doc에 APPEND → frontmatter 업데이트
+   - 모든 steps 완료 후 SendMessage [Stage Draft Complete] to team-lead
+2. quinn(QA) 스폰: Stage 전체 output을 한번에 리뷰
+   - party-logs/stage-{N}-batch-quinn.md 작성 (D1-D6 scores)
+   - Grade B steps 중 score < 7.5인 step 지적
+3. Stage Worker가 fixes 적용 → party-logs/stage-{N}-batch-fixes.md 작성
+4. 오케스트레이터 독립 검증:
+   - [ ] quinn party-log 존재
+   - [ ] fixes.md 존재
+   - [ ] 전체 avg >= 7.5
+   → PASS
 ```
+
+### Grade A Steps: Stage Worker + Parallel Critics + DA
+```
+1. Stage Worker (1명): 해당 Stage의 모든 Grade A steps를 연속 작성
+   - Grade B와 동일 방식, Grade A steps만 대상
+   - 완료 후 SendMessage [Grade A Draft Complete] to team-lead
+2. winston(Arch) + quinn(QA) 동시 스폰 (opus 모델):
+   - 각자 독립 리뷰 → party-logs/stage-{N}-gradeA-{name}.md 작성
+   - Cross-talk: 파일 기반 (SendMessage 대신)
+     a. 둘 다 리뷰 작성 완료
+     b. winston이 quinn 파일 읽고 → 자신의 파일에 ## Cross-talk 추가
+     c. quinn이 winston 파일 읽고 → 자신의 파일에 ## Cross-talk 추가
+     d. 오케스트레이터가 두 파일의 ## Cross-talk 존재 확인
+3. DA (Devil's Advocate): quinn이 ≥3 이슈 추가 발견
+   - party-logs/stage-{N}-gradeA-devils-advocate.md
+4. Stage Worker가 fixes 적용
+5. 오케스트레이터 독립 검증:
+   - [ ] winston + quinn party-log 존재
+   - [ ] 각 파일에 ## Cross-talk 존재
+   - [ ] DA 파일 존재 (≥3 이슈)
+   - [ ] fixes.md 존재
+   - [ ] avg >= 8.0
+   → PASS
+```
+
+### GATE Steps (변경 없음)
+Business GATE: 오케스트레이터가 CEO에게 한국어로 질문 → CEO 응답 대기.
+Technical GATE: 자동 통과 + 기록.
+
+### Orchestrator Stage Completion Checklist (v10.4)
+```
+Stage 완료 전 오케스트레이터 MUST verify:
+- [ ] 모든 steps의 content가 output doc에 존재
+- [ ] frontmatter stepsCompleted가 모든 step 포함
+- [ ] Grade B: quinn party-log + fixes 존재
+- [ ] Grade A: winston + quinn party-logs + cross-talk + DA + fixes 존재
+- [ ] GATE decisions 기록됨
+- [ ] Context snapshot 저장됨
+- [ ] Compliance YAML 작성됨
+- [ ] pipeline-state.yaml 업데이트됨
+→ git commit → 다음 Stage
+```
+
+### 기존 Party Mode Protocol (v10.3, 레거시)
+Sprint Dev(Story 단위) 실행 시에는 기존 per-step 프로토콜 유지.
+Planning(Stage 단위)만 v10.4 Stage-Batch 적용.
 
 ### Party-log Naming Standard (v10.1)
 
@@ -1264,7 +1276,7 @@ Output: _qa-e2e/uxui-redesign-review-{date}.md
 3. **BMAD steps auto-discovered.** glob steps/ directories, filter continue files, sort by filename. Never hardcode step lists.
 4. **Independent steps run in parallel.** PRD Validate and Readiness use parallel groups.
 5. **Writer NEVER calls Skill tool.** Read step/checklist files manually with Read tool.
-6. **One step at a time.** Write ONE step → full party mode → THEN next step.
+6. **Planning = one stage at a time (v10.4).** Stage Worker writes ALL steps in a stage → batch review → THEN next stage. Sprint Dev = one step at a time (기존 유지).
 7. **All reads FROM FILE.** Use Read tool, never message memory.
 8. **Output quality: specific and concrete.** File paths, hex colors, exact values. "Vague" = instant FAIL.
 9. **Orchestrator embeds first task in spawn.** Never spawn with just "wait".
