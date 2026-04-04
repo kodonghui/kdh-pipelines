@@ -1,6 +1,6 @@
 ---
 name: 'kdh-full-auto-pipeline'
-description: 'Universal Full Pipeline v10.2 — Planning DA + Traceability Matrix + App Chrome Checklist + UI Existence Check. 사장님 명령어: /kdh-full-auto-pipeline [auto|planning|sprint N|story-ID|parallel ID1 ID2...|swarm epic-N|계속]'
+description: 'Universal Full Pipeline v10.4 — Stage-Batch Party Mode + Cross-Validation + Fresh DA + Step -1 Tool Check. 사장님 명령어: /kdh-full-auto-pipeline [auto|planning|sprint N|story-ID|parallel ID1 ID2...|swarm epic-N|계속]'
 ---
 
 # Universal Full Pipeline v10
@@ -281,8 +281,8 @@ PROHIBITION: Never spawn agents as `critic-a`, `critic-b`, `critic-c` or any gen
 |------|-------|-----------|
 | Orchestrator (kdh-go, pipeline) | opus | Complex judgment, state management, CEO communication |
 | Dev agent (builder) | sonnet | Best coding model, fast, validated in Sprint 0 |
-| Critics — Grade A (Planning) | opus | winston(Arch) + quinn(QA), 2명 병렬. DA = quinn 겸임 |
-| Critics — Grade B (Planning) | sonnet | quinn(QA) 1명. 일괄 리뷰 |
+| Critics — Grade A (Planning) | opus | winston(Arch) + quinn(QA) + john(PM), 3명 병렬. DA = fresh instance (기존 3명 겸임 금지) |
+| Critics — Grade B (Planning) | sonnet | winston + quinn + john, 3명. 일괄 리뷰 |
 | Critics — Grade A (Sprint Dev) | opus | 기존 유지 (3명) |
 | Critics — Grade B (Sprint Dev) | sonnet | 기존 유지 (3명) |
 | Critics — Grade C (setup) | N/A | Writer Solo, no critics |
@@ -340,6 +340,9 @@ Phase D: 오케스트레이터 후처리 (spawn 0)
   - FAIL: fixes 목록 작성 → Stage Worker에게 전달 (SendMessage)
     → Stage Worker fixes 적용 → Phase B 반복 (max retries: Grade A=2, Grade B=1)
   - PASS: Phase E로 (Grade A) 또는 Phase F로 (Grade B)
+  ★ Planning Grade A 1-cycle 예외: Cycle 1 avg ≥ 8.0 PASS 시, Cycle 2 스킵하고 Phase E(DA)로 바로 진행 가능.
+    단, compliance YAML에 `single_cycle_pass: true` + `ceo_approved: [날짜]` 기록 필수.
+    Sprint Dev에는 적용 안 됨 — Sprint Dev Grade A는 무조건 2 cycles.
 
 Phase E: DA — Grade A만 (spawn 1회, ★ FRESH INSTANCE 필수)
   - ★ 기존 3명(winston/quinn/john) 중 아무도 아닌 완전히 새로운 에이전트
@@ -375,7 +378,7 @@ Phase F: 최종 검증 + 커밋 (spawn 0)
 ### 절대 규칙 (v10.4 추가)
 
 37. **조건부 PASS 금지.** avg < threshold = FAIL. "다음 Stage에서 해결" 미루기 금지. 해당 Stage에서 해결 or ESCALATE.
-38. **DA는 반드시 fresh instance.** 기존 critic(winston/quinn/john) 겸임 금지. 이전 리뷰 맥락 0인 새 에이전트만. (출처: Metaswarm adversarial reviewer invariant)
+38. **DA는 반드시 fresh instance.** 기존 critic(winston/quinn/john) 겸임 금지. 이전 리뷰 맥락 0인 새 에이전트만. (출처: Metaswarm adversarial reviewer invariant). DA 미실행 시 compliance YAML에 `da_skipped: true` + `da_skip_reason` 필수 기록. 미기록 = Rule 위반.
 39. **Cross-Validation은 독립 리뷰 후.** 리뷰 중 대화(cross-talk) 금지. 독립 리뷰 완료 → 파일 기반 상호 검증.
 40. **Critic 전문 영역 집중.** "전체를 리뷰하라"가 아니라 각자 담당 영역만. winston=아키텍처, quinn=QA/보안, john=제품/요구사항.
 
