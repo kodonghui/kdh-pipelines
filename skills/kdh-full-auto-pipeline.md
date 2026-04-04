@@ -1,6 +1,6 @@
 ---
 name: 'kdh-full-auto-pipeline'
-description: 'Universal Full Pipeline v10.2 — Planning DA + Traceability Matrix + App Chrome Checklist + UI Existence Check. 사장님 명령어: /kdh-full-auto-pipeline [auto|planning|sprint N|story-ID|parallel ID1 ID2...|swarm epic-N|계속]'
+description: 'Universal Full Pipeline v10.4 — Stage-Batch Party Mode + Cross-Validation + Fresh DA + Step -1 Tool Check. 사장님 명령어: /kdh-full-auto-pipeline [auto|planning|sprint N|story-ID|parallel ID1 ID2...|swarm epic-N|계속]'
 ---
 
 # Universal Full Pipeline v10
@@ -92,47 +92,48 @@ Phase:   "Phase 1 전부 끝났습니다! 기능 5개 완성."
 
 ---
 
-## Step -1 (ALL Modes): Tool Readiness Check
+## Step -1 (ALL Modes): Tool Readiness Check — 초장 검증
 
-파이프라인 시작 전 필수 도구 사용 가능 여부 검증. 하나라도 실패하면 CEO에게 보고 후 대기.
+**파이프라인 시작 전 필수 도구 전부 검증. 하나라도 안 되면 즉시 중지. 자동 복구/fallback 없음.**
 
 ```
 1. Codex CLI:
    - `which codex` → 설치 확인
    - `codex --version` → 버전 확인
-   - 실패 시: `sudo npm install -g @openai/codex` 시도
-   - 여전히 실패 → 🚩 BLOCK: "Codex 미설치. CEO 보고."
+   - 안 되면 → 🚩 BLOCK. 멈춰. CEO 보고. 설치 시도 하지 마.
 
 2. Codex 인증:
-   - `codex exec "echo hello" --timeout 10` → 응답 확인
-   - 실패 시: `codex login` 필요
-   - 여전히 실패 → 🚩 BLOCK: "Codex 인증 실패. CEO 보고."
+   - `codex exec "echo hello"` → 실제 응답 확인
+   - 안 되면 → 🚩 BLOCK. 멈춰. CEO 보고. 자동 로그인 하지 마.
 
-3. Subframe MCP (UI Story가 있는 Stage에서만):
-   - Subframe MCP 도구 목록 확인 (mcp__plugin_subframe_subframe__*)
-   - 없으면: "Subframe MCP 미연결"
-   - UI Story가 없는 Stage면 → ⚠️ WARNING만, BLOCK 아님
-   - UI Story가 있는 Stage면 → 🚩 BLOCK
+3. Subframe MCP (★ 무조건 체크, Stage 무관):
+   - ToolSearch로 subframe 도구 검색
+   - `mcp__plugin_subframe_subframe__authenticate`만 보이면 = 미인증 → 🚩 BLOCK
+   - `mcp__plugin_subframe_subframe__design_page` 등 실제 도구가 보여야 = ✅
+   - 안 되면 → 🚩 BLOCK. 멈춰. CEO에게 "Subframe 브라우저 인증 필요" 보고.
+   - ★ "지금 Stage에서 안 쓰니까 WARNING만" 같은 예외 없음. 초장에 안 되면 멈춤.
 
 4. Helper Script:
    - `test -x ~/.claude/scripts/codex-review.sh` → 실행 권한 확인
-   - 없으면: 생성 (SKILL.md 참조)
+   - 안 되면 → 🚩 BLOCK.
 
 5. design-references.md:
    - `test -f _bmad-output/design-references.md` → 5개 테마 URL 존재 확인
-   - 없으면: ⚠️ WARNING "테마 참조 파일 없음"
+   - 안 되면 → ⚠️ WARNING (BLOCK 아님)
 
 출력:
-  ✅ Codex CLI: v0.118.0
-  ✅ Codex 인증: OK
-  ✅/⚠️ Subframe MCP: [연결됨/미연결]
-  ✅ Helper script: OK
-  ✅ Design references: OK
+  ✅/🚩 Codex CLI: [버전 or FAIL]
+  ✅/🚩 Codex 인증: [OK or FAIL]
+  ✅/🚩 Subframe MCP: [연결됨 or 미인증]
+  ✅/🚩 Helper script: [OK or FAIL]
+  ✅/⚠️ Design references: [OK or MISSING]
 
 판정:
-  → ALL ✅ → Step 0 진행
-  → ANY 🚩 → **파이프라인 시작 금지. fallback 없음. CEO 보고 후 문제 해결 때까지 대기.**
-  → "설치 시도" 같은 자동 복구 하지 마. 안 되면 그냥 멈춰.
+  → 🚩 0개 → Step 0 진행
+  → 🚩 1개라도 → **즉시 중지. 파이프라인 시작하지 않음.**
+     CEO에게 뭐가 안 되는지 보고 → 문제 해결될 때까지 대기.
+     자동 설치/자동 로그인/자동 복구 시도 금지.
+     "나중에 쓰니까 지금은 넘어가자" 금지.
 ```
 
 ---
@@ -280,8 +281,8 @@ PROHIBITION: Never spawn agents as `critic-a`, `critic-b`, `critic-c` or any gen
 |------|-------|-----------|
 | Orchestrator (kdh-go, pipeline) | opus | Complex judgment, state management, CEO communication |
 | Dev agent (builder) | sonnet | Best coding model, fast, validated in Sprint 0 |
-| Critics — Grade A (Planning) | opus | winston(Arch) + quinn(QA), 2명 병렬. DA = quinn 겸임 |
-| Critics — Grade B (Planning) | sonnet | quinn(QA) 1명. 일괄 리뷰 |
+| Critics — Grade A (Planning) | opus | winston(Arch) + quinn(QA) + john(PM), 3명 병렬. DA = fresh instance (기존 3명 겸임 금지) |
+| Critics — Grade B (Planning) | sonnet | winston + quinn + john, 3명. 일괄 리뷰 |
 | Critics — Grade A (Sprint Dev) | opus | 기존 유지 (3명) |
 | Critics — Grade B (Sprint Dev) | sonnet | 기존 유지 (3명) |
 | Critics — Grade C (setup) | N/A | Writer Solo, no critics |
@@ -339,6 +340,9 @@ Phase D: 오케스트레이터 후처리 (spawn 0)
   - FAIL: fixes 목록 작성 → Stage Worker에게 전달 (SendMessage)
     → Stage Worker fixes 적용 → Phase B 반복 (max retries: Grade A=2, Grade B=1)
   - PASS: Phase E로 (Grade A) 또는 Phase F로 (Grade B)
+  ★ Planning Grade A 1-cycle 예외: Cycle 1 avg ≥ 8.0 PASS 시, Cycle 2 스킵하고 Phase E(DA)로 바로 진행 가능.
+    단, compliance YAML에 `single_cycle_pass: true` + `ceo_approved: [날짜]` 기록 필수.
+    Sprint Dev에는 적용 안 됨 — Sprint Dev Grade A는 무조건 2 cycles.
 
 Phase E: DA — Grade A만 (spawn 1회, ★ FRESH INSTANCE 필수)
   - ★ 기존 3명(winston/quinn/john) 중 아무도 아닌 완전히 새로운 에이전트
@@ -374,7 +378,7 @@ Phase F: 최종 검증 + 커밋 (spawn 0)
 ### 절대 규칙 (v10.4 추가)
 
 37. **조건부 PASS 금지.** avg < threshold = FAIL. "다음 Stage에서 해결" 미루기 금지. 해당 Stage에서 해결 or ESCALATE.
-38. **DA는 반드시 fresh instance.** 기존 critic(winston/quinn/john) 겸임 금지. 이전 리뷰 맥락 0인 새 에이전트만. (출처: Metaswarm adversarial reviewer invariant)
+38. **DA는 반드시 fresh instance.** 기존 critic(winston/quinn/john) 겸임 금지. 이전 리뷰 맥락 0인 새 에이전트만. (출처: Metaswarm adversarial reviewer invariant). DA 미실행 시 compliance YAML에 `da_skipped: true` + `da_skip_reason` 필수 기록. 미기록 = Rule 위반.
 39. **Cross-Validation은 독립 리뷰 후.** 리뷰 중 대화(cross-talk) 금지. 독립 리뷰 완료 → 파일 기반 상호 검증.
 40. **Critic 전문 영역 집중.** "전체를 리뷰하라"가 아니라 각자 담당 영역만. winston=아키텍처, quinn=QA/보안, john=제품/요구사항.
 
