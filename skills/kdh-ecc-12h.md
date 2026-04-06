@@ -20,6 +20,18 @@ tags: [learning, evolution, maintenance]
 4. 품질 자가평가: 진짜 유용한 패턴인지 판단
 5. Global vs Project 스코프 결정
 
+### Phase 1.5: Plan Retrospective (계획 회고)
+
+1. _bmad-output/kdh-plans/_index.yaml 읽기
+2. status: done인 plan 분석:
+   - plan의 예상 시간 vs 실제 소요 시간 (git log으로 추적)
+   - plan의 Risk 항목 중 실제 발생한 것
+   - plan에서 빠졌던 태스크
+3. 패턴 추출 → instinct 후보:
+   - "Phase D 보충은 예상보다 빨리 끝남" (confidence 계산)
+   - "PoC 스토리는 plan 없이 진행하면 나중에 보충 필요"
+4. done plan이 30일 이상 → status: archived 자동 전환
+
 ### Phase 2: Evolve (진화)
 
 1. instinct-status로 현재 목록 확인
@@ -43,5 +55,5 @@ tags: [learning, evolution, maintenance]
 ## Report
 
 ```
-[KDH-ECC-12H] Learn: N instincts (P:N G:N) | Evolve: N candidates | Health: N/N OK | Budget: Nk tokens
+[KDH-ECC-12H] Learn: N instincts | PlanRetro: N analyzed | Evolve: N candidates | Health: N/N OK | Budget: Nk tokens
 ```

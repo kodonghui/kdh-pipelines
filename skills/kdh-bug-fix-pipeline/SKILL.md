@@ -126,6 +126,32 @@ kdh-full-auto-pipeline의 Step 0과 동일. project-context.yaml 재사용.
 
 ---
 
+## Step 0.5: Read Active Plans
+
+파이프라인 시작 후, Step 0 완료 후, Phase 1 SCAN 진입 전에 실행.
+
+```
+1. _bmad-output/kdh-plans/_index.yaml 읽기
+   - 파일 없으면 → 스킵 (plan 없이 진행 OK)
+
+2. status: active 필터링
+
+3. 현재 작업과 매칭:
+   - pipeline: "bug-fix" 또는 "all"인 것만
+   - scope: 현재 Sprint/버그와 관련된 것만
+
+4. 매칭된 plan 본문 읽기 (Read tool)
+
+5. plan 맥락을 보유하고 실행 시작:
+   - plan은 "맥락 제공자" — SKILL.md의 절차/Phase 순서를 override하지 않음
+   - plan에 CEO 결정이 있으면 → 해당 결정 따름
+
+★ plan 읽기는 _index.yaml이 없을 때만 스킵. 있으면 active plan 필수 읽기.
+★ plan 내용과 SKILL.md 충돌 시: SKILL.md = 절차, plan = 내용. 영역이 다름.
+```
+
+---
+
 ## Phase 1: SCAN — browser-use 전수 탐색
 
 ```

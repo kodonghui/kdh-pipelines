@@ -49,6 +49,20 @@ Run: check `~/.claude/homunculus/projects/` for new observations, summarize.
 
 Run: `/prune` logic
 
+### Phase 3.5: Plan Audit (계획 정리) — 10초
+
+```
+1. _bmad-output/kdh-plans/_index.yaml 읽기
+   - 없으면 스킵
+2. TTL 체크:
+   - ttl이 오늘 이전인 plan → status: active → done 자동 전환
+   - _index.yaml 업데이트
+3. Stale 체크:
+   - created가 14일 이상 전 + status: active → ⚠️ 경고
+   - "Plan {id} 2주 넘음. 아직 유효한지 확인 필요"
+4. 보고: "Plans: N active, N done, N expired"
+```
+
 ### Phase 4: Health Check (건강 체크) — 20초
 
 ```
@@ -84,7 +98,7 @@ Run: Read today's `_bmad-output/update-log/$(date +%Y-%m-%d).md`, append new ent
 
 출력 형식:
 ```
-[KDH-ECC-3H] Dream: OK | Learn: N instincts | Prune: N deleted | Health: OK | Lint: N issues
+[KDH-ECC-3H] Dream: OK | Learn: N instincts | Prune: N deleted | Plans: N active | Health: OK | Lint: N issues
 ```
 
 ## 12시간 확장 (kdh-ecc-12h)
