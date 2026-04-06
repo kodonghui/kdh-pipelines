@@ -204,7 +204,36 @@ If `project-context.yaml` already exists and is < 1 hour old, skip re-scan (use 
 
 ---
 
+## Step 0.5: Read Active Plans
+
+파이프라인 시작 후, Step 0 완료 후, 첫 Phase 진입 전에 실행.
+
+```
+1. _bmad-output/kdh-plans/_index.yaml 읽기
+   - 파일 없으면 → 스킵 (plan 없이 진행 OK)
+
+2. status: active 필터링
+
+3. 현재 작업과 매칭:
+   - pipeline: "dev" 또는 "all"인 것만
+   - scope: 현재 Sprint/Story와 관련된 것만
+     예: sprint 2 실행 중 → scope "sprint-2" 또는 "all" 매칭
+     예: story 2-2 실행 중 → scope "story-2-2" 또는 "sprint-2" 매칭
+
+4. 매칭된 plan 본문 읽기 (Read tool)
+   - plan이 2개 이상이면 → 전부 읽되, 가장 최신 것 우선
+
+5. plan 맥락을 보유하고 실행 시작:
+   - plan은 "맥락 제공자" — SKILL.md의 절차/Phase 순서를 override하지 않음
+   - plan에 구체적 구현 지시가 있으면 → Phase A에서 구현 계획에 반영
+   - plan에 CEO 결정이 있으면 → 해당 결정 따름 (GATE 자동 통과)
+
+★ plan 읽기는 _index.yaml이 없을 때만 스킵. 있으면 active plan 필수 읽기.
+★ plan 내용과 SKILL.md 충돌 시: SKILL.md = 절차, plan = 내용. 영역이 다름.
+```
+
 ---
+
 ## BMAD Agent Roster
 
 ALL agents are spawned with their **real BMAD names** and **full persona files loaded**.
@@ -740,7 +769,9 @@ Output: _qa-e2e/uxui-redesign-review-{date}.md
 34. **UX App Chrome Checklist (v10.2).** Stage 5 완료 전 sally가 반드시 정의: 로그아웃 버튼 위치, 로딩 상태, 에러 표시 위치, 세션 만료 흐름, 빈 상태, 사용자 계정 메뉴. 빠지면 Stage 5 PASS 불가.
 35. **FR-to-UI Traceability Matrix (v10.2).** Stage 7에서 tech-writer가 모든 FR에 대해 PRD→UX→Story→AC 매핑 검증. 빈 셀 = Sprint Planning 진행 불가.
 36. **Phase A UI Existence Check (v10.2).** quinn이 스토리의 모든 UI 참조를 검증: "이 버튼/페이지가 다른 스토리 또는 UX 스펙에 정의되어 있는가?" 없으면 auto-FAIL.
-38. **mock-only Phase D = FAIL (v10.6).** Phase D Layer 2 (integration test, 실제 HTTP 요청) 최소 1개 필수. mock만 있으면 FAIL. compliance YAML에 integration_tests_count 기록.
+38. **mock-only Phase D = FAIL (v10.6).**
+43. **스토리 간 에이전트 재사용 절대 금지 (v11.1).** Story X 완료 → Shutdown ALL → TeamDelete → Story Y에서 TeamCreate + 새 에이전트 소환. SendMessage로 "다음 스토리 해라" 지시 금지 — fresh context 필수. 같은 스토리 내 Phase 전환(A→B→D)은 에이전트 유지 OK.
+44. **FAIL 재리뷰 시 fresh agent 필수 (v11.1).** Phase D FAIL → dev 수정 → 재리뷰 시: 기존 critic Shutdown → 새 critic 소환. 기존 에이전트에 SendMessage "다시 봐라" 금지 — 옛날 결과 반복함. 원인: sonnet 에이전트가 긴 히스토리에서 이전 리뷰와 현재 지시를 혼동. Phase D Layer 2 (integration test, 실제 HTTP 요청) 최소 1개 필수. mock만 있으면 FAIL. compliance YAML에 integration_tests_count 기록.
 40. **Sprint End = /kdh-bug-fix-pipeline 필수 (v11.0).** Sprint 내 모든 스토리 완료 후 /kdh-bug-fix-pipeline 실행. 0 bugs 아니면 다음 Sprint 진입 금지. Playwright 전체 suite + browser-use 전수 탐색 + Codex batch.
 42. **Reference Code Search 필수 (v10.9).** Phase B Step 1d — dev가 코드 짜기 전에 `gh search repos` + `gh search code` + npm 검색 필수. 검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용. 검색 결과(채택/기각 사유) party-log에 "## Reference Code" 섹션 기록. 검색 0건이어도 기록 필수.
 
