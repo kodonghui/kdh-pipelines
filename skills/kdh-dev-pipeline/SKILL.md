@@ -296,7 +296,7 @@ NEW: 4 phases (A→B→D→Codex). Browser verification → bug-fix pipeline at 
 ```
 Step 0: Project Auto-Scan → load project-context.yaml
 Step 1: TeamCreate("{project}-story-{id}")
-Step 2: Spawn base team: dev(Writer), winston, quinn (3 agents, bypassPermissions)
+Step 2: Spawn base team: dev(Writer), winston, quinn, john (4 agents, bypassPermissions)
 Step 3: Execute Phase A → B → D → Codex
   - Between phases: save context-snapshot, team continues (no recreation)
   - Phase D: team rotation (quinn Writer, dev+winston critics)
@@ -307,7 +307,7 @@ Step 5: Shutdown ALL → TeamDelete → update sprint status
 ### Phase A: Create Story
 
 ```
-Team: dev(Writer), winston, quinn = 3
+Team: dev(Writer), winston, quinn, john = 4
 Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
 
 1. dev reads story requirements from epics file
@@ -333,7 +333,7 @@ Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
 ### Phase B: Develop Story
 
 ```
-Team: dev(Writer), winston, quinn = 3
+Team: dev(Writer), winston, quinn, john = 4
 Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 
 1. dev reads story file + DoD checklist
@@ -364,8 +364,9 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 2. dev implements REAL working code (no stubs/mocks/placeholders)
    2b. UI stories: apply active theme from themes.ts, use consistent layout from Subframe reference
 3. Party mode: dev sends [Review Request] with changed files list
-   - winston: architecture compliance, contract compliance, engine boundary
+   - winston: architecture compliance, contract compliance, 전체 코드베이스 패턴 일관성 (타입, API 호출 방식, 미들웨어)
    - quinn: code quality, error handling, test hooks
+   - john: acceptance criteria 충족, 사용자 경험 갭, 제품 수준 품질 (에러 메시지, 상태 유실, UX 흐름)
    - sally: (UI stories only) design matches approved Subframe layout
 4. Fix → verify → PASS
 5. Save: context-snapshots/stories/{story-id}-phase-b.md
@@ -407,7 +408,7 @@ Sprint Zero GATE #17 (theme-select):
 ### Phase D: Test + QA (v10.1 — Phase E 통합)
 
 ```
-Team: quinn(Writer), dev(Critic), winston(Critic) = 3
+Team: quinn(Writer), dev(Critic), winston(Critic), john(Critic) = 4
 Reference: TEA risk-based test strategy + QA acceptance checklist
 
 Phase D = 기존 Phase D (테스트 작성) + Phase E (QA 검증) 통합.
@@ -415,10 +416,10 @@ quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
 
 오케스트레이터 MUST (v11.0):
   1. quinn을 Writer로 Agent 소환
-  2. dev, winston을 Critic으로 Agent 소환 (2명 전부)
-  3. quinn 작업 완료 후 SendMessage [Review Request]를 2명에게 전송
-  4. Critic 2명의 로그 파일 존재 확인 후에만 PASS
-  ★ pre-commit hook이 phase-d-dev.md, phase-d-winston.md 검증
+  2. dev, winston, john을 Critic으로 Agent 소환 (3명 전부)
+  3. quinn 작업 완료 후 SendMessage [Review Request]를 3명에게 전송
+  4. Critic 3명의 로그 파일 존재 확인 후에만 PASS
+  ★ pre-commit hook이 phase-d-winston.md, phase-d-quinn.md 검증
   ★ critic 로그 없으면 커밋 차단됨
 
 1. quinn designs test strategy based on story requirements
@@ -435,9 +436,10 @@ quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
    2d. For stories that CREATE something: at least 1 integration smoke test
 3. quinn runs QA checklist against implemented code
 4. quinn verifies ALL acceptance criteria from story file
-5. Party mode: quinn sends [Review Request] to dev, winston BY NAME
+5. Party mode: quinn sends [Review Request] to dev, winston, john BY NAME
    - dev: implementability, test framework compliance, code completeness
    - winston: architecture test coverage, boundary tests
+   - john: acceptance criteria met? user value delivered? 제품 수준 검증
    Critics write to: party-logs/story-{id}-phase-d-{critic-name}.md (필수)
    Critics include D1-D6 scores with rationale per dimension
 6. Fix → verify → PASS
@@ -641,9 +643,9 @@ If Playwright not configured → skip automated E2E, still run router + console 
 
 ```
 Story Dev completion checklist (C안 — v11.0):
-  [ ] Phase A: create-story + party review PASS (winston+quinn)
-  [ ] Phase B: dev-story (real code, no stubs) + party review PASS (winston+quinn)
-  [ ] Phase D: tests (unit + integration) + QA + party review PASS (winston+quinn)
+  [ ] Phase A: create-story + party review PASS (winston+quinn+john)
+  [ ] Phase B: dev-story (real code, no stubs) + party review PASS (winston+quinn+john)
+  [ ] Phase D: tests (unit + integration) + QA + party review PASS (winston+quinn+john)
   [ ] Phase D Layer 2: at least 1 integration test with real HTTP request (not mock)
   [ ] Codex: GPT-5.4 cross-model review PASS
   [ ] bun test passes
