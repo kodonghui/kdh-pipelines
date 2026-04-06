@@ -17,6 +17,50 @@ description: 'Universal Full Pipeline v10.4 — Stage-Batch Party Mode + Cross-V
 
 ---
 
+## Phase Directory Convention (v10.8)
+
+`_bmad-output/`는 Phase별로 폴더를 분리한다. 나중에 버그 추적 시 해당 Phase 문서를 바로 찾기 위함.
+
+```
+_bmad-output/
+├── phase-1/                        # Phase 1 archive (complete)
+│   ├── planning-artifacts/         # PRD, architecture, epics, etc.
+│   ├── party-logs/                 # Phase 1 party logs
+│   ├── compliance/                 # Phase 1 compliance YAMLs
+│   ├── context-snapshots/          # Phase 1 snapshots
+│   ├── implementation-artifacts/   # Sprint status, story guides
+│   ├── e2e-screenshots/           # Phase 1 E2E screenshots
+│   └── pipeline-audit/            # Phase 1 audit logs
+├── phase-{N}/                      # Active phase (same structure)
+│   ├── planning-artifacts/
+│   ├── party-logs/
+│   ├── compliance/
+│   ├── context-snapshots/
+│   │   ├── planning/
+│   │   └── stories/
+│   ├── implementation-artifacts/
+│   └── e2e-screenshots/
+├── bug-fix/                        # Bug fix pipeline (cross-phase)
+├── critic-rubric.md                # Shared — all phases use same rubric
+├── design-references.md            # Shared design references
+├── pipeline-state.yaml             # Global state (current_phase_number here)
+├── update-log/                     # Daily logs (cross-phase)
+├── daily-briefings/                # Cross-phase
+├── ecc-logs/                       # Cross-phase
+└── evolve-candidates/              # Cross-phase
+```
+
+**경로 규칙:**
+- 이 문서의 모든 `_bmad-output/planning-artifacts/` 등의 경로는 `_bmad-output/phase-{N}/planning-artifacts/`로 읽는다
+- `N` = `pipeline-state.yaml`의 `current_phase_number` 값
+- Phase 완료 시: 해당 폴더 그대로 유지 (archive). 삭제/이동 금지.
+- 새 Phase 시작 시: 빈 폴더 구조 자동 생성 (`mkdir -p`)
+- bug-fix/, update-log/, ecc-logs/, daily-briefings/ 등은 cross-phase → top level 유지
+- critic-rubric.md, design-references.md, v2 참고 문서는 top level (shared)
+- 이전 Phase 문서 참조 가능: `_bmad-output/phase-1/planning-artifacts/prd.md` 등
+
+---
+
 ## Mode: Auto (상태 자동 감지 — kdh-go 흡수)
 
 인자 없이 실행하면 프로젝트 상태를 읽고 자동으로 다음 할 일을 판단합니다.
@@ -975,6 +1019,16 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
    1b. dev reads API contracts from shared/src/contracts/ → import ALL types from contracts (NEVER define inline)
        If needed type missing from contracts: STOP → update contract first → tsc → then continue
 
+   === REFERENCE CODE SEARCH (v10.9 — CEO 지시 2026-04-05) ===
+   1d. dev searches for reference implementations BEFORE writing new code:
+     i.   gh search repos "{story 핵심 기술 키워드}" --sort=stars --limit=5
+     ii.  gh search code "{핵심 패턴/함수명}" --limit=10
+     iii. npm/PyPI에서 관련 라이브러리 확인 (검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용)
+     iv.  참고 코드 발견 시 → party-log에 "## Reference Code" 섹션 기록 (URL + 채택/기각 사유)
+     v.   검색 결과 0건이어도 기록 ("searched: {query}, result: none" — 검색했다는 증거)
+     ★ "먼저 찾아보고, 있으면 검토" — 새로 짜는 건 검색 후 판단
+     ★ 기각 시 사유 필수 (예: "라이선스 비호환", "의존성 과다", "우리 패턴과 불일치")
+
    === UI STORY GATE (v10 — 오케스트레이터 주도, dev는 MCP 접근 불가) ===
    1c. Check: does this story create or modify UI pages? (*.tsx in features/)
        If YES → Subframe Design Gate (오케스트레이터가 직접 실행):
@@ -1079,7 +1133,43 @@ quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
 8. Save: context-snapshots/stories/{story-id}-phase-d.md
 ```
 
-NOTE: Phase E is removed (v10.1). Pipeline order is now: A → B → C → D → F → Codex.
+### Phase E: Browser E2E Verification (v10.6 — 신규 복원)
+
+```
+Pipeline order (v10.6): A → B → C → D → E → F → Codex
+
+Phase E = 오케스트레이터 직접 실행 (에이전트 소환 불필요).
+
+1. Dev 서버 시작 (이미 떠있으면 재사용):
+   - Playwright webServer 설정이 자동 시작
+   - 또는 수동: cd packages/server && bun run src/index.ts &
+
+2. Playwright E2E 실행:
+   cd packages/admin && bunx playwright test e2e/story-{id}.spec.ts
+
+3. 해당 스토리의 AC를 브라우저에서 검증:
+   - 각 AC에 대해 최소 1개 Playwright 테스트
+   - 스크린샷: _bmad-output/e2e-screenshots/story-{id}/
+   - 테마 검증: 현재 활성 테마에서 기본 렌더링 확인
+
+4. 결과 판정:
+   - 전부 PASS → Phase F 진행
+   - 1개라도 FAIL → 스크린샷 + 에러 로그 → Phase B로 돌아가서 코드 수정
+   - Dev 서버 시작 실패 → BLOCK (환경 문제)
+
+5. Dev 서버 종료
+
+★ Phase E 미실행이면 Phase F 진입 금지 (pipeline-guard.sh v5 검증)
+★ E2E 스크린샷 _bmad-output/e2e-screenshots/ 에 저장
+★ Phase E는 critic 리뷰 없음 — PASS/FAIL 자동 판정
+
+E2E 테스트 작성 규칙:
+- 해당 스토리 AC만 (다른 스토리 X)
+- 가입/로그인은 공통 fixture (e2e/auth.setup.ts)
+- 스크린샷: 실패 시 자동 + 테마 검증 시 수동
+- 3초 이내 로딩 안 되면 FAIL
+- flaky 방지: retry 2회, locator.waitFor()
+```
 
 ### Phase F: Code Review
 
@@ -1267,11 +1357,13 @@ If Playwright not configured → skip automated E2E, still run router + console 
 ## Story Dev Completion Checklist
 
 ```
-Story Dev completion checklist (v10.1 — Phase E merged into D):
+Story Dev completion checklist (v10.6 — Phase E restored as E2E):
   [ ] Phase A: create-story + party review PASS
   [ ] Phase B: dev-story (real code, no stubs) + party review PASS
   [ ] Phase C: simplify completed
-  [ ] Phase D: TEA tests + QA acceptance criteria + party review PASS + tests passing
+  [ ] Phase D: TEA tests (Layer 1 mock + Layer 2 integration) + QA + party review PASS
+  [ ] Phase D Layer 2: at least 1 integration test with real HTTP request (not mock)
+  [ ] Phase E: Playwright E2E — all ACs verified in real browser + screenshots saved
   [ ] Phase F: code-review + party review PASS
   [ ] tsc passes (if tsc_enabled)
   [ ] If UI story: full interaction E2E passes
@@ -1371,3 +1463,9 @@ Output: _qa-e2e/uxui-redesign-review-{date}.md
 34. **UX App Chrome Checklist (v10.2).** Stage 5 완료 전 sally가 반드시 정의: 로그아웃 버튼 위치, 로딩 상태, 에러 표시 위치, 세션 만료 흐름, 빈 상태, 사용자 계정 메뉴. 빠지면 Stage 5 PASS 불가.
 35. **FR-to-UI Traceability Matrix (v10.2).** Stage 7에서 tech-writer가 모든 FR에 대해 PRD→UX→Story→AC 매핑 검증. 빈 셀 = Sprint Planning 진행 불가.
 36. **Phase A UI Existence Check (v10.2).** quinn이 스토리의 모든 UI 참조를 검증: "이 버튼/페이지가 다른 스토리 또는 UX 스펙에 정의되어 있는가?" 없으면 auto-FAIL.
+37. **Phase E(E2E) 필수 (v10.6).** Phase D 후, Phase F 전. Playwright로 AC를 실제 브라우저에서 검증. 미실행 시 Phase F 진입 금지. pipeline-guard.sh가 e2e-screenshots/ 존재를 확인.
+38. **mock-only Phase D = FAIL (v10.6).** Phase D Layer 2 (integration test, 실제 HTTP 요청) 최소 1개 필수. mock만 있으면 FAIL. compliance YAML에 integration_tests_count 기록.
+39. **Phase E FAIL → Phase B (v10.6).** 브라우저에서 안 되면 코드 수정 필요. Phase D만 재실행 아니라 Phase B(구현)로 돌아감.
+40. **Sprint End 3단계 검증 (v10.7).** Step 1: Playwright 전체 E2E + 5테마 스크린샷. Step 2: browser-use AI 탐색 (**필수** — 실제 클릭/입력으로 전체 유저 플로우 검증, venv: /home/ubuntu/browser-use-env). Step 3: GATE #19 CEO 확인.
+41. **Phase E browser-use 필수 (v10.7).** Phase E에서 Playwright 코드 테스트 외에 browser-use AI 탐색도 필수. browser-use가 발견한 이슈 = FAIL, Phase B로 돌아감. Playwright만 PASS해도 browser-use FAIL이면 전체 FAIL.
+42. **Reference Code Search 필수 (v10.9).** Phase B Step 1d — dev가 코드 짜기 전에 `gh search repos` + `gh search code` + npm 검색 필수. 검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용. 검색 결과(채택/기각 사유) party-log에 "## Reference Code" 섹션 기록. 검색 0건이어도 기록 필수.
