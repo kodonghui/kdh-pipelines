@@ -640,6 +640,7 @@ timeout: NONE
 - Sprint 완료 후 브라우저 검증 실패
 - kdh-full-auto-pipeline Sprint End GATE에서 CEO가 문제 발견
 - 정기 탐색 (browser-use sweep 스케줄)
+- **Sprint End 자동 연동 (v11.0):** dev pipeline Sprint End Step 3에서 필수 호출. /kdh-bug-fix-pipeline scan으로 시작. 0 bugs = PASS → dev pipeline Sprint End 계속. bugs 있으면 수정 루프 → 0 bugs 될 때까지 다음 Sprint 금지.
 
 ### Exit (언제 끝나는가)
 - browser-use 전수 탐색: 0 bugs found

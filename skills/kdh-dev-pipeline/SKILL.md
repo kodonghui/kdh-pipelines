@@ -280,28 +280,34 @@ PROHIBITION: Never spawn agents as `critic-a`, `critic-b`, `critic-c` or any gen
 ---
 ## Story Dev Pipeline
 
-### Key Change from v8.0
-OLD: 1 Worker calls BMAD Skills sequentially, no party mode.
-NEW: 6 phases, each with Writer + Critics party mode using BMAD checklists.
+### Key Change (C안 — v11.0)
+OLD: 7 phases (A→B→C→D→E→F→Codex), browser verification per story.
+NEW: 4 phases (A→B→D→Codex). Browser verification → bug-fix pipeline at Sprint End.
+
+### Phase 책임 이관표
+| 삭제된 Phase | 원래 역할 | 이관 위치 |
+|-------------|----------|----------|
+| Phase C (simplify) | 코드 간소화 | Phase B 리뷰에서 흡수 (Sprint 1: 기여 0) |
+| Phase E (browser E2E) | Playwright + browser-use | /kdh-bug-fix-pipeline (Sprint End) |
+| Phase F (code review) | 최종 코드 리뷰 | Phase B 리뷰에서 흡수 (Sprint 1: 추가 발견 0건) |
 
 ### Orchestrator Flow
 
 ```
 Step 0: Project Auto-Scan → load project-context.yaml
 Step 1: TeamCreate("{project}-story-{id}")
-Step 2: Spawn base team: dev(Writer), winston, quinn, john (4 agents, bypassPermissions)
-Step 3: Execute Phase A → B → C → D → F (v10.1: Phase E removed, merged into D)
+Step 2: Spawn base team: dev(Writer), winston, quinn (3 agents, bypassPermissions)
+Step 3: Execute Phase A → B → D → Codex
   - Between phases: save context-snapshot, team continues (no recreation)
-  - Phase C (simplify): Orchestrator runs directly, no team needed
-  - Phase D: team rotation (quinn Writer, dev+winston+john critics)
-Step 4: Verify completion checklist → tsc (if enabled) → commit + push
+  - Phase D: team rotation (quinn Writer, dev+winston critics)
+Step 4: bun test + tsc → Verify completion checklist → commit + push
 Step 5: Shutdown ALL → TeamDelete → update sprint status
 ```
 
 ### Phase A: Create Story
 
 ```
-Team: dev(Writer), winston, quinn, john = 4
+Team: dev(Writer), winston, quinn = 3
 Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
 
 1. dev reads story requirements from epics file
@@ -327,7 +333,7 @@ Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
 ### Phase B: Develop Story
 
 ```
-Team: dev(Writer), winston, quinn, john = 4
+Team: dev(Writer), winston, quinn = 3
 Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 
 1. dev reads story file + DoD checklist
@@ -358,9 +364,8 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 2. dev implements REAL working code (no stubs/mocks/placeholders)
    2b. UI stories: apply active theme from themes.ts, use consistent layout from Subframe reference
 3. Party mode: dev sends [Review Request] with changed files list
-   - winston: architecture compliance, engine boundary (agent-loop.ts untouched)
+   - winston: architecture compliance, contract compliance, engine boundary
    - quinn: code quality, error handling, test hooks
-   - john: acceptance criteria satisfaction
    - sally: (UI stories only) design matches approved Subframe layout
 4. Fix → verify → PASS
 5. Save: context-snapshots/stories/{story-id}-phase-b.md
@@ -399,28 +404,21 @@ Sprint Zero GATE #17 (theme-select):
   - CEO가 기본 테마 선택 → defaultTheme 설정
 ```
 
-### Phase C: Simplify
-
-```
-No team needed. Orchestrator runs /simplify directly.
-Timeout: 3 minutes. Skip on fail — code-review catches issues.
-```
-
 ### Phase D: Test + QA (v10.1 — Phase E 통합)
 
 ```
-Team: quinn(Writer), dev(Critic), winston(Critic), john(Critic) = 4
+Team: quinn(Writer), dev(Critic), winston(Critic) = 3
 Reference: TEA risk-based test strategy + QA acceptance checklist
 
 Phase D = 기존 Phase D (테스트 작성) + Phase E (QA 검증) 통합.
 quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
 
-오케스트레이터 MUST (v10.1):
+오케스트레이터 MUST (v11.0):
   1. quinn을 Writer로 Agent 소환
-  2. dev, winston, john을 Critic으로 Agent 소환 (3명 전부)
-  3. quinn 작업 완료 후 SendMessage [Review Request]를 3명에게 전송
-  4. Critic 3명의 로그 파일 존재 확인 후에만 PASS
-  ★ pre-commit hook이 phase-d-dev.md, phase-d-winston.md, phase-d-john.md 검증
+  2. dev, winston을 Critic으로 Agent 소환 (2명 전부)
+  3. quinn 작업 완료 후 SendMessage [Review Request]를 2명에게 전송
+  4. Critic 2명의 로그 파일 존재 확인 후에만 PASS
+  ★ pre-commit hook이 phase-d-dev.md, phase-d-winston.md 검증
   ★ critic 로그 없으면 커밋 차단됨
 
 1. quinn designs test strategy based on story requirements
@@ -437,10 +435,9 @@ quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
    2d. For stories that CREATE something: at least 1 integration smoke test
 3. quinn runs QA checklist against implemented code
 4. quinn verifies ALL acceptance criteria from story file
-5. Party mode: quinn sends [Review Request] to dev, winston, john BY NAME
+5. Party mode: quinn sends [Review Request] to dev, winston BY NAME
    - dev: implementability, test framework compliance, code completeness
    - winston: architecture test coverage, boundary tests
-   - john: acceptance criteria met? user value delivered?
    Critics write to: party-logs/story-{id}-phase-d-{critic-name}.md (필수)
    Critics include D1-D6 scores with rationale per dimension
 6. Fix → verify → PASS
@@ -448,93 +445,64 @@ quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
 8. Save: context-snapshots/stories/{story-id}-phase-d.md
 ```
 
-### Phase E: Browser E2E Verification (v10.6 — 신규 복원)
+### Codex: Cross-Model Verification
 
 ```
-Pipeline order (v10.6): A → B → C → D → E → F → Codex
+Phase D PASS 후 실행. 에이전트 소환 불필요 — 오케스트레이터 직접 실행.
 
-Phase E = 오케스트레이터 직접 실행 (에이전트 소환 불필요).
+1. 스토리 diff 준비:
+   git diff HEAD~1 -- packages/ > /tmp/story-diff.patch
 
-1. Dev 서버 시작 (이미 떠있으면 재사용):
-   - Playwright webServer 설정이 자동 시작
-   - 또는 수동: cd packages/server && bun run src/index.ts &
+2. Codex 실행:
+   bash ~/.claude/scripts/codex-review.sh /tmp/story-diff.patch \
+     "이 코드를 리뷰해라. 버그, 보안 문제, 타입 오류를 찾아라."
 
-2. Playwright E2E 실행:
-   cd packages/admin && bunx playwright test e2e/story-{id}.spec.ts
+3. 판정:
+   - PASS → Phase transitions 진행
+   - FAIL → 이슈 수정 → 재실행 (max 1회)
+   - 실행 불가 (인증/타임아웃) → CEO 보고, 자동 스킵 금지
+   - 맥락상 불필요한 지적 → 사유 기록 후 스킵 OK
 
-3. 해당 스토리의 AC를 브라우저에서 검증:
-   - 각 AC에 대해 최소 1개 Playwright 테스트
-   - 스크린샷: _bmad-output/e2e-screenshots/story-{id}/
-   - 테마 검증: 현재 활성 테마에서 기본 렌더링 확인
-
-4. 결과 판정:
-   - 전부 PASS → Phase F 진행
-   - 1개라도 FAIL → 스크린샷 + 에러 로그 → Phase B로 돌아가서 코드 수정
-   - Dev 서버 시작 실패 → BLOCK (환경 문제)
-
-5. Dev 서버 종료
-
-★ Phase E 미실행이면 Phase F 진입 금지 (pipeline-guard.sh v5 검증)
-★ E2E 스크린샷 _bmad-output/e2e-screenshots/ 에 저장
-★ Phase E는 critic 리뷰 없음 — PASS/FAIL 자동 판정
-
-E2E 테스트 작성 규칙:
-- 해당 스토리 AC만 (다른 스토리 X)
-- 가입/로그인은 공통 fixture (e2e/auth.setup.ts)
-- 스크린샷: 실패 시 자동 + 테마 검증 시 수동
-- 3초 이내 로딩 안 되면 FAIL
-- flaky 방지: retry 2회, locator.waitFor()
-```
-
-### Phase F: Code Review
-
-```
-Team: winston(Writer), quinn(Critic), dev(Critic), john(Critic) = 4
-Reference: _bmad/bmm/workflows/4-implementation/code-review/checklist.md
-
-오케스트레이터 MUST (v10.1):
-  1. winston을 Writer로 Agent 소환
-  2. quinn, dev, john을 Critic으로 Agent 소환 (3명 전부)
-  3. winston 작업 완료 후 SendMessage [Review Request]를 3명에게 전송
-  4. Critic 3명의 로그 파일 존재 확인 후에만 PASS
-  ★ pre-commit hook이 phase-f-quinn.md, phase-f-dev.md, phase-f-john.md 검증
-  ★ critic 로그 없으면 커밋 차단됨
-
-1. winston reads all changed files + code-review checklist
-2. winston performs architecture + security + quality review
-   CONTRACT COMPLIANCE (v9.4): winston verifies all API types imported from contracts, not defined inline. Inline type = FAIL.
-3. Party mode: winston sends [Review Request] to quinn, dev, john BY NAME
-   - quinn: security patterns, test coverage, edge cases
-   - dev: code conventions, performance, dependencies
-   - john: product alignment, scope compliance
-   Critics write to: party-logs/story-{id}-phase-f-{critic-name}.md (필수)
-   Critics include D1-D6 scores with rationale per dimension
-4. Fix → verify → PASS
-5. Save: context-snapshots/stories/{story-id}-phase-f.md
+★ Codex FAIL = 자동 진행 금지 (계속 모드에서도)
+★ Codex = GPT-5.4 (다른 모델로 교차 검증)
 ```
 
 ### Phase transitions
 
-After Phase F passes:
-1. Run ALL tsc commands from project-context.yaml (all must pass — cross-package)
-1b. Integration check: for each new/modified API endpoint, verify frontend imports contract type (not inline)
-2. If UI files changed → run UI Verification (see section below)
+After Codex PASS:
+1. bun test (해당 패키지 — run ALL relevant test suites)
+2. Run ALL tsc commands from project-context.yaml (all must pass — cross-package)
+2b. Integration check: for each new/modified API endpoint, verify frontend imports contract type (not inline)
 3. Verify Story Dev Completion Checklist (all items [x])
 4. git commit + push
 5. Shutdown team → TeamDelete
 
-### Sprint End GATE #19: Visual Verification (v9.5)
+### Sprint End (모든 스토리 완료 후)
 
 ```
-After ALL stories in a sprint are complete:
-1. Start dev servers (backend + frontend)
-2. Send [GATE visual-verify] to Orchestrator
-3. Orchestrator tells CEO: "Sprint N 완료! 브라우저에서 확인해주세요"
-   - CEO's local: git pull → bun install → bun run dev
-   - Or: provide URL if VPS port is open
-4. CEO checks in browser → approves or requests changes
-5. If changes needed → create fix stories, repeat
-6. If approved → proceed to next sprint
+Step 1: 자동 검증
+  - bun test 전체 (모든 패키지)
+  - tsc 전 패키지 (cross-package)
+
+Step 2: Codex 일괄 리뷰
+  - git diff로 Sprint 전체 변경사항 리뷰
+  - FAIL → 수정 후 재실행
+
+Step 3: /kdh-bug-fix-pipeline 필수 실행 ★
+  - Phase 1 SCAN: Playwright 전체 suite + browser-use AI 전수 탐색
+  - Phase 2 FIX: 발견된 버그 수정 루프
+  - Phase 3 SWEEP: 전체 회귀 + Codex
+  - 0 bugs = PASS → Step 4로
+  - bugs 남으면 수정 완료까지 다음 Sprint 진입 금지
+
+Step 4: 5개 테마 스크린샷
+  - browser-use 또는 Playwright로 주요 페이지 × 5테마 스크린샷
+  - 저장: _bmad-output/phase-{N}/e2e-screenshots/sprint-end/
+
+Step 5: CEO GATE #19 (브라우저 확인)
+  - "Sprint N 완료! 브라우저에서 확인해주세요."
+  - CEO "OK" → 다음 Sprint
+  - CEO "여기 이상해" → /kdh-bug-fix-pipeline 재실행
 ```
 
 ### Developer Writer Prompt Template (Phase A/B)
@@ -672,25 +640,18 @@ If Playwright not configured → skip automated E2E, still run router + console 
 ## Story Dev Completion Checklist
 
 ```
-Story Dev completion checklist (v10.6 — Phase E restored as E2E):
-  [ ] Phase A: create-story + party review PASS
-  [ ] Phase B: dev-story (real code, no stubs) + party review PASS
-  [ ] Phase C: simplify completed
-  [ ] Phase D: TEA tests (Layer 1 mock + Layer 2 integration) + QA + party review PASS
+Story Dev completion checklist (C안 — v11.0):
+  [ ] Phase A: create-story + party review PASS (winston+quinn)
+  [ ] Phase B: dev-story (real code, no stubs) + party review PASS (winston+quinn)
+  [ ] Phase D: tests (unit + integration) + QA + party review PASS (winston+quinn)
   [ ] Phase D Layer 2: at least 1 integration test with real HTTP request (not mock)
-  [ ] Phase E: Playwright E2E — all ACs verified in real browser + screenshots saved
-  [ ] Phase F: code-review + party review PASS
-  [ ] tsc passes (if tsc_enabled)
-  [ ] If UI story: full interaction E2E passes
-  [ ] If UI story: theme consistency verified
-  [ ] If UI story: no unexpected console errors
-  [ ] All router imports resolve
-  [ ] Real functionality (no stub/mock/placeholder)
-  [ ] Integration: cross-package imports all resolve
+  [ ] Codex: GPT-5.4 cross-model review PASS
+  [ ] bun test passes
+  [ ] tsc passes (cross-package, not just changed package)
   [ ] Contract compliance: all API types imported from shared contracts (no inline overrides)
-  [ ] If wiring story: upstream component → downstream consumer connected end-to-end
-  [ ] If story creates API endpoint: frontend hook/query uses contract types
-  [ ] Cross-package tsc: ALL tsc commands pass (not just changed package)
+  [ ] Real functionality (no stub/mock/placeholder)
+  [ ] If UI story: Subframe MCP로 디자인 + theme consistency
+  [ ] If wiring story: upstream → downstream connected end-to-end
 ```
 
 ALL items must be [x] before story is accepted.
@@ -747,7 +708,7 @@ Output: _qa-e2e/uxui-redesign-review-{date}.md
 3. **BMAD steps auto-discovered.** glob steps/ directories, filter continue files, sort by filename. Never hardcode step lists.
 4. **Independent steps run in parallel.** PRD Validate and Readiness use parallel groups.
 5. **Writer NEVER calls Skill tool.** Read step/checklist files manually with Read tool.
-6. **Planning = one stage at a time (v10.4).** Stage Worker writes ALL steps in a stage → batch review → THEN next stage. Sprint Dev = one step at a time (기존 유지).
+6. **Planning = one stage at a time (v10.4).** Stage Worker writes ALL steps in a stage → batch review → THEN next stage. Sprint Dev = Phase A→B→D→Codex (기존 유지).
 7. **All reads FROM FILE.** Use Read tool, never message memory.
 8. **Output quality: specific and concrete.** File paths, hex colors, exact values. "Vague" = instant FAIL.
 9. **Orchestrator embeds first task in spawn.** Never spawn with just "wait".
@@ -766,23 +727,19 @@ Output: _qa-e2e/uxui-redesign-review-{date}.md
 22. **Contract types are single source of truth.** API types defined in Contract Stage (6.5). Story dev imports from contracts, never defines inline. Type changes require contract update FIRST, tsc pass, then implementation.
 23. **Wiring stories mandatory for cross-package connections.** If a story creates a component consumed by another package, a wiring story must exist. Skip only for same-directory connections.
 24. **Integration gate before story completion.** ALL tsc commands run (cross-package), not just the changed package. Import chains verified. Contract compliance checked.
-25. **Codex second opinion mandatory (Phase B.5).** After 3-critic party review PASS, run Codex (GPT-5.4) in tmux. 1 run + max 1 re-run. Context-irrelevant findings may be self-skipped (record reason). Codex FAIL blocks commit. See kdh-sprint Phase B.5 for details.
+25. **Codex second opinion mandatory (Phase B.5).** After 2-critic party review PASS (winston+quinn), run Codex (GPT-5.4) in tmux. 1 run + max 1 re-run. Context-irrelevant findings may be self-skipped (record reason). Codex FAIL blocks commit. See kdh-sprint Phase B.5 for details.
 26. **Sprint mode (kdh-sprint absorbed).** `sprint N` argument runs full sprint orchestration: TeamCreate → story loop (build→review→Codex→commit) → batch integration → sprint integration → E2E → GATE. kdh-sprint skill is deprecated; its logic lives here.
 27. **Context judgment autonomy.** Orchestrator makes obvious technical decisions autonomously (REST vs RPC, DB structure, code patterns). Only ask CEO about feature meaning/intent/direction. Codex findings clearly irrelevant to project context may be self-skipped with recorded reason.
 28. **Batch integration review.** Every 3 completed stories (or last batch in sprint), run kdh-integration batch with Codex. Cross-dependency, middleware consistency, env var sync. PASS until Codex PASS.
 29. **Agent prompts include kdh-build rules verbatim.** When spawning dev agents, include kdh-build SKILL.md rules as full text in prompt, never summarized. Missing rules = CEO deletes code.
 30. **pipeline-state.yaml은 항상 멀티라인 (v10.1).** 인라인 YAML `{ key: value }` 금지. pre-commit hook이 yq 우선 + sed 폴백으로 파싱하지만, 멀티라인이 가장 안전. 예: `phase_d:\n  status: pass\n  tests: 87` (O), `phase_d: { status: pass, tests: 87 }` (X).
-31. **Phase D/F critic 로그 필수 (v10.1).** Phase D: quinn(Writer) + dev/winston/john(Critics) 4개 로그. Phase F: winston(Writer) + quinn/dev/john(Critics) 4개 로그. pre-commit hook이 파일 존재 검증. critic 로그 없으면 커밋 차단.
-32. **Cross-talk 고정 쌍 (v10.1).** Story Dev 3인 critic: winston↔quinn, quinn↔john, john↔winston. 각 critic 로그에 `## Cross-talk` 섹션 + 최소 3줄 필수. pre-commit hook이 WARNING 발생.
+31. **Phase D critic 로그 필수 (v11.0).** Phase D: quinn(Writer) + dev/winston(Critics) 3개 로그. pre-commit hook이 파일 존재 검증. critic 로그 없으면 커밋 차단.
 33. **Planning DA (v10.2).** Stage 6 완료 후 Stage 6.1에서 quinn이 모든 FR의 사용자 여정을 추적. FR→UI요소→Story→AC 각 단계에서 빈 셀 = BLOCK. 최소 3개 갭 강제 발견.
 34. **UX App Chrome Checklist (v10.2).** Stage 5 완료 전 sally가 반드시 정의: 로그아웃 버튼 위치, 로딩 상태, 에러 표시 위치, 세션 만료 흐름, 빈 상태, 사용자 계정 메뉴. 빠지면 Stage 5 PASS 불가.
 35. **FR-to-UI Traceability Matrix (v10.2).** Stage 7에서 tech-writer가 모든 FR에 대해 PRD→UX→Story→AC 매핑 검증. 빈 셀 = Sprint Planning 진행 불가.
 36. **Phase A UI Existence Check (v10.2).** quinn이 스토리의 모든 UI 참조를 검증: "이 버튼/페이지가 다른 스토리 또는 UX 스펙에 정의되어 있는가?" 없으면 auto-FAIL.
-37. **Phase E(E2E) 필수 (v10.6).** Phase D 후, Phase F 전. Playwright로 AC를 실제 브라우저에서 검증. 미실행 시 Phase F 진입 금지. pipeline-guard.sh가 e2e-screenshots/ 존재를 확인.
 38. **mock-only Phase D = FAIL (v10.6).** Phase D Layer 2 (integration test, 실제 HTTP 요청) 최소 1개 필수. mock만 있으면 FAIL. compliance YAML에 integration_tests_count 기록.
-39. **Phase E FAIL → Phase B (v10.6).** 브라우저에서 안 되면 코드 수정 필요. Phase D만 재실행 아니라 Phase B(구현)로 돌아감.
-40. **Sprint End 3단계 검증 (v10.7).** Step 1: Playwright 전체 E2E + 5테마 스크린샷. Step 2: browser-use AI 탐색 (**필수** — 실제 클릭/입력으로 전체 유저 플로우 검증, venv: /home/ubuntu/browser-use-env). Step 3: GATE #19 CEO 확인.
-41. **Phase E browser-use 필수 (v10.7).** Phase E에서 Playwright 코드 테스트 외에 browser-use AI 탐색도 필수. browser-use가 발견한 이슈 = FAIL, Phase B로 돌아감. Playwright만 PASS해도 browser-use FAIL이면 전체 FAIL.
+40. **Sprint End = /kdh-bug-fix-pipeline 필수 (v11.0).** Sprint 내 모든 스토리 완료 후 /kdh-bug-fix-pipeline 실행. 0 bugs 아니면 다음 Sprint 진입 금지. Playwright 전체 suite + browser-use 전수 탐색 + Codex batch.
 42. **Reference Code Search 필수 (v10.9).** Phase B Step 1d — dev가 코드 짜기 전에 `gh search repos` + `gh search code` + npm 검색 필수. 검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용. 검색 결과(채택/기각 사유) party-log에 "## Reference Code" 섹션 기록. 검색 0건이어도 기록 필수.
 
 ---
