@@ -77,7 +77,7 @@ kdh-pipelines/
 │   ├── kdh-playwright-e2e-full-auto-24-7-tmux/
 │   ├── save-session/              # Session persistence
 │   ├── resume-session/
-│   ├── discuss-mode/
+│   ├── kdh-discuss/               # CEO discussion partner v2
 │   ├── plan/ verify/ checkpoint/
 │   ├── learn/ learn-eval/ evolve/
 │   ├── instinct-status/ instinct-export/ instinct-import/
