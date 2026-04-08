@@ -35,7 +35,10 @@ description: "실행 계획 생성기 v1.2 — research+analyze 결과를 파일
 ### Step 1: Input Validation (입력 신뢰도 평가)
 
 ```
-1. /kdh-research 보고서 검색 (최신 _bmad-output/ 또는 _research/)
+1. /kdh-research 보고서 검색 (최신 _bmad-output/ 또는 _research/):
+   - "Analyze-Ready Summary" 섹션이 있으면 우선 읽기
+   - Summary가 없으면 research 본문 전체를 읽기
+   - Summary만으로 태스크 분해/롤백 근거가 부족하면 research 본문 관련 섹션 추가 열람
 2. /kdh-analyze 분석 결과 검색
 3. _bmad-output/kdh-plans/_index.yaml 읽기:
    - status: active이고 scope가 현재 작업과 관련된 plan 확인
@@ -45,7 +48,7 @@ description: "실행 계획 생성기 v1.2 — research+analyze 결과를 파일
    - 날짜: 24시간 이내 → ✅ | 24시간+ → ⚠️ "오래된 분석"
    - 일관성: research+analyze 결론 일치 → ✅ | 충돌 → 🚩
    - 범위: 현재 작업과 관련 → ✅ | 다른 주제 → 🚩
-4. 둘 다 없으면: "⚠️ research/analyze 없이 plan을 만들면 근거가 약합니다."
+5. 둘 다 없으면: "⚠️ research/analyze 없이 plan을 만들면 근거가 약합니다."
    → CEO에게 보고, 진행 여부 확인
 ```
 

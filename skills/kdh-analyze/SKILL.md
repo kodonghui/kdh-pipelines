@@ -179,7 +179,7 @@ Stage 5(자기 공격) + Stage 6(Codex) 결과가 반영된 최종 실행안:
 - [ ] 모든 추천에 confidence level이 있는가?
 - [ ] LOW confidence 추천이 최소 1개 존재하는가? (없으면 편향 의심)
 - [ ] Self-Attack 섹션이 비어있지 않은가?
-- [ ] [Ultrathink] Codex 리뷰 실행했는가?
+- [ ] Codex 리뷰 실행했는가? ← 모든 복잡도에서 필수
 
 ## 4명령어 워크플로우
 
