@@ -378,6 +378,11 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
      v.   검색 결과 0건이어도 기록 ("searched: {query}, result: none" — 검색했다는 증거)
      ★ "먼저 찾아보고, 있으면 검토" — 새로 짜는 건 검색 후 판단
      ★ 기각 시 사유 필수 (예: "라이선스 비호환", "의존성 과다", "우리 패턴과 불일치")
+     Source routing (ref: kdh-research v3):
+     - Library/framework topics → Context7 MCP first, WebSearch second
+     - Code implementation patterns → GitHub search first (`gh search repos`)
+     - General best practices → WebSearch first
+     - Each source evaluated with 3-question credibility (type, recency, evidence)
 
    === UI STORY GATE (v10 — 오케스트레이터 주도, dev는 MCP 접근 불가) ===
    1c. Check: does this story create or modify UI pages? (*.tsx in features/)
@@ -683,6 +688,7 @@ Story Dev completion checklist (C안 — v11.0):
   [ ] Real functionality (no stub/mock/placeholder)
   [ ] If UI story: Subframe MCP로 디자인 + theme consistency
   [ ] If wiring story: upstream → downstream connected end-to-end
+  [ ] Compliance YAML trajectory: fixes_rounds, critic_agreement_rate, da_skipped/da_skip_reason, bias_flag 기록됨
 ```
 
 ALL items must be [x] before story is accepted.
@@ -1121,6 +1127,8 @@ sprint-status.yaml 업데이트:
 3. false positive에 과민 반응 안 함 — HIGH만 테스트 재실행
 4. 순환 의존성 무한 루프 안 됨 — 최대 1회 재실행, 2회 FAIL → GATE
 5. 전체 파일 다 읽으려 안 함 — 교차점만 분석
+6. DA(Phase D) 미실행 시 compliance YAML에 `da_skipped: true` + `da_skip_reason` 필수. Story completion checklist에서 검증. 없으면 REJECT. (ref: planning-pipeline Anti-Pattern #16)
+7. Self-enhancement bias 플래그 — fixes 후 직전 라운드 대비 3명 critics 점수가 모두 같은 방향으로 ≥1.0 상승 시, 오케스트레이터가 bias 의심 플래그. compliance YAML에 `bias_flag: true/false` 기록. bias_flag=true 시 독립 재채점 경고. (ref: planning-pipeline Anti-Pattern #8, PoLL study)
 ```
 
 ---
