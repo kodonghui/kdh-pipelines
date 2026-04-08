@@ -51,6 +51,18 @@ If an argument is provided:
 
 Read the complete file. Do not summarize yet.
 
+### Step 2.5: Cross-verify with live state
+
+세션 파일을 읽은 후, 반드시 다음을 교차 검증한다:
+
+1. **pipeline-state.yaml 읽기** — 현재 Sprint, 완료/미완료 스토리 확인
+2. **epics-and-stories.md에서 현재 Sprint 스토리 목록 확인** — 세션 파일에 누락된 스토리가 있는지 대조
+3. **세션 파일에 없는 스토리가 발견되면** → ⚠️ 표시하고 보고에 포함
+4. **_index.yaml 읽기** — status: active인 plan 목록 확인
+
+이 단계는 세션 파일의 정보가 오래되었거나 불완전한 경우를 방지한다.
+세션 파일과 live state가 충돌하면, live state를 신뢰한다.
+
 ### Step 3: Confirm understanding
 
 Respond with a structured briefing in this exact format:
@@ -67,13 +79,27 @@ WHAT WE'RE BUILDING:
 CURRENT STATE:
 ✅ Working: [count] items confirmed
 🔄 In Progress: [list files that are in progress]
-🗒️ Not Started: [list planned but untouched]
+🗒️ Not Started (Sprint {N} 잔여):
+  - Story X-Y: [제목]
+  - Story X-Z: [제목]
+  [축약 금지. 전부 나열. pipeline-state.yaml + epics-and-stories.md 교차 확인 결과.]
+  [세션 파일에 없었으나 live state에서 발견된 스토리는 ⚠️ 표시]
+
+EXECUTION ORDER (CEO 결정 기준):
+  1. [다음 할 것] ← 여기부터
+  2. [그 다음]
+  3. ...
+  [세션 파일의 "Exact Next Step" + "Decisions Made" + "Sprint & Pipeline Snapshot"의
+   실행 순서를 합쳐서 표시. CEO가 순서를 바꾼 것이 있으면 명시.]
 
 WHAT NOT TO RETRY:
 [list every failed approach with its reason — this is critical]
 
 OPEN QUESTIONS / BLOCKERS:
 [list any blockers or unanswered questions]
+
+ACTIVE PLANS:
+[_index.yaml에서 status: active인 plan 목록. 없으면 "없음"]
 
 NEXT STEP:
 [exact next step if defined in the file]

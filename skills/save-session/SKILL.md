@@ -77,12 +77,20 @@ Categories: Features, Bug Fixes, Infrastructure, Planning, Pipeline, Memory, Dis
 
 This mirrors what `/kdh-ecc-3h` Phase 6 does, but runs at session save time so no work is lost between maintenance cycles.
 
-### Step 5: Show the file to the user
+### Step 5: Show the file + Sprint Summary to the user
 
-After writing, display the full contents and ask:
+After writing, display the full contents AND a sprint summary footer:
 
 ```
 Session saved to [actual resolved path to the session file]
+
+━━━ Sprint 잔여 현황 ━━━
+Sprint {N}: {완료}/{전체} 완료. 남은 것: {Story ID: 제목} 전부 나열 (축약 금지)
+
+━━━ 다음 세션 추천 시작점 ━━━
+1. {다음 할 스토리/작업} (이유 한 줄)
+2. {그 다음}
+3. ...
 
 Does this look accurate? Anything to correct or add before we close?
 ```
@@ -165,12 +173,46 @@ If no files were touched: "No files modified this session."
 
 ---
 
+## Sprint & Pipeline Snapshot
+
+[pipeline-state.yaml + epics-and-stories.md에서 자동 추출. 수작업 금지.
+이 섹션의 목적: 다음 세션이 "남은 스토리가 뭔지" 즉시 파악하는 것.
+"나머지 N개" 같은 축약 절대 금지. 스토리 ID + 제목 전부 나열.]
+
+현재 Sprint: Sprint {N}
+Sprint 전체 스토리 ({완료}/{전체}):
+  ✅ Story X-1: [제목]
+  ✅ Story X-2: [제목]
+  🗒️ Story X-3: [제목]
+  🗒️ Story X-4: [제목]
+  ... [전부 나열. 하나도 빠뜨리지 않는다.]
+
+실행 순서 (CEO 결정 반영):
+  1. Story X-1 ✅
+  2. Story X-2 ✅
+  3. Story X-3 ← 다음
+  4. [특별 삽입 작업 있으면 여기에: 예) "Agent SDK Migration (CEO 결정: X-3 다음, X-4 전에)"]
+  5. Story X-4
+  ... [CEO가 순서를 바꿨으면 그 이유도 기재]
+
+파이프라인 상태:
+- hook version: {v4.x}
+- 강제 사항: [party mode, codex 등 현재 적용 중인 것]
+- 활성 plan: [_index.yaml에서 status: active 목록. 없으면 "없음"]
+
+다음 Sprint 미리보기 (해당 시):
+- Sprint {N+1}: [스토리 목록 간략히]
+
+---
+
 ## Decisions Made
 
 [Architecture choices, tradeoffs accepted, approaches chosen and why.
-These prevent the next session from relitigating settled decisions.]
+These prevent the next session from relitigating settled decisions.
+★ 순서가 있는 결정은 반드시 전후 관계를 포함한다.
+"A를 B 다음에, C 전에 한다" 같은 순서 정보가 핵심.]
 
-- **[decision]** — reason: [why this was chosen over alternatives]
+- **[decision]** — reason: [why] | order: [X 다음, Y 전에] (순서 관련 시)
 
 If no significant decisions: "No major decisions made this session."
 
@@ -185,8 +227,9 @@ If no significant decisions: "No major decisions made this session."
 - **프로젝트 전체 맥락:** [어떤 프로젝트의 어느 단계인지]
 - **이 세션의 맥락:** [어떤 작업을 하다가 어떤 문제가 발생했고, 어떤 결정을 했는지]
 - **파이프라인/프로세스 맥락:** [어떤 파이프라인을 돌리고 있는지, 어떤 버전인지, 어떤 규칙이 적용 중인지]
-- **CEO 지시사항:** [이번 세션에서 CEO가 내린 결정이나 피드백]
+- **CEO 지시사항:** [이번 세션에서 CEO가 내린 결정이나 피드백. 순서 변경·우선순위 지정 포함.]
 - **감정/분위기 맥락:** [CEO가 화났는지, 급한지, 신중한지 — 다음 세션 톤 설정에 중요]
+- **잔여 작업 전체 목록:** [Sprint 내 아직 안 한 스토리 전부. 축약 금지. Sprint & Pipeline Snapshot과 일관되게.]
 
 If this is a fresh project with no prior context: "First session — no prior context."
 
