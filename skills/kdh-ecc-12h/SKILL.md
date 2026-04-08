@@ -1,75 +1,150 @@
 ---
 name: kdh-ecc-12h
-description: "12시간 학습+진화 — learn-eval + evolve + skill-health + context-budget. instinct를 스킬로 진화시키는 핵심 루틴."
+description: "12시간 학습+진화 v2 — 6 Phase 파이프라인 (Learn→PlanRetro→Evolve→Prune→Health→Report). 입출력 계약 + SKIP 로깅."
 tags: [learning, evolution, maintenance]
 ---
 
-# KDH ECC 12시간 학습+진화
+# KDH ECC 12시간 학습+진화 v2
 
-12시간마다 실행. ECC의 핵심: instinct → 스킬 자동 진화.
+12시간마다 실행하는 ECC 핵심 루틴. instinct → 스킬 자동 진화.
+단순 명령어 나열이 아닌 **오케스트레이터** — Phase 간 데이터 전달 + 조건 분기.
 
-비유: 일기를 쓰고(learn), 반복되는 패턴을 정리해서 매뉴얼로 만들고(evolve), 기존 매뉴얼이 잘 쓰이는지 체크(health).
+> v2 변경 (2026-04-08): Phase 1~6 재넘버링, Prune을 Evolve 후로 이동, 입출력 계약 명시, SKIP 로깅.
 
-## 실행 흐름 (총 ~5분)
+## 실행 흐름 (6 Phase)
+
+```
+Phase 1: Learn-Eval ─── instinct 파일들 ───→ Phase 2: Plan Retro (조건부)
+                                                   │
+                                              추가 instinct
+                                                   ↓
+Phase 3: Evolve ←── Phase 1+2의 instinct ──── skill/cmd/agent 후보
+                                                   ↓
+Phase 4: Prune ←── evolved 결과 참조 ──── 정리된 instinct
+                                                   ↓
+Phase 5: Health ─── 스킬 목록 + 비용 ──── 건강 대시보드
+                                                   ↓
+Phase 6: Report ←── Phase 1~5 결과 ──── 1줄 + 상세 + SKIP 비율
+```
 
 ### Phase 1: Learn-Eval (패턴 추출 + 평가)
 
-1. 최근 세션 기록 스캔
-2. 교정사항(유저가 고친 것), 결정사항, 반복 패턴 추출
-3. instinct로 저장 (confidence 0.3~0.9)
-4. 품질 자가평가: 진짜 유용한 패턴인지 판단
-5. Global vs Project 스코프 결정
-
-### Phase 1.5: Plan Retrospective (계획 회고)
-
-1. _bmad-output/kdh-plans/_index.yaml 읽기
-2. status: done인 plan 분석:
-   - plan의 예상 시간 vs 실제 소요 시간 (git log으로 추적)
-   - plan의 Risk 항목 중 실제 발생한 것
-   - plan에서 빠졌던 태스크
-3. 패턴 추출 → instinct 후보:
-   - "Phase D 보충은 예상보다 빨리 끝남" (confidence 계산)
-   - "PoC 스토리는 plan 없이 진행하면 나중에 보충 필요"
-4. done plan이 30일 이상 → status: archived 자동 전환
-
-### Phase 1.7: Prune (3h에서 이관)
-
-1. 30일 넘은 미승격 instinct 삭제
-2. 빈 메모리 파일 삭제
-3. 오래된 세션 파일 정리 (최근 10개만 유지)
-
-Run: `/prune` logic
-
-### Phase 2: Evolve (진화)
-
-1. instinct-status로 현재 목록 확인
-2. confidence 0.7+ instinct 클러스터링
-3. 관련 instinct 묶어서 → 스킬/커맨드/에이전트 후보 생성
-4. 생성된 후보 리뷰 → 채택 or 보류
-
-### Phase 3: Skill Health (건강 체크)
-
-1. 모든 스킬 성공률 트렌드 분석
-2. 하락하는 스킬 경고
-3. 미사용 스킬 식별
-4. sparkline 대시보드 출력
-
-### Phase 3.5: Health Check (3h에서 이관)
-
-1. `~/.claude/metrics/costs.jsonl` 존재 확인
-   - 없으면 → SKIP, 로그에 "Health: SKIP (no metrics file)" 기록
-   - 있으면 → 세션 비용 누계 요약
-2. skill-health: 하락하는 스킬 있으면 경고
-3. .last-12h-run 타임스탬프 업데이트
-
-### Phase 4: Context Budget (컨텍스트 분석)
-
-1. 에이전트/스킬/MCP/규칙별 토큰 소비 분석
-2. 불필요하게 큰 컴포넌트 식별
-3. 최적화 제안
-
-## Report
+입력: 최근 세션 기록
+출력: instinct 파일들 (confidence 0.3~0.9)
+SKIP: 새 세션 없으면 → "Phase 1: SKIP (no new sessions since last run)"
 
 ```
-[KDH-ECC-12H] Learn: N instincts | PlanRetro: N analyzed | Evolve: N candidates | Health: N/N OK | Budget: Nk tokens
+1. 최근 세션 기록 스캔
+2. 교정사항, 결정사항, 반복 패턴 추출
+3. instinct 파일 저장 (YAML: id, trigger, confidence, domain, scope)
+4. 품질 자가평가: 진짜 유용한 패턴인지 판단
+5. Global vs Project 스코프 결정
+```
+
+Run: `/learn-eval`
+
+### Phase 2: Plan Retrospective (계획 회고) — 조건부
+
+입력: _index.yaml의 status:done plans + git log
+출력: plan 관련 instinct 추가
+SKIP: done plan 3개 미만 → "Phase 2: SKIP (done plans: N, threshold: 3)"
+
+```
+1. _bmad-output/kdh-plans/_index.yaml 읽기
+2. status: done plan 분석 (최근 30일):
+   - 예상 시간 vs 실제 소요 (git log 대조)
+   - Risk 중 실제 발생한 것
+   - plan에서 빠졌던 태스크
+3. 패턴 → instinct 후보 저장
+4. done plan 30일+ → status: archived 전환
+```
+
+### Phase 3: Evolve (진화)
+
+입력: Phase 1+2의 instinct + 기존 instinct 전체
+출력: skill/command/agent 후보 (staging)
+SKIP: instinct 총 3개 미만 → "Phase 3: SKIP (instinct count: N, min: 3)"
+
+```
+1. instinct-status로 현재 목록 확인
+2. confidence 0.7+ instinct 클러스터링 (difflib 유사도)
+3. 3+ 관련 instinct → skill/command/agent 후보 생성
+4. ~/.claude/homunculus/evolved/ 에 staging
+5. 생성된 후보 리뷰 → 채택 or 보류
+```
+
+Run: `/evolve`
+
+### Phase 4: Prune (정리) — Evolve 후!
+
+입력: 전체 instinct + Phase 3 evolved 결과
+출력: 정리된 instinct 목록
+SKIP: instinct 없으면 → "Phase 4: SKIP (no instincts)"
+
+```
+1. 30일 넘은 미승격 instinct 삭제 (evolved된 것은 보존)
+2. 빈 메모리 파일 삭제
+3. 오래된 세션 파일 정리 (최근 10개 유지)
+```
+
+Run: `/prune`
+순서 근거: Prune을 Evolve 전에 하면 아직 클러스터링 안 된 후보가 삭제될 위험.
+
+### Phase 5: Health (건강 체크)
+
+입력: 스킬 목록 + 비용 데이터 (있으면)
+출력: 건강 대시보드
+SKIP: 참조 파일 부재 → "Phase 5: SKIP (missing: [파일 경로])"
+
+```
+1. ~/.claude/metrics/costs.jsonl 확인
+   - 없으면 → SKIP (파일 경로 로깅)
+   - 있으면 → 세션 비용 누계 요약
+2. /skill-health → 전체 스킬 성공률 트렌드
+3. /context-budget → 에이전트/스킬/MCP별 토큰 소비
+4. .last-12h-run 타임스탬프 업데이트
+```
+
+### Phase 6: Report (보고)
+
+입력: Phase 1~5 결과
+출력: 1줄 요약 + Phase별 상세
+SKIP: 없음 (항상 실행)
+
+1줄 요약:
+```
+[ECC-12H] Learn:N instincts|SKIP Retro:N plans|SKIP Evolve:N candidates|SKIP Prune:N deleted|SKIP Health:OK|SKIP
+```
+
+상세:
+```
+Phase별 결과:
+| Phase | 상태 | 결과 | SKIP 사유 |
+|-------|------|------|----------|
+
+SKIP 비율: N/6 (80%+ = 경고)
+실행 시간: ~Nm
+```
+
+SKIP 비율 경고:
+- 5/6 이상 SKIP → "WARNING: 대부분 Phase가 SKIP. 세션 활동 또는 참조 파일 점검 필요."
+
+## 3h v2와의 역할 분담
+
+| 역할 | 3h (경량 순찰) | 12h (중량 진화) |
+|------|--------------|---------------|
+| 메모리 | Dream (정리) | Learn-Eval (추출) |
+| Plan | Audit (TTL/Stale) | Retrospective (예상vs실제) |
+| 코드 | Lint (tsc/console) | - |
+| 진화 | - | Evolve + Prune |
+| 건강 | - | Health + Context Budget |
+| 로그 | Update Log | - |
+| 감시 | 12h 실행 여부 감시 | - |
+
+3h가 .last-12h-run을 감시: 15h 미실행=경고, 24h=치명.
+
+## CronCreate
+
+```
+CronCreate(cron: "37 */12 * * *", prompt: "/kdh-ecc-12h")
 ```
