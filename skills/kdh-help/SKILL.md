@@ -74,6 +74,33 @@ description: "뭐해야하지? v2 — 프로젝트 상태 읽고 다음 할 일 
    - plan 제목 + id만 (본문은 안 읽음)
 ```
 
+### 1-3.5. 4cmd 아티팩트 감지
+```
+1. _bmad-output/kdh-plans/ 에서 최근 24시간 아티팩트 확인 (mtime 기준):
+   - *-research-*.md → "research 완료"
+   - *-analyze-*.md → "analyze 완료"
+     - "CEO 선택: 대기중" 포함 → "CEO 선택 대기"
+     - "CEO 선택: [A-Z]" 포함 → "CEO 선택 완료"
+2. 판단:
+   - research만 있으면 → "→ /kdh-analyze 추천"
+   - analyze(CEO 선택 대기) → "→ 선택지 확인 필요"
+   - analyze(CEO 선택 완료) → "→ /kdh-plan 추천"
+3. 24시간 이내 아티팩트 없으면 → SKIP
+```
+
+### 1-3.6. ECC 상태 감지
+```
+1. .last-3h-run 타임스탬프 읽기
+   - 없으면 → "ECC-3h: 미설정"
+   - 4시간 이내 → "ECC-3h: OK"
+   - 4시간+ → "ECC-3h: 지연"
+2. .last-12h-run 타임스탬프 읽기
+   - 없으면 → "ECC-12h: 미설정"
+   - 15시간 미만 → "ECC-12h: OK"
+   - 15~24시간 → "ECC-12h: 경고"
+   - 24시간+ → "ECC-12h: 치명"
+```
+
 ### 1-4. 기타 감지
 ```
 1. 리뷰/통합 상태:
@@ -99,6 +126,12 @@ description: "뭐해야하지? v2 — 프로젝트 상태 읽고 다음 할 일 
 해야 할 것:
   - {미완료 스토리 — 번호+제목, 우선순위순}
   - {active plan 있으면: "계획 진행중: {plan 제목}"}
+
+사고 체인:
+  - {4cmd 상태: "research 완료 → analyze 추천" 등, 없으면 생략}
+
+시스템:
+  - ECC: {3h 상태} / {12h 상태}
 
 막힌 것:
   - {블로커들 — 없으면 "없음"}
@@ -132,7 +165,11 @@ D. 다른 거 하고 싶어 (직접 말해주세요)
 ```
 1. 블로커 해결 (tsc 실패, 통합 에러 등)
 2. session.tmp 존재 → /resume-session
-3. Sprint 미완료 스토리 → /kdh-dev-pipeline sprint {N}
+3. 4cmd 체인 진행중 → 다음 단계 안내
+   - research 완료 → "/kdh-analyze [주제]"
+   - analyze CEO선택 대기 → 선택지 표시
+   - analyze 완료 → "/kdh-plan [주제]"
+4. Sprint 미완료 스토리 → /kdh-dev-pipeline sprint {N}
    - current_story 있으면 그것 먼저
    - 없으면 backlog 중 의존 해소된 첫 번째
 4. Active plan 실행 → 해당 plan의 다음 단계

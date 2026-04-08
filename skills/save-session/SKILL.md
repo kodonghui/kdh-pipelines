@@ -47,6 +47,12 @@ Full valid filename example: `2024-01-15-abc123de-session.tmp`
 
 The legacy filename `YYYY-MM-DD-session.tmp` is still valid, but new session files should prefer the short-id form to avoid same-day collisions.
 
+**Previous 필드 작성 규칙:**
+1. `~/.claude/session-data/`에서 현재 저장 중인 파일을 제외하고 가장 최근 수정 파일 선택
+2. 같은 날짜 파일이 여러 개면 가장 최근 것
+3. 파일을 찾을 수 없으면 `(첫 세션)`
+4. 파일이 존재하지만 경로가 불확실하면 `(경로 불명)`
+
 ### Step 4: Populate the file with all sections below
 
 Write every section honestly. Do not skip sections — write "Nothing yet" or "N/A" if a section genuinely has no content. An incomplete file is worse than an honest empty section.
@@ -76,6 +82,23 @@ After saving the session file, also update the daily update log:
 Categories: Features, Bug Fixes, Infrastructure, Planning, Pipeline, Memory, Discussion
 
 This mirrors what `/kdh-ecc-3h` Phase 6 does, but runs at session save time so no work is lost between maintenance cycles.
+
+### Step 4c: Sprint Snapshot 교차 검증
+
+Sprint & Pipeline Snapshot 섹션 작성 후, source of truth와 대조한다.
+Source of truth = `pipeline-state.yaml` (스토리 status) + `epics-and-stories.md` (스토리 ID/제목).
+
+1. `pipeline-state.yaml` 읽기 → 현재 Sprint 스토리 목록 + status 추출
+2. `epics-and-stories.md`에서 해당 Sprint 스토리 ID + 제목 확인
+3. 세션 파일의 Sprint & Pipeline Snapshot 섹션과 대조:
+   - 빠진 스토리 없는지
+   - status(complete/backlog/in-progress)가 일치하는지
+   - 스토리 수가 맞는지
+4. 불일치 발견 시:
+   - **자동 수정하지 않는다**
+   - CEO에게 경고: "Sprint Snapshot과 pipeline-state.yaml 불일치 N건: [구체 내역]"
+   - CEO 확인 후 수정
+5. 불일치 0건이면 그대로 진행
 
 ### Step 5: Show the file + Sprint Summary to the user
 
@@ -108,6 +131,7 @@ Wait for confirmation. Make edits if requested.
 **Last Updated:** [current time]
 **Project:** [project name or path]
 **Topic:** [one-line summary of what this session was about]
+**Previous:** [이전 세션 파일 경로 또는 "(첫 세션)"]
 
 ---
 
@@ -147,14 +171,15 @@ If nothing failed: "No failed approaches yet."
 
 ## What Has NOT Been Tried Yet
 
-[Approaches that seem promising but haven't been attempted. Ideas from the
-conversation. Alternative solutions worth exploring. Be specific enough that
-the next session knows exactly what to try.]
+[기술적으로 아직 시도하지 않은 접근법만 기재.
+구현 대안, 디버깅 가설, 검증 실험 등 "다음에 뭘 시도할지" 판단용.
+Sprint 스토리 순서/백로그는 Sprint & Pipeline Snapshot에서 담당 — 여기에 중복 기재 금지.
+Be specific enough that the next session knows exactly what to try.]
 
 - [approach / idea]
 - [approach / idea]
 
-If nothing is queued: "No specific untried approaches identified."
+If nothing is queued: "No untried approaches — next work is defined in Sprint Snapshot."
 
 ---
 
@@ -175,9 +200,10 @@ If no files were touched: "No files modified this session."
 
 ## Sprint & Pipeline Snapshot
 
-[pipeline-state.yaml + epics-and-stories.md에서 자동 추출. 수작업 금지.
+[pipeline-state.yaml (source of truth) + epics-and-stories.md에서 자동 추출. 수작업 금지.
 이 섹션의 목적: 다음 세션이 "남은 스토리가 뭔지" 즉시 파악하는 것.
-"나머지 N개" 같은 축약 절대 금지. 스토리 ID + 제목 전부 나열.]
+"나머지 N개" 같은 축약 절대 금지. 스토리 ID + 제목 전부 나열.
+Step 4c에서 pipeline-state.yaml과 교차 검증됨.]
 
 현재 Sprint: Sprint {N}
 Sprint 전체 스토리 ({완료}/{전체}):

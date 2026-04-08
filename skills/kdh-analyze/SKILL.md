@@ -134,6 +134,48 @@ Stage 5(자기 공격) + Stage 6(Codex) 결과가 반영된 최종 실행안:
 - **A/B/C 선택지** — 각각 confidence + trade-off + pre-mortem 결과 포함
 - "A를 택하면 이런 위험이 있지만 이렇게 예방"
 
+## 산출물 저장 (필수)
+
+분석 완료 후 결과를 파일로 저장한다. 같은 세션에서 바로 /kdh-plan으로 이어가도, 파일은 반드시 저장.
+
+저장 경로: `_bmad-output/kdh-plans/MMDD-analyze-{slug}.md`
+- MMDD = 오늘 날짜
+- slug = 주제 kebab-case
+- _index.yaml에 등록하지 않는다 (glob 탐색으로 충분)
+
+저장 내용:
+
+```markdown
+# Analyze: [주제]
+> Analyzed: [date] | Complexity: [간단/보통/복잡] | Codex: [PASS/이슈 N개]
+
+## TL;DR
+[3줄 요약]
+
+## 추천
+| # | 추천 | Confidence | Trade-off |
+
+## Self-Attack 요약
+[핵심 편향 + 수정사항]
+
+## Codex 지적 요약
+[핵심 이슈 + 반영 여부]
+
+## Plan-Ready Summary (kdh-plan 입력용)
+
+추천안:
+| # | 추천 | Confidence | 근거 요약 |
+
+주요 위험:
+| # | 위험 | 확률 | 예방책 |
+
+CEO 선택: [A/B/C 또는 "대기중"]
+```
+
+★ 같은 주제의 기존 analyze 파일 있으면: "기존 분석 있음. 갱신할까요?" CEO 확인
+★ CEO가 선택지를 골랐으면 → "CEO 선택: B" 기록. 아직이면 → "대기중"
+★ /kdh-plan이 이 파일의 "Plan-Ready Summary"를 자동 입력으로 사용
+
 ## 출력 규칙
 
 - **한국어** — 기술 용어 최소화, 비유로 설명

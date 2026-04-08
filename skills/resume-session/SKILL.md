@@ -60,6 +60,12 @@ Read the complete file. Do not summarize yet.
 3. **세션 파일에 없는 스토리가 발견되면** → ⚠️ 표시하고 보고에 포함
 4. **_index.yaml 읽기** — status: active인 plan 목록 확인
 
+5. **git log 교차 검증** — 세션 파일 수정 시각 이후의 커밋 확인:
+   - 세션 파일의 mtime을 기준으로 `git log --oneline --since="<mtime>"` 실행
+   - 세션 파일에 없는 커밋이 있으면 → 브리핑에 "세션 이후 N건 커밋 발생" + 커밋 목록 표시
+   - 병렬 세션(tmux)이 작업한 내용을 누락하지 않기 위함
+   - 0건이면 "없음" 표시
+
 이 단계는 세션 파일의 정보가 오래되었거나 불완전한 경우를 방지한다.
 세션 파일과 live state가 충돌하면, live state를 신뢰한다.
 
@@ -69,6 +75,8 @@ Respond with a structured briefing in this exact format:
 
 ```
 SESSION LOADED: [actual resolved path to the file]
+PREVIOUS SESSION: [Previous 필드 값 또는 "(없음 — 옛 형식 파일)"]
+COMMITS SINCE SAVE: [N건 커밋 목록 또는 "없음"]
 ════════════════════════════════════════════════
 
 PROJECT: [project name / topic from file]
@@ -136,12 +144,23 @@ Read it and follow the same briefing process — the format is the same regardle
 **Session file is empty or malformed:**
 Report: "Session file found but appears empty or unreadable. You may need to create a new one with /save-session."
 
+**Session file has no `Previous:` field (pre-v2.1 files):**
+Display "(없음 — 옛 형식 파일)" in the PREVIOUS SESSION line. Do not treat as an error.
+
+**No git repository in working directory:**
+Skip git log cross-verification. Display "COMMITS SINCE SAVE: (git repo 아님 — 생략)" in briefing.
+
+**Zero commits since session save:**
+Display "COMMITS SINCE SAVE: 없음" — this is the normal case for single-session workflows.
+
 ---
 
 ## Example Output
 
 ```
 SESSION LOADED: /Users/you/.claude/session-data/2024-01-15-abc123de-session.tmp
+PREVIOUS SESSION: /Users/you/.claude/session-data/2024-01-14-setup-session.tmp
+COMMITS SINCE SAVE: 없음
 ════════════════════════════════════════════════
 
 PROJECT: my-app — JWT Authentication

@@ -37,7 +37,7 @@ description: "실행 계획 생성기 v1.2 — research+analyze 결과를 파일
 실행 전 반드시 출력:
 ```
 입력 research: [파일 경로] 또는 "없음"
-입력 analyze: [같은 세션 인라인] 또는 "없음"
+입력 analyze: [파일 경로] 또는 [같은 세션 인라인] 또는 "없음"
 핵심: [research + analyze 결론 각 1줄]
 ```
 둘 다 없으면 → "⚠️ research/analyze 없이 plan. CEO 확인 필요" → CEO 승인 없이 진행 금지.
@@ -50,7 +50,11 @@ description: "실행 계획 생성기 v1.2 — research+analyze 결과를 파일
    - "Analyze-Ready Summary" 섹션이 있으면 우선 읽기
    - Summary가 없으면 research 본문 전체를 읽기
    - Summary만으로 태스크 분해/롤백 근거가 부족하면 research 본문 관련 섹션 추가 열람
-2. /kdh-analyze 분석 결과: 같은 세션 채팅 맥락에서 확인
+2. /kdh-analyze 분석 결과:
+   a. _bmad-output/kdh-plans/ 에서 Glob "*-analyze-*.md" 중 현재 주제 매칭, 최신 우선
+   b. 파일 있으면 → "Plan-Ready Summary" 섹션 읽기
+   c. 파일 없으면 → 같은 세션 채팅 맥락에서 확인
+   d. 둘 다 없으면 → research만으로 진행 (경고 표시)
 3. _bmad-output/kdh-plans/_index.yaml 읽기:
    - status: active이고 scope가 현재 작업과 관련된 plan 확인
    - 동일 scope plan이 이미 있으면: "기존 plan {id} 고도화할까요?" CEO 질문

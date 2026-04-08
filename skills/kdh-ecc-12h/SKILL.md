@@ -52,9 +52,14 @@ SKIP: done plan 3개 미만 → "Phase 2: SKIP (done plans: N, threshold: 3)"
 ```
 1. _bmad-output/kdh-plans/_index.yaml 읽기
 2. status: done plan 분석 (최근 30일):
-   - 예상 시간 vs 실제 소요 (git log 대조)
-   - Risk 중 실제 발생한 것
-   - plan에서 빠졌던 태스크
+   - 복잡도 vs 실제 규모 비교:
+     a. plan 본문에 "복잡도:" 필드 있으면 사용
+     b. 없으면 task 개수로 추정 (1~3=S, 4~7=M, 8+=L)
+     c. 실제 규모: git log --since {created} --until {done 추정} 커밋 수 (merge 제외, fixup 포함)
+     d. S 기대=1~2, M 기대=3~5, L 기대=6+. 기대 대비 2배 이상 → "과소 추정" 패턴 기록
+   - analyze 파일 있으면 (*-analyze-*.md): 추천 vs 실제 결과 비교
+   - Risk 중 실제 발생한 것 (plan 본문의 Pre-mortem 테이블 대조)
+   - plan에서 빠졌던 태스크 (git log에 있으나 plan task에 없는 변경)
 3. 패턴 → instinct 후보 저장
 4. done plan 30일+ → status: archived 전환
 ```
