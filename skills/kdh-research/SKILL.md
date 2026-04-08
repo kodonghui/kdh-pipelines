@@ -1,28 +1,61 @@
 ---
 name: kdh-research
-description: "Deep Research v2 — 7-angle query decomposition, 2-round search, cross-verification, learning-based synthesis"
+description: "Deep Research v3 — Source routing (Context7→GitHub→Web), 3-question credibility scoring, conditional Round 3, analyze-ready output"
 ---
 
-# /kdh-research — Deep Research Command v2
+# /kdh-research — Deep Research Command v3
 
-When the user invokes `/kdh-research [topic]`, execute a comprehensive, multi-source deep research operation using the 6-step methodology below.
+When the user invokes `/kdh-research [topic]`, execute a comprehensive, multi-source deep research operation.
 
 ## Core Directive
 
-Research the given topic with these mandatory qualities:
-- **Latest**: Only use current, up-to-date information. Verify publication dates. Reject sources older than 12 months for fast-moving topics (AI, frameworks).
-- **Accurate**: Cross-reference across 3+ sources before stating a claim as fact. Flag single-source claims.
-- **Popular/Trending**: Prioritize widely-adopted, battle-tested approaches. Include GitHub stars, npm downloads, citation counts.
-- **Comprehensive**: Cover the topic from 7 different angles (see Step 1).
-- **Detailed**: Include specific numbers, code examples, architecture patterns, comparison tables.
+- **Latest**: Reject sources older than 12 months for fast-moving topics (AI, frameworks).
+- **Accurate**: Cross-reference across 3+ sources before stating a claim as fact.
+- **Comprehensive**: Cover the topic from 7 different angles (Step 1).
 - **Verified**: Every claim in the report must have a source. No source = don't include it.
+- **Analyze-Ready**: Output format optimized for /kdh-analyze Stage 2 input.
 
-## Execution Steps
+## Execution Steps (Step 0~6)
+
+### Step 0: Source Routing (검색원 라우팅)
+
+주제 분류 후 적합한 검색원을 **먼저** 사용한다.
+"먼저" = 1순위로 시도, 결과 부족하면 2순위로 보충.
+1순위 충분해도 교차 검증용 2순위 검색 최소 1회 실행.
+
+| 검색원 | 강점 | 사용 시점 |
+|--------|------|----------|
+| **Context7 MCP** | 공식 문서, 버전별 정확 | 라이브러리/프레임워크 관련 각도 |
+| **GitHub (gh CLI)** | 실제 구현체, 스타 수로 검증 | 코드 패턴/구현 관련 각도 |
+| **WebSearch** | 최신 트렌드, 블로그, 뉴스 | 일반 지식, 비교, 의견 |
+| **WebFetch** | 특정 URL 상세 분석 | Round 1/2에서 선별된 URL |
+
+**Context7 사용법:**
+1. `resolve-library-id` — 라이브러리명으로 Context7 ID 조회
+2. `query-docs` — 해당 ID로 문서 검색
+폴백: Context7 실패(MCP 미응답, 라이브러리 미지원) → WebSearch 전환. 멈추지 말 것.
+
+**GitHub 검색:**
+```bash
+gh search repos "{topic}" --stars=">500" --sort=stars --limit=5
+gh search repos "{topic}" --sort=updated --limit=5
+```
+품질: stars > 500 = 검증됨, 100-500 = 참고, < 100 = 참조만.
+
+**학술 검색 (주제가 학술적일 때):**
+```
+WebSearch: "site:arxiv.org {topic} survey 2025 2026"
+```
+품질: citations > 10 = 신뢰, 5-10 = 최근이면 OK, < 5 = 최근 아니면 제외.
+
+**패키지 레지스트리 (해당 시):**
+```
+WebSearch: "npmjs.com {package}" OR "pypi.org {package}"
+```
 
 ### Step 1: Query Decomposition (쿼리 분해)
 
-Before searching, decompose the topic into **7 sub-queries** covering different angles.
-Take 30 seconds to think: "What are the different facets of this topic?"
+주제를 **7 sub-queries**로 분해. 30초 생각: "이 주제의 다른 면은?"
 
 | # | Angle | Query Pattern | Purpose |
 |---|-------|--------------|---------|
@@ -34,149 +67,160 @@ Take 30 seconds to think: "What are the different facets of this topic?"
 | 6 | Official | "{vendor} official {topic} documentation guide" | Vendor/framework docs |
 | 7 | Production | "{topic} production experience lessons learned enterprise" | Real-world experience |
 
-★ Execute ALL 7 WebSearch queries in parallel (single message, multiple tool calls).
-★ If the topic is very specific, adapt angle names but KEEP 7 angles.
-★ Include year "2025 2026" in at least 3 queries to get fresh results.
+★ Step 0의 라우팅에 따라 각 angle의 1순위 검색원 선택.
+  - Angle 4(Implementations) → GitHub 먼저
+  - Angle 6(Official) → Context7 먼저
+  - 나머지 → WebSearch
+★ 7 WebSearch를 **single message에 병렬 호출**.
+★ "2025 2026"을 최소 3개 쿼리에 포함.
 
 ### Step 2: Round 1 — Breadth (발견)
 
-From 7 WebSearch results:
-1. **Select top 5~8 URLs** — judge by title + snippet relevance
-2. **WebFetch each** with focused prompt:
-   > "Extract: (1) specific findings with numbers/evidence, (2) what this source uniquely contributes that others might not, (3) any claims made without evidence. Be concrete — no vague summaries."
+7 WebSearch + Step 0 결과에서:
+1. **Top 5~8 URL 선별** — title + snippet relevance로 판단
+2. **WebFetch 5~8개를 single message에 병렬 호출:**
+   ★ 반드시 하나의 메시지에 여러 WebFetch를 동시 실행. 순차 호출 금지.
+   ★ 각 WebFetch prompt:
+   > "Extract: (1) specific findings with numbers/evidence, (2) what this source uniquely contributes, (3) claims without evidence. Be concrete."
 3. **Extract learning** from each source:
 
 ```
 Source: [Title](URL) | Date: YYYY-MM | Type: blog/paper/docs/repo
 Finding: {core discovery in 1-2 sentences}
-Evidence: {specific numbers, code, quotes that support the finding}
+Evidence: {specific numbers, code, quotes}
 Gap: {what this source alone can't answer}
-Confidence: high/medium/low (based on evidence quality)
 ```
 
-★ WebFetch prompts MUST ask for specific evidence, not summaries.
-★ Note TYPE of each source (blog vs paper vs official docs vs repo).
-★ If a source has no concrete evidence, mark Confidence: low.
+### Step 3: Source Credibility (소스 신뢰도 평가)
 
-### Step 3: Specialized Search (특화 검색)
+Round 1 각 소스에 대해 **3가지 질문**:
 
-Run in parallel with Step 2 where possible:
+| 질문 | 좋음 | 보통 | 나쁨 |
+|------|------|------|------|
+| **유형?** | 논문, 공식문서 | GitHub (500+), 알려진 테크블로그 | 포럼, 무명 블로그, 출처 불명 |
+| **최신?** | 6개월 이내 | 6~12개월 | 1년+ |
+| **근거?** | 숫자+코드 제시 | 숫자 또는 코드 중 하나 | 주장만, 근거 없음 |
 
-**GitHub (implementations):**
-```bash
-gh search repos "{topic}" --stars=">500" --sort=stars --limit=5
-gh search repos "{topic}" --sort=updated --limit=5
-```
-For each relevant repo: note stars, last push date, README summary, key pattern used.
-Quality threshold: stars > 500 = validated, 100-500 = promising, < 100 = reference only.
+판정:
+- 3개 다 좋음 → **HIGH**
+- 2개 좋음 → **MEDIUM**
+- 1개 이하 → **LOW**
 
-**Academic (if topic warrants):**
-```
-WebSearch: "site:arxiv.org {topic} survey 2025 2026"
-WebSearch: "site:semanticscholar.org {topic}"
-```
-For papers: extract abstract + key findings + citation count.
-Quality threshold: citations > 10 = trusted, 5-10 = recent and OK, < 5 = only if very recent.
-
-**Package registries (if applicable):**
-```
-WebSearch: "npmjs.com {package}" OR "pypi.org {package}"
-```
-Note: weekly downloads, last publish date, GitHub stars link.
-
-**Official documentation (if applicable):**
-Use Context7 MCP or WebFetch vendor docs for authoritative reference.
+★ 주제별 조정:
+  - fast-moving (AI, 프레임워크) → "최신?" 가중: 6개월 넘으면 자동 1단계 하향
+  - 보안/법률 → "유형?" 가중: 블로그는 자동 1단계 하향
+★ LOW라도 "유일한 소스"면 제외 안 함 — [단일소스] 태그 표시
+★ 이 단계 = 개별 소스 품질. Step 5(교차 검증) = 주장 단위 합의. 역할 다름.
 
 ### Step 4: Round 2 — Depth (깊이)
 
-After Round 1 + Specialized Search, review ALL learnings:
+**입력 필터링:**
+1. HIGH (≥ 2/3 좋음): Round 2에서 깊이 파는 우선 대상
+2. MEDIUM: 갭 채우기용으로만 사용
+3. LOW: Round 2 입력에서 제외 (단, [단일소스]면 유지)
+   → LOW 제외 소스의 Finding은 Gaps에 "미검증 주장"으로 기록
 
-1. **List gaps**: What's still unknown? (from each learning's "Gap" field)
-2. **List conflicts**: Where do sources disagree?
-3. **Generate 3~5 targeted queries** based on gaps and conflicts
-4. **Execute targeted WebSearch + WebFetch**
-5. **Extract additional learnings**
+**실행:**
+1. **갭 목록 작성** (각 learning의 Gap 필드에서)
+2. **충돌 목록 작성** (소스 간 불일치)
+3. **타겟 검색 3~5개** 생성 (갭 + 충돌 기반, Round 1 반복 금지)
+4. **WebSearch + WebFetch 실행** (병렬)
+5. 새 learning에도 Step 3 신뢰도 평가 적용
 
-★ Round 2 queries are NARROW — "해결법 X의 단점은?" not "해결법 전반"
-★ If two sources conflict, search specifically for a third opinion
-★ Round 2 should NOT repeat Round 1 queries
+### Step 4.5: Gap Check (갭 체크)
+
+Round 2 완료 후:
+1. 미해결 갭 목록 작성
+2. 판정:
+   - 갭 0~2개 → Step 5로 진행
+   - 갭 3개 이상 → **Round 3 실행** (갭 기반 타겟 검색 3~5개)
+3. Round 3는 **최대 1회**. 무한 루프 금지.
+4. 보고서에 명시: "Rounds: 2" 또는 "Rounds: 3 (갭 N개로 추가)"
 
 ### Step 5: Cross-Verification (교차 검증)
 
-Before writing the report, verify key claims:
-
-For each major claim that will appear in the report:
-- Count how many independent sources support it
-- Assign confidence level:
+주장 단위로 독립 소스 합의 확인 (소스 단위 아님 — Step 3과 역할 다름):
 
 | Confidence | Criteria | Report Format |
 |-----------|---------|---------------|
-| ✅ HIGH | 3+ independent sources agree | State as fact: "X is Y" |
-| ⚠️ MEDIUM | 2 sources agree | State with qualifier: "X appears to be Y" |
-| 🔴 LOW | 1 source only | State with attribution: "According to [source], X is Y" |
-| ❌ CONFLICTED | Sources disagree | Present both sides: "Source A says X, Source B says Y" |
+| ✅ HIGH | 3+ independent sources agree | "X is Y" |
+| ⚠️ MEDIUM | 2 sources agree | "X appears to be Y" |
+| 🔴 LOW | 1 source only | "According to [source], X is Y" |
+| ❌ CONFLICTED | Sources disagree | "Source A says X, Source B says Y" |
 
-★ Never state a LOW confidence claim as fact.
-★ CONFLICTED claims are valuable — include both sides with your analysis of which is more likely correct and why.
+★ LOW confidence claim을 사실처럼 쓰지 말 것.
+★ CONFLICTED는 양쪽 + 어느 쪽이 맞을 가능성이 높은지 분석 포함.
 
-### Step 6: Report Synthesis (보고서 합성)
+### Step 6: Report Synthesis (보고서)
 
-Synthesize ALL learnings into a structured report. Do NOT copy-paste source content — all text must be your synthesis.
+모든 learning을 합성. Copy-paste 금지.
 
 ```markdown
 # Research Report: [Topic]
 > Researched: [date] | Sources: [count] | Rounds: [N] | Queries: [N]
-> Cross-verified claims: [N verified / N total] | Overall confidence: [HIGH/MEDIUM/LOW]
+> Cross-verified claims: [N/N] | Overall confidence: [HIGH/MEDIUM/LOW]
 
 ## TL;DR
 [3~5 bullet points — each with confidence indicator]
 
 ## Current State (as of [date])
-[Cross-verified facts only. Date + source count per claim.]
+[Cross-verified facts only]
 
 ## Detailed Analysis
 [Subsections by theme. Each claim marked with confidence level.]
-[Include specific numbers, code examples, architecture patterns.]
 [CONFLICTED claims: present both sides with analysis.]
 
 ## Comparison Table
-[If comparing options — include quantitative metrics where available]
+[Quantitative metrics where available]
 
 ## Recommendations
-[Ranked recommendations. Each with: confidence level, supporting evidence count, trade-offs.]
+[Ranked. Each with: confidence level, evidence count, trade-offs.]
 
 ## Gaps & Limitations
-[What this research could NOT answer. Where more investigation is needed.]
-[Single-source claims that need additional verification.]
+[What we couldn't answer. 미검증 주장. Single-source claims.]
+
+## Analyze-Ready Summary (kdh-analyze 입력용)
+
+검증된 사실:
+| # | 사실 | 신뢰도 | 소스 수 | 소스 목록 |
+|---|------|--------|---------|----------|
+
+미검증 주장:
+| # | 주장 | 신뢰도 | 이유 |
+|---|------|--------|------|
+
+핵심 갭:
+- [아직 모르는 것]
 
 ## Sources
-| # | Source | Date | Type | Cited in | Confidence |
-|---|--------|------|------|----------|-----------|
-| 1 | [Title](URL) | YYYY-MM | blog/paper/docs/repo | §1,§3 | HIGH |
-| 2 | [Title](URL) | YYYY-MM | paper | §2 | HIGH |
+| # | Source | Date | Type | Cited in | Credibility |
+|---|--------|------|------|----------|------------|
 ```
 
-★ Save report to `_research/[topic-slug]-[date].md` or `_bmad-output/pipeline-audit/` as appropriate.
-★ ALL claims must have [source] reference.
-★ No "~인 것 같다" or "아마도" — use confidence levels instead.
+★ Save to `_bmad-output/kdh-plans/` or `_research/` as appropriate.
 
 ## Rules
+
 - Never rely on training data alone — always verify with live search
-- If a topic has changed rapidly, explicitly note what changed and when
-- If the user's topic is vague, ask ONE clarifying question before researching
-- Write the report in the same language the user used for the topic
-- Minimum: 7 WebSearch + 5 WebFetch + 1 GitHub search per research
-- Round 2 is MANDATORY — never skip even if Round 1 seems sufficient
-- Cross-verification is MANDATORY — never skip even if sources seem reliable
-- Report MUST include Gaps & Limitations section — intellectual honesty
+- If topic changed rapidly, note what changed and when
+- If topic is vague, ask ONE clarifying question before researching
+- Write report in same language user used
+- Minimum: 7 WebSearch + 5 WebFetch per research
+- Round 2 is MANDATORY — never skip
+- Cross-verification is MANDATORY — never skip
+- Gaps & Limitations section is MANDATORY
+- Context7 먼저 for library/framework topics
+- GitHub search 먼저 for code implementation topics
 
-## Quality Self-Check (보고서 작성 후)
+## Quality Self-Check
 
-Before presenting the report, verify:
 - [ ] Every claim has at least 1 source reference
-- [ ] Confidence levels assigned to all major claims
-- [ ] At least 1 CONFLICTED or LOW claim exists (if everything is HIGH, you're not looking hard enough)
+- [ ] All sources have 3-question credibility score
+- [ ] Confidence levels on all major claims
+- [ ] At least 1 CONFLICTED or LOW claim exists (all HIGH = not looking hard enough)
 - [ ] Gaps section is non-empty
-- [ ] Comparison table includes quantitative data (not just qualitative)
-- [ ] Sources table is complete with dates and types
-- [ ] No copy-paste from sources — all text is synthesized
+- [ ] Comparison table includes quantitative data
+- [ ] Sources table complete with dates, types, credibility
+- [ ] No copy-paste — all text synthesized
+- [ ] Analyze-Ready Summary section exists
+- [ ] WebFetch calls were parallel (not sequential)
