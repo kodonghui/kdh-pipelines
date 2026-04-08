@@ -32,6 +32,14 @@ tags: [learning, evolution, maintenance]
    - "PoC 스토리는 plan 없이 진행하면 나중에 보충 필요"
 4. done plan이 30일 이상 → status: archived 자동 전환
 
+### Phase 1.7: Prune (3h에서 이관)
+
+1. 30일 넘은 미승격 instinct 삭제
+2. 빈 메모리 파일 삭제
+3. 오래된 세션 파일 정리 (최근 10개만 유지)
+
+Run: `/prune` logic
+
 ### Phase 2: Evolve (진화)
 
 1. instinct-status로 현재 목록 확인
@@ -45,6 +53,14 @@ tags: [learning, evolution, maintenance]
 2. 하락하는 스킬 경고
 3. 미사용 스킬 식별
 4. sparkline 대시보드 출력
+
+### Phase 3.5: Health Check (3h에서 이관)
+
+1. `~/.claude/metrics/costs.jsonl` 존재 확인
+   - 없으면 → SKIP, 로그에 "Health: SKIP (no metrics file)" 기록
+   - 있으면 → 세션 비용 누계 요약
+2. skill-health: 하락하는 스킬 있으면 경고
+3. .last-12h-run 타임스탬프 업데이트
 
 ### Phase 4: Context Budget (컨텍스트 분석)
 
