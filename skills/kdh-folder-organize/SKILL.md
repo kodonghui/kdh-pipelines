@@ -21,6 +21,11 @@ description: "프로젝트 폴더 정리 5단계 파이프라인 - scan/plan/run
 
 인수 없으면 `scan` 실행. `full`은 각 Phase 끝마다 사용자 승인을 받고 다음 진행.
 
+## 4명령어 워크플로우 참고
+
+이 스킬은 독립 실행 도구이며, discuss/research/analyze/plan 체인에 직접 연결되지 않음.
+단, 대규모 폴더 재구성이 필요하면 먼저 `/kdh-discuss 폴더 정리 방향`으로 논의 후 실행 권장.
+
 ## 공통 규칙 (모든 Phase에 적용)
 
 ### 안전 원칙
