@@ -146,7 +146,16 @@ Stage 5(자기 공격) + Stage 6(Codex) 결과가 반영된 최종 실행안:
 
 ## 리서치 연동
 
-/kdh-research 결과가 이미 있으면:
+## 입력 확인 (필수 — 생략 시 중단)
+1. _bmad-output/kdh-plans/ 에서 Glob "*-research-*.md" 중 현재 주제 매칭, 최신 우선
+2. 출력:
+   ```
+   입력: [research 파일 경로] 또는 "없음"
+   핵심: [Analyze-Ready Summary 첫 줄] 또는 "research 없이 진행 — CEO 확인 필요"
+   ```
+3. 입력이 없으면 → CEO에게 "research 없이 진행할까요?" 확인 후 진행
+
+/kdh-research 결과가 있으면:
 1. 보고서의 **"Analyze-Ready Summary"** 섹션을 먼저 읽는다
 2. "검증된 사실" 테이블 → Stage 2(사실⚪) 자동 입력
 3. "미검증 주장" 테이블 → Stage 2(사실⚪)에 [미검증] 태그로 표시

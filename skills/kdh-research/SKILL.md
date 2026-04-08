@@ -15,6 +15,18 @@ When the user invokes `/kdh-research [topic]`, execute a comprehensive, multi-so
 - **Verified**: Every claim in the report must have a source. No source = don't include it.
 - **Analyze-Ready**: Output format optimized for /kdh-analyze Stage 2 input.
 
+## 입력 확인 (필수)
+
+실행 전 반드시 출력:
+1. 같은 세션 /kdh-discuss 결과 확인 → 논의 맥락 활용
+2. _bmad-output/kdh-plans/ 에서 Glob "*-research-*.md" → 같은 주제 기존 research 확인
+3. 기존 research 있으면 → CEO에게 "기존 [파일명] 있는데 새로 할까요?" 확인
+
+```
+입력: [discuss 맥락 유무] + [기존 research 유무]
+핵심: [discuss 방향 1줄] 또는 "새 주제"
+```
+
 ## Execution Steps (Step 0~6)
 
 ### Step 0: Source Routing (검색원 라우팅)
@@ -197,7 +209,9 @@ Round 2 완료 후:
 |---|--------|------|------|----------|------------|
 ```
 
-★ Save to `_bmad-output/kdh-plans/` or `_research/` as appropriate.
+★ 저장: _bmad-output/kdh-plans/MMDD-research-{slug}.md
+  - MMDD = 오늘 날짜 (예: 0408)
+  - slug = 주제 kebab-case (예: kdh-plan-upgrade, 4cmd-chaining)
 
 ## Rules
 
