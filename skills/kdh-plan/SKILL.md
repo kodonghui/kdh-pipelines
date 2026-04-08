@@ -1,6 +1,6 @@
 ---
 name: kdh-plan
-description: "실행 계획 생성기 v1 — research+analyze 결과를 파일/코드/명령어 수준의 구체적 실행 계획으로 변환. DAG 태스크 분해 + 중단/롤백 조건 + Codex 필수 검증."
+description: "실행 계획 생성기 v1.2 — research+analyze 결과를 파일/코드/명령어 수준의 구체적 실행 계획으로 변환. DAG 태스크 분해 + EARS 수락 기준 + 중단/롤백 조건 + Codex 필수 검증."
 ---
 
 # /kdh-plan — 실행 계획 생성기
@@ -88,7 +88,11 @@ Phase 1: Foundation
 │   ├── 변경: "함수 X를 추가" (코드 스니펫 or 설명)
 │   ├── 첫 실행 명령: "Read file → Edit → bun test"
 │   ├── 의존: 없음
-│   ├── 완료 기준: "tsc pass + 테스트 pass"
+│   ├── 수락 기준 (EARS — 간단:1개, 보통:2~3개, 복잡:3~5개):
+│   │   ├── WHEN [트리거], THE SYSTEM SHALL [동작]
+│   │   ├── IF [예외], THEN THE SYSTEM SHALL [대응]
+│   │   └── ...
+│   ├── 검증 방법: [어떻게 확인? tsc? bun test? 브라우저?]
 │   ├── 롤백: "git checkout -- path/to/file.ts"
 │   └── 복잡도: S (구현:S, 불확실성:없음, 테스트:있음, 롤백:쉬움)
 
@@ -118,6 +122,18 @@ Stage 3: 본 구현
 | 불확실성 | 답을 알고 있음 | 조사 필요 | 될지 모름 |
 | 테스트 | 기존 테스트 | 새 테스트 | E2E 필요 |
 | 롤백 | git checkout | 마이그레이션 | 불가능 |
+
+**EARS 5 Patterns (수락 기준 작성용):**
+모든 수락 기준은 반드시 EARS 5 패턴 중 하나를 따른다.
+"should/needs to/must" 같은 비EARS 표현 사용 금지.
+
+| 패턴 | 형식 | 용도 |
+|------|------|------|
+| Ubiquitous | THE SYSTEM SHALL [동작] | 항상 성립하는 동작 |
+| Event-driven | WHEN [트리거], THE SYSTEM SHALL [동작] | 특정 이벤트 발생 시 |
+| State-driven | WHILE [상태], THE SYSTEM SHALL [동작] | 특정 상태 유지 중 |
+| Unwanted | IF [예외], THEN THE SYSTEM SHALL [대응] | 에러/예외 처리 |
+| Optional | WHERE [기능 활성], THE SYSTEM SHALL [동작] | 선택적 기능 |
 
 **우선순위 원칙:**
 1. 의존관계 해소 (dependency unlock)
@@ -161,7 +177,7 @@ EOF
 
 # Codex 실행
 bash ~/.claude/scripts/codex-review.sh /tmp/kdh-plan-review.md \
-  "이 실행 계획을 공격적으로 리뷰해라. 빠진 태스크, 잘못된 의존관계, 비현실적 복잡도, 빠진 롤백 전략, 빠진 중단 조건을 찾아라. 한국어로 답해라."
+  "이 실행 계획을 공격적으로 리뷰해라. 빠진 태스크, 잘못된 의존관계, 비현실적 복잡도, 빠진 롤백 전략, 빠진 중단 조건을 찾아라. 수락 기준이 EARS 5 패턴(Ubiquitous/Event-driven/State-driven/Unwanted/Optional) 중 하나를 따르는지 확인하고, should/needs to/must 같은 비EARS 표현이 있으면 지적해라. 한국어로 답해라."
 ```
 
 Codex 결과 처리:
@@ -231,7 +247,8 @@ C) 더 분석 필요
 
 - [ ] 목표 SMART 기준 충족?
 - [ ] 모든 태스크에 첫 실행 명령?
-- [ ] 모든 태스크에 완료 기준?
+- [ ] 모든 태스크에 EARS 수락 기준 ≥ 1개?
+- [ ] EARS 비준수 표현 (should/needs to/must) 없음?
 - [ ] 의존관계 다이어그램?
 - [ ] 롤백 방법 명시?
 - [ ] Pre-mortem ≥ 3개?
