@@ -115,8 +115,8 @@ CEO에게 보여주기 전, **3가지 편향 자가 진단**:
 echo "[분석 요약 + 추천 + self-attack 결과]" > /tmp/kdh-analyze-review.md
 
 # Codex CLI로 cross-verification
-codex -q "다음 분석 결과를 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향을 찾아라.
-$(cat /tmp/kdh-analyze-review.md)" 2>/dev/null
+codex exec "다음 분석 결과를 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향을 찾아라. 한국어.
+$(cat /tmp/kdh-analyze-review.md)" 2>&1 | tail -60
 ```
 
 Codex 결과 처리:
@@ -147,9 +147,12 @@ Stage 5(자기 공격) + Stage 6(Codex) 결과가 반영된 최종 실행안:
 ## 리서치 연동
 
 /kdh-research 결과가 이미 있으면:
-- 해당 리포트의 findings를 Stage 2(사실) 입력으로 사용
-- confidence level을 그대로 계승
-- 추가 리서치 불필요
+1. 보고서의 **"Analyze-Ready Summary"** 섹션을 먼저 읽는다
+2. "검증된 사실" 테이블 → Stage 2(사실⚪) 자동 입력
+3. "미검증 주장" 테이블 → Stage 2(사실⚪)에 [미검증] 태그로 표시
+4. "핵심 갭" → Stage 1(MECE)의 "모르는 것"에 자동 입력
+5. confidence level + 소스 수를 그대로 계승
+6. 추가 리서치 불필요
 
 /kdh-research 결과가 없고 외부 정보가 필요하면:
 - Stage 2 작성 중 WebSearch 최소 3회 실행
@@ -178,12 +181,17 @@ Stage 5(자기 공격) + Stage 6(Codex) 결과가 반영된 최종 실행안:
 - [ ] Self-Attack 섹션이 비어있지 않은가?
 - [ ] [Ultrathink] Codex 리뷰 실행했는가?
 
-## /kdh-research → /kdh-analyze → /kdh-plan 워크플로우
+## 4명령어 워크플로우
 
-이 3개 명령어는 순차적으로 사용 가능:
-1. `/kdh-research` — 광범위 조사 (7각도, 2라운드, 교차 검증)
-2. `/kdh-analyze` — 조사 결과 기반 깊은 분석 (6관점, pre-mortem, self-attack, Codex)
-3. `/kdh-plan` — 분석 결과 기반 구체적 실행 계획 (신규, 다음에 만들 것)
+```
+/kdh-discuss [주제]   → 논의 (선택지 + 반대의견 + 다음 행동)
+/kdh-research [주제]  → 조사 (7각도, 검색원 라우팅, 신뢰도 점수)
+/kdh-analyze [주제]   → 분석 (6관점, pre-mortem, self-attack, Codex)
+/kdh-plan [작업]      → 실행 계획 (DAG 분해, 롤백, Codex 필수)
+CEO: "A"             → 즉시 실행
+```
+
+각 명령어 독립 실행 가능. 이전 결과 있으면 자동 로드.
 
 Sources:
 - Self-Preference Bias: arxiv 2410.21819
