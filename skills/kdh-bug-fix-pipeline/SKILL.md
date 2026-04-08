@@ -1,9 +1,9 @@
 ---
 name: 'kdh-bug-fix-pipeline'
-description: 'Bug Fix Pipeline v1.0 — browser-use 중심 E2E 버그 탐색 + 수정 + 검증 루프. 사장님 명령어: /kdh-bug-fix-pipeline [auto|계속|scan|fix BUG-XXX|verify|deploy]'
+description: 'Bug Fix Pipeline v2.0 — browser-use 중심 E2E 버그 탐색 + 수정 + 검증 루프. Origin 분류 + 에스컬레이션 + 루프 감지 + 중복 제거. 사장님 명령어: /kdh-bug-fix-pipeline [auto|계속|scan|fix BUG-XXX|verify|deploy]'
 ---
 
-# Bug Fix Pipeline v1.0
+# Bug Fix Pipeline v2.0
 
 ## Purpose
 
@@ -58,11 +58,24 @@ _bmad-output/bug-fix/
 while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
 ```
 
-### 보고 형식 (한국어)
+### 보고 형식 (한국어, 번호 목차 필수)
+
+모든 보고는 번호 목차(I./II. 또는 1./2.) 구조 필수 (CLAUDE.md 규칙).
 
 ```
 시작:    "사이트 탐색 시작합니다."
-탐색:    "버그 {N}개 발견! 심각 {N}, 보통 {N}, 경미 {N}."
+탐색:
+  "I. 탐색 결과
+   1. 버그 {N}개 발견
+      - 심각: {N}개
+      - 보통: {N}개
+      - 경미: {N}개
+   2. 중복 제거: {M}건 → {K}건 (affected_themes 합침)
+   3. 새 기능 요청: {N}건 (bugfix 대상 아님)
+   
+   II. 다음 단계
+   수정 시작합니다."
+
 수정중:  "BUG-{id} 수정 중... ({N}/{M} 진행)"
 수정완료: "버그 {N}개 전부 수정. 전체 검증 시작합니다."
 검증:    "전체 검증 완료. 새 버그 {N}개 추가 발견." 또는 "깨끗합니다!"
@@ -97,6 +110,11 @@ while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
      tmux new-session -d -s corthex-server \
        "cd /home/ubuntu/corthex-v3/packages/server && NODE_ENV=production PORT=3000 bun run src/index.ts 2>/tmp/corthex-server.log"
    - 60초 대기 후 재확인
+   - sweep 시작 전 curl 200 확인 → sweep 중 5xx 연속 3회 감지 시:
+     → 현재 sweep 중단
+     → 서버 상태 확인 (curl + 로그)
+     → 서버 크래시면 → 재시작 후 60초 대기 → sweep 재시작
+     → 이 시점의 버그는 "거짓 버그" 의심 → source: server-crash 태그
    - 안 되면 → 🚩 BLOCK.
 
 5. OpenAI API 키 (browser-use용):
@@ -215,6 +233,16 @@ Step 4: 3개 소스 종합 → bug-fix-state.yaml 생성
     - id: BUG-002
       ...
 
+Step 4.5: 멀티 테마 중복 제거
+  같은 (page, component, css_property) 조합의 버그가 여러 테마에서 발견되면:
+  → 1개 master bug로 합침
+  → master_bug_id 할당, affected_themes에 테마 목록 기록
+  → severity는 가장 높은 것 채택
+  
+  예: /dashboard의 sidebar 배경색 문제가 toss-dark, cherry-blossom에서 발견
+  → BUG-001 (master), affected_themes: [toss-dark, cherry-blossom]
+  → BUG-002~003은 생성하지 않음
+
 Step 5: CEO 보고 (정보 전달 — GATE 아님)
   "사이트 탐색 완료.
    
@@ -259,7 +287,15 @@ Step 2a: DIAGNOSE (오케스트레이터 직접)
   - 관련 파일 찾기: Grep으로 page/컴포넌트/라우트 키워드 검색
   - 서버 로그에서 관련 에러 추출 (500, stack trace)
   - 근본 원인 1줄 특정
-  - bug-fix-state.yaml에 root_cause 추가
+  - Dependency Correlation:
+    git log --since="<sprint_start>" -- {관련파일} → 최근 변경 커밋 목록
+    → 변경 커밋과 버그 연결: "이 버그는 Story X-Y의 커밋 {hash}에서 발생한 것으로 추정"
+  - Origin 판단 (ODC 기반):
+    → 단순 로직 오류 = code
+    → 같은 컴포넌트에서 3회+ 버그 = design 의심 (auto-flag)
+    → API 응답 형태 불일치 = requirements 의심
+    → 있어야 할 테스트 없음 = test
+  - bug-fix-state.yaml에 origin + escalation 필드 추가
   - status: discovered → diagnosing
 
 Step 2b: FIX (dev 에이전트)
@@ -372,6 +408,7 @@ Read: _bmad-output/bug-fix/bug-fix-rubric.md
 - Playwright 회귀 테스트 필수.
 - tsc --noEmit 필수.
 - 5개 테마 전부 확인 (D6).
+- Critics(quinn, winston)에게 dev의 "수정 이유/의도" 전달 금지. bug report + 수정된 코드만 전달. 맥락 격리로 자기평가 편향 방지.
 ```
 
 ---
@@ -485,6 +522,49 @@ Step 4e: GATE — CEO 확인 (필수)
 
 ---
 
+## Sprint End Metrics (v2.0)
+
+Phase 4 완료 후, bug-fix-state.yaml에 메트릭스 기록:
+
+```yaml
+bugfix_metrics:
+  bugs_found: 0
+  bugs_fixed: 0
+  duplicates_removed: 0       # 중복 제거로 합쳐진 수
+  fix_loops: 0                # Phase 3→2 루프 횟수
+  avg_fix_attempts: 0.0       # 버그당 평균 수정 시도
+  loop_detected_count: 0      # browser-use 루프 감지 횟수
+  origin_breakdown:
+    code: 0
+    design: 0
+    requirements: 0
+    test: 0
+  escalated_to_dev: 0
+  escalated_to_planning: 0
+```
+
+### Success / Failure Criteria
+
+| 기준 | 성공 | 실패 |
+|------|------|------|
+| Origin 분류 정확도 | 오분류 ≤ 2건 (Sprint End CEO 확인) | 오분류 > 50% |
+| 에스컬레이션 작동 | design/requirements 발견 시 경로 전달 | 경로 미작동 |
+| 중복 제거 효과 | 멀티 테마 중복 50%+ 감소 | 감소 0% |
+| 메트릭스 활용 | Sprint 회고에서 1회+ 참조 | 아무도 안 봄 |
+
+### Ownership & Sunset Rules
+
+| 항목 | 소유자 | 검증자 |
+|------|--------|--------|
+| Origin 분류 | 오케스트레이터 (Step 2a) | CEO (Sprint End) |
+| 에스컬레이션 | 오케스트레이터 | CEO (design/requirements 승인) |
+| 메트릭스 기록 | 오케스트레이터 | Sprint 회고에서 CEO |
+| Anti-Pattern 갱신 | 오케스트레이터 | 다음 고도화 시 |
+
+**폐기 기준:** 2 Sprint 연속 효과 미입증 → 해당 규칙/필드를 폐기 후보로 표시 → 다음 고도화에서 CEO 확인 후 삭제.
+
+---
+
 ## State Management: bug-fix-state.yaml
 
 ```yaml
@@ -564,6 +644,7 @@ timeout은 사용하지 않음. 대신 stall 감지:
 | codex_retry | Codex FAIL 1회 | 수정 후 재실행 (max 1) |
 | review_retry | Party avg < 7.5 | fixes → 재리뷰 (max 1) |
 | server_startup | Dev 서버 60초 내 미응답 | 🚩 BLOCK |
+| action_loop | 최근 10회 action 시그니처(type+selector)에서 길이 1-2-3 반복 패턴 | 경고 로그 + 현재 페이지 종료, 다음 페이지로 |
 
 ★ **timeout 없음** — browser-use가 한 페이지에서 20분 걸려도 정상. 기능이 많으면 시간이 걸림.
 ★ **stall ≠ timeout** — stall은 "아무것도 안 함"일 때만. 열심히 탐색 중이면 절대 안 끊음.
@@ -591,6 +672,10 @@ timeout은 사용하지 않음. 대신 stall 감지:
 17. **최소 변경 원칙.** 버그만 고침. 주변 코드 리팩토링/개선 금지.
 18. **context-snapshot 저장.** Phase 완료마다 context-snapshots/bug-fix/ 에 저장.
 19. **compliance YAML.** Phase 완료마다 _bmad-output/compliance/bugfix-{date}-phase-{N}.yaml 기록.
+20. **Origin 분류 필수.** Phase 2 완료 전 모든 버그에 origin(code|design|requirements|test) 지정. 미지정 = Phase 3 진입 불가.
+21. **중복 제거 필수.** 같은 (page, component, css_property) = 1 master bug. 5개 테마 5개 BUG 등록 금지.
+22. **에스컬레이션 라우팅 필수.** origin=design/requirements → CEO 확인 후 에스컬레이션. 자동 에스컬레이션 금지.
+23. **폐기 기준 적용.** 2 Sprint 연속 무효과 규칙은 폐기 후보로 표시. 다음 고도화 시 삭제 여부 결정.
 
 ---
 
@@ -690,6 +775,30 @@ Phase 1 SCAN에서 "새 기능 필요" 발견 시:
 2. CEO 보고
 3. CEO 승인 → kdh-full-auto-pipeline planning에 포함
 
+### Escalation Routing (ODC 기반 — v2.0)
+
+bug origin에 따른 에스컬레이션 경로:
+
+| Origin | 설명 | 행동 | 승인 |
+|--------|------|------|------|
+| code | 단순 로직 오류 | bugfix에서 해결 | 자동 |
+| test | 테스트 빈틈 | bugfix에서 테스트 추가 | 자동 |
+| design | 설계 결함 (3회+ 같은 컴포넌트) | dev-pipeline 에스컬레이션 | CEO 확인 필수 |
+| requirements | 스펙 빈틈 (API 형태 불일치 등) | planning-pipeline 에스컬레이션 | CEO 확인 필수 |
+
+계속 모드(밤새):
+- origin=design/requirements → bug-fix-state.yaml에 기록만
+- 자동 에스컬레이션 하지 않음
+- 아침에 CEO가 확인 후 결정
+
+에스컬레이션 기록:
+```yaml
+# bug-fix-state.yaml 내 해당 버그
+escalation: dev-pipeline
+escalation_reason: "같은 sidebar 컴포넌트에서 4회 버그. 설계 검토 필요."
+escalation_status: pending  # [pending | approved | rejected]
+```
+
 ---
 
 ## Anti-Patterns
@@ -701,3 +810,7 @@ Phase 1 SCAN에서 "새 기능 필요" 발견 시:
 5. **버그를 새 기능으로 "그냥 만들기"** — 없는 기능인데 버그로 분류해서 여기서 구현. FIX: feature-request 분류 후 CEO 보고.
 6. **외부 루프 무한** — Phase 3에서 계속 새 버그 발견해서 영원히 안 끝남. FIX: max 5회.
 7. **dev 서버 안 띄우고 시작** — browser-use가 접속할 서버가 없음. FIX: Step -1에서 검증.
+8. **자기평가 편향** — dev가 수정한 코드를 같은 맥락 공유하는 critic이 검증. FIX: critics에게 dev 수정 의도 미전달, 코드+버그만 전달.
+9. **거짓 버그 등록** — 서버 크래시 중 모든 페이지를 버그로 등록. FIX: sweep 전/중 서버 health check. source: server-crash 태그.
+10. **원인 미상 수정** — root_cause null인 채 수정 시도. FIX: Core Rule #9(근본 원인 못 찾으면 수정 금지) 이미 있지만 상태도 체크. root_cause null이면 Step 2b 진입 불가.
+11. **프로세스 비대화** — 효과 없는 규칙 누적. FIX: 2 Sprint 무효과 규칙은 폐기 후보. Core Rule #23 참조.
