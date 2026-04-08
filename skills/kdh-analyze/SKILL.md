@@ -115,7 +115,7 @@ CEO에게 보여주기 전, **3가지 편향 자가 진단**:
 echo "[분석 요약 + 추천 + self-attack 결과]" > /tmp/kdh-analyze-review.md
 
 # Codex CLI로 cross-verification
-codex exec "다음 분석 결과를 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향을 찾아라. 한국어.
+codex exec "다음 분석 결과를 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향을 찾아라. Respond in preset gate.language.
 $(cat /tmp/kdh-analyze-review.md)" 2>&1 | tail -60
 ```
 
@@ -178,7 +178,7 @@ CEO 선택: [A/B/C 또는 "대기중"]
 
 ## 출력 규칙
 
-- **한국어** — 기술 용어 최소화, 비유로 설명
+- **preset gate.language** — 기술 용어 최소화, 비유로 설명
 - **구체적** — "좋은 방법"이 아니라 "이 파일의 이 부분을 이렇게"
 - **선택지** — 마지막에 항상 A/B/C 선택지 제시
 - **짧은 요약 먼저** — TL;DR 3줄 (confidence 포함) → 상세 분석

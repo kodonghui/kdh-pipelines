@@ -115,7 +115,7 @@ description: "뭐해야하지? v2 — 프로젝트 상태 읽고 다음 할 일 
 
 ```
 ══════════════════════════════════════
-  CORTHEX v3 — 현재 상태
+  {project_name} — 현재 상태 (project_name from project-context.yaml)
 ══════════════════════════════════════
 
 지금 위치: Phase {N} / Sprint {N} / {mode}

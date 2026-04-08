@@ -195,7 +195,7 @@ EOF
 
 # Codex 실행
 bash ~/.claude/scripts/codex-review.sh /tmp/kdh-plan-review.md \
-  "이 실행 계획을 공격적으로 리뷰해라. 빠진 태스크, 잘못된 의존관계, 비현실적 복잡도, 빠진 롤백 전략, 빠진 중단 조건을 찾아라. 수락 기준이 EARS 5 패턴(Ubiquitous/Event-driven/State-driven/Unwanted/Optional) 중 하나를 따르는지 확인하고, should/needs to/must 같은 비EARS 표현이 있으면 지적해라. 한국어로 답해라."
+  "이 실행 계획을 공격적으로 리뷰해라. 빠진 태스크, 잘못된 의존관계, 비현실적 복잡도, 빠진 롤백 전략, 빠진 중단 조건을 찾아라. 수락 기준이 EARS 5 패턴(Ubiquitous/Event-driven/State-driven/Unwanted/Optional) 중 하나를 따르는지 확인하고, should/needs to/must 같은 비EARS 표현이 있으면 지적해라. Respond in preset gate.language."
 ```
 
 Codex 결과 처리:
@@ -250,7 +250,7 @@ C) 더 분석 필요
 
 5. CEO 보고 (★ 필수):
    plan 저장 후 채팅으로 전체 내용을 CEO에게 보여준다.
-   - 목표, 태스크 목록, 의존관계, 위험을 한국어로 설명
+   - 목표, 태스크 목록, 의존관계, 위험을 preset gate.language로 설명
    - CEO가 "좋아" / "수정해" / "다시" 응답할 때까지 대기
    - CEO 승인 없이 다음 단계 진행 금지
    - plan 파일만 저장하고 보고 안 하면 = 규칙 위반

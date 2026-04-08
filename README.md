@@ -105,6 +105,11 @@ cp -r _pipeline/rules/typescript ~/.claude/rules/typescript
 
 # Install hooks
 cp _pipeline/hooks/* .claude/hooks/
+
+# Configure your project preset
+cp _pipeline/presets/example.yaml presets/my-project.yaml
+# Edit presets/my-project.yaml with your project settings:
+#   project.name, e2e.base_url, gate.language, ui.components, etc.
 ```
 
 ---
@@ -171,11 +176,10 @@ cp _pipeline/hooks/* .claude/hooks/
 | `dream` | Creative/exploratory ideation. |
 | `docs` | Documentation generation. |
 
-### Project-Specific (1)
+### Project Presets
 
-| Skill | Description |
-|-------|-------------|
-| `corthex-v3-patterns` | CORTHEX v3 project patterns reference. |
+Project-specific patterns and checklists go in `presets/{project-name}/`.
+Example: `presets/corthex/` contains CORTHEX v3 patterns and feature checklist.
 
 ---
 
@@ -249,8 +253,7 @@ kdh-pipelines/
 │   ├── instinct-status/ instinct-export/ instinct-import/
 │   ├── plan/ verify/ checkpoint/
 │   ├── promote/ prune/ aside/ claw/ dream/ docs/
-│   ├── corthex-v3-patterns/     # Project patterns
-│   └── kdh-full-auto-pipeline/  # [LEGACY — do not use]
+│   └── (project patterns go in presets/{project}/)
 ├── agents/                      # 33 specialized agents
 ├── rules/                       # Language coding rules
 │   ├── common/

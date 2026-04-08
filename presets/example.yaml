@@ -1,51 +1,88 @@
 # KDH Pipeline Preset — Copy this file and customize for your project
-# Usage: Save as presets/my-project.yaml in your project root
+# Usage: Save as presets/{your-project}.yaml
+# All fields have sensible defaults — only override what you need.
 
 project:
   name: "my-project"
   description: "Brief project description"
+  phase: 1
+  total_stories: 0
+  sprints: 0
 
-# E2E Testing
+# Monorepo structure (leave empty for single-package projects)
+monorepo:
+  manager: ""               # turborepo | pnpm | lerna | npm | yarn | ""
+  package_manager: "npm"    # bun | pnpm | yarn | npm
+  packages: {}
+  # Example:
+  #   server: "packages/server"
+  #   admin: "packages/admin"
+  #   app: "packages/app"
+  #   shared: "packages/shared"
+
+# Contract types (for monorepo with shared types)
+contracts:
+  path: ""
+  barrel: ""
+  enforcement: strict       # strict | warn | off
+
+# Database
+db:
+  provider: ""              # neon | supabase | planetscale | local | ""
+  orm: ""                   # drizzle | prisma | typeorm | knex | ""
+  schema_path: ""
+
+# UI framework
+ui:
+  framework: ""             # react | vue | svelte | angular | next | nuxt | remix | astro | ""
+  bundler: ""               # vite | webpack | turbopack | ""
+  css: ""                   # tailwind | css-modules | styled-components | ""
+  components: ""            # subframe | shadcn | mui | antd | "" (empty = no design system)
+  themes_path: ""
+
+# E2E testing
 e2e:
   base_url: "https://your-site.com"
-  admin_login:
-    endpoint: "/api/auth/admin/login"
-    username: "admin"
-    password: "admin1234"
-  ceo_login:
-    endpoint: "/api/auth/login"
-    username: "ceo"
-    password: "ceo1234"
+  dev_admin_url: "http://localhost:5173"
+  dev_api_url: "http://localhost:3000/api"
   test_company_prefix: "E2E-TEMP"
+  journeys: []
+  # Example:
+  #   - "signup → login"
+  #   - "entity CRUD"
 
-# UXUI Redesign
-uxui:
-  themes:
-    - name: "default"
-      keywords: "modern clean professional SaaS"
-      target: "General users"
-  packages:
-    - "app"
-    - "admin"
-  icon_library: "lucide-react"
-
-# Planning
+# Planning artifacts
 planning:
-  # Files to reference during planning stages (relative to project root)
+  artifacts_path: "_bmad-output/planning-artifacts/"
+  party_logs_path: "_bmad-output/party-logs/"
+  sprint_status: "_bmad-output/implementation-artifacts/sprint-status.yaml"
   reference_docs: []
-  # User gate questions can be customized per project
-  # Default gates from the pipeline will be used if not specified here
 
-# Code Review
+# Code review
+review:
+  critics: ["winston", "quinn"]
+  pass_threshold: 7.5
+  min_cycles: 1
+  contract_compliance: strict  # strict | warn | off
+
+# GATE communication
+gate:
+  language: "english"       # english | korean | japanese | etc.
+  tech_jargon: true         # allow technical terms in reports
+  auto_mode_keyword: "continue"
+
+# Code review limits
 code_review:
-  # Files/paths that should never be auto-fixed
-  protected_paths:
-    - "src/auth/"
-    - "src/middleware/"
-    - "migrations/"
-  # Max files per auto-fix
+  protected_paths: []
   smart_limits:
     logic: 3
     style: 10
     text: 15
     mixed: 5
+
+# Tools
+tools:
+  browseruse_venv: ""       # path to browser-use venv (empty = skip browser-use)
+  codex_enabled: true
+  server_entry: "src/index.ts"  # main server file
+  server_tmux_name: ""      # tmux session name (empty = auto from project.name)

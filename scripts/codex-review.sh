@@ -5,8 +5,9 @@
 # 모든 kdh 명령어에서 Codex 검증 시 사용.
 # Codex가 없으면 설치, 인증 실패면 에러 반환 (자동 스킵 금지).
 
-FILE="${1:?Usage: codex-review.sh <file> [prompt]}"
-PROMPT="${2:-다음 내용을 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향, 비현실적 가정을 찾아라. 반드시 3개 이상 이슈를 찾아라. 한국어로 답해라.}"
+FILE="${1:?Usage: codex-review.sh <file> [prompt] [language]}"
+LANG_OVERRIDE="${3:-English}"
+PROMPT="${2:-다음 내용을 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향, 비현실적 가정을 찾아라. 반드시 3개 이상 이슈를 찾아라. Respond in ${LANG_OVERRIDE}.}"
 
 # Check codex installed
 if ! command -v codex &> /dev/null; then

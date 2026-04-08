@@ -9,7 +9,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const COUNTER_FILE = '/tmp/corthex-edit-counter.json';
+const projectName = path.basename(process.cwd()).replace(/[^a-z0-9-]/gi, '-');
+const COUNTER_FILE = `/tmp/${projectName}-edit-counter.json`;
 const WARN_THRESHOLD = 5;
 const ESCALATE_THRESHOLD = 8;
 

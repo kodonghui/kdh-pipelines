@@ -35,7 +35,7 @@
 | 1-2 | 전부 뜬구름. "좋은 UX 제공", "성능 최적화" 수준 |
 
 **예시:**
-- 10점: `bg-slate-950 (#020617)에서 bg-zinc-900 (#18181B)으로 변경. 파일: packages/admin/src/pages/dashboard.tsx:42`
+- 10점: `bg-slate-950 (#020617)에서 bg-zinc-900 (#18181B)으로 변경. 파일: {admin_package_path}/src/pages/example.tsx (generic example)`
 - 5점: `배경색을 어두운 계열로 변경`
 - 2점: `적절한 다크 테마 적용`
 

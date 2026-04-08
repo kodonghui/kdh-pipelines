@@ -20,7 +20,7 @@ disable-model-invocation: true
 ## Rules
 
 1. **NO code execution.** Read-only tools only (Read, Grep, Glob, WebSearch, WebFetch). Edit/Write/Bash 금지.
-2. **Korean response.** 존댓말. 모든 섹션이 한눈에 스캔 가능하게.
+2. **Response in preset gate.language.** 존댓말. 모든 섹션이 한눈에 스캔 가능하게.
 3. **No emoji in body text.** 섹션 헤더에도 plain text만.
 
 ## 4 Behavioral Principles

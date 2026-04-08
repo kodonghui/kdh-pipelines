@@ -58,7 +58,7 @@ _bmad-output/bug-fix/
 while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
 ```
 
-### 보고 형식 (한국어, 번호 목차 필수)
+### 보고 형식 (preset gate.language, 번호 목차 필수)
 
 모든 보고는 번호 목차(I./II. 또는 1./2.) 구조 필수 (CLAUDE.md 규칙).
 
@@ -90,13 +90,15 @@ while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
 
 ```
 1. browser-use 환경:
-   - source /home/ubuntu/browser-use-env/bin/activate
+   - source ${BROWSERUSE_VENV:-$PROJECT_ROOT/browser-use-env}/bin/activate
+     (BROWSERUSE_VENV = preset tools.browseruse_venv. 비어있으면 browser-use 스킵.)
    - python3.11 -c "from browser_use import Agent" → 임포트 확인
    - python3.11 -c "from browser_use.llm.openai.chat import ChatOpenAI" → LLM 확인
    - 안 되면 → 🚩 BLOCK. CEO 보고. 자동 설치 시도 금지.
 
 2. Playwright:
-   - cd packages/admin && bunx playwright --version → 설치 확인
+   - cd {admin_package_path} && {package_manager}x playwright --version → 설치 확인
+     (admin_package_path, package_manager from project-context.yaml)
    - 안 되면 → 🚩 BLOCK.
 
 3. Codex CLI:
@@ -105,10 +107,12 @@ while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
    - 안 되면 → 🚩 BLOCK.
 
 4. Dev 서버:
-   - curl -sf http://localhost:3000 → 응답 확인
+   - curl -sf {e2e.dev_api_url} → 응답 확인
+     (e2e.dev_api_url from preset or project-context.yaml)
    - 안 떠있으면 → 자동 시작:
-     tmux new-session -d -s corthex-server \
-       "cd /home/ubuntu/corthex-v3/packages/server && NODE_ENV=production PORT=3000 bun run src/index.ts 2>/tmp/corthex-server.log"
+     tmux new-session -d -s {project_name}-server \
+       "cd $PROJECT_ROOT/{server_package_path} && NODE_ENV=production PORT={port} {package_manager} run {server_entry} 2>/tmp/{project_name}-server.log"
+     (server_package_path, package_manager, server_entry from project-context.yaml; project_name from preset)
    - 60초 대기 후 재확인
    - sweep 시작 전 curl 200 확인 → sweep 중 5xx 연속 3회 감지 시:
      → 현재 sweep 중단
@@ -118,7 +122,7 @@ while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
    - 안 되면 → 🚩 BLOCK.
 
 5. OpenAI API 키 (browser-use용):
-   - python3.11 -c "from dotenv import load_dotenv; import os; load_dotenv('/home/ubuntu/corthex-v3/.env'); k=os.environ.get('OPENAI_API_KEY',''); print('OK' if len(k)>10 else 'EMPTY')"
+   - python3.11 -c "from dotenv import load_dotenv; import os; load_dotenv('$PROJECT_ROOT/.env'); k=os.environ.get('OPENAI_API_KEY',''); print('OK' if len(k)>10 else 'EMPTY')"
    - 안 되면 → 🚩 BLOCK. .env에 OPENAI_API_KEY 확인 필요.
 
 출력:
@@ -174,21 +178,24 @@ kdh-dev-pipeline의 Step 0과 동일. project-context.yaml 재사용.
 팀 구성: 없음 (오케스트레이터 직접 실행)
 
 Step 1: Playwright 기존 smoke 실행
-  cd packages/admin && bunx playwright test e2e/smoke.spec.ts
+  cd {admin_package_path} && {package_manager}x playwright test e2e/smoke.spec.ts
+  (admin_package_path, package_manager from project-context.yaml)
   → FAIL 목록 = 확실한 버그
   → 결과 기록
 
 Step 2: browser-use 전수 탐색
-  source /home/ubuntu/browser-use-env/bin/activate
-  cd /home/ubuntu/corthex-v3
-  python3.11 _browser-use-test/sweep.py --url http://localhost:3000
+  source ${BROWSERUSE_VENV:-$PROJECT_ROOT/browser-use-env}/bin/activate
+  cd $PROJECT_ROOT
+  python3.11 _browser-use-test/sweep.py --url {e2e.dev_api_url}
+  (BROWSERUSE_VENV from preset tools.browseruse_venv; e2e.dev_api_url from preset)
   
   ★ timeout 없음 — 탐색이 끝날 때까지 기다림
   ★ 한 페이지에 기능이 여러 개 있을 수 있으므로 시간 제한 두지 않음
   ★ stall 감지: 5분간 아무 action이 없으면 → 현재 페이지 탐색 종료, 다음 페이지로
 
 Step 3: 서버 로그 분석
-  tail -1000 /tmp/corthex-server.log | grep -E "(Error|500|FATAL|throw)"
+  tail -1000 /tmp/{project_name}-server.log | grep -E "(Error|500|FATAL|throw)"
+  (project_name from preset project.name)
   → 최근 에러 패턴 추출
   → 각 에러를 버그로 등록
 
@@ -197,9 +204,9 @@ Step 4: 3개 소스 종합 → bug-fix-state.yaml 생성
   
   _bmad-output/bug-fix/bug-fix-state.yaml:
   
-  project: corthex-v3
+  project: {project_name}
   pipeline: bug-fix
-  version: v1.0
+  version: v2.0
   last_updated: "{timestamp}"
   outer_loop_count: 0
   max_outer_loops: 5
@@ -316,17 +323,17 @@ Step 2b: FIX (dev 에이전트)
 
 Step 2c: REGRESSION TEST (dev 에이전트, 이어서)
   dev가 Playwright 회귀 테스트 작성:
-  → packages/admin/e2e/bugfix/bug-{id}.spec.ts
+  → {admin_package_path}/e2e/bugfix/bug-{id}.spec.ts
   → 이 버그의 repro 시나리오를 Playwright 코드로 고정
   → 테스트 실행해서 PASS 확인
   dev → [Fix Complete] SendMessage
 
 Step 2d: VERIFY (오케스트레이터 직접)
   1. Playwright 회귀 테스트 실행:
-     cd packages/admin && bunx playwright test e2e/bugfix/bug-{id}.spec.ts
+     cd {admin_package_path} && {package_manager}x playwright test e2e/bugfix/bug-{id}.spec.ts
   
   2. browser-use 재확인:
-     source /home/ubuntu/browser-use-env/bin/activate
+     source ${BROWSERUSE_VENV:-$PROJECT_ROOT/browser-use-env}/bin/activate
      python3.11 _browser-use-test/verify-bug.py \
        --bug-id BUG-{id} \
        --description "{description}" \
@@ -500,9 +507,10 @@ Step 4c: Push + 배포 대기
   → GitHub Actions 배포 완료 대기
 
 Step 4d: 프로덕션 확인 (오케스트레이터)
-  browser-use로 https://corthex-hq.com 접속:
-  python3.11 _browser-use-test/sweep.py --url https://corthex-hq.com
+  browser-use로 {e2e.base_url} 접속:
+  python3.11 _browser-use-test/sweep.py --url {e2e.base_url}
   → 프로덕션에서도 수정 확인
+  (e2e.base_url from preset)
   ★ localhost 통과 + 프로덕션 실패 = 다른 문제 (env/deploy 버그)
 
 Step 4e: GATE — CEO 확인 (필수)
@@ -513,7 +521,7 @@ Step 4e: GATE — CEO 확인 (필수)
    - BUG-002: {description} ✅
    ...
    
-   https://corthex-hq.com 에서 확인해주세요."
+   {e2e.base_url} 에서 확인해주세요."
   
   → CEO "OK" → 파이프라인 종료. bug-fix-state.yaml에 gate: approved.
   → CEO "여기 또 이상해" → 새 버그 추가 → Phase 1로 (새 sweep)
@@ -569,13 +577,13 @@ bugfix_metrics:
 
 ```yaml
 # ═══════════════════════════════════════════════════════════
-# CORTHEX v3 — Bug Fix Pipeline State v1.0
+# Bug Fix Pipeline State v2.0
 # 모든 세션은 이 파일을 먼저 읽고 정확히 이 지점부터 이어감.
 # ═══════════════════════════════════════════════════════════
 
-project: corthex-v3
+project: {project_name}
 pipeline: bug-fix
-version: v1.0
+version: v2.0
 last_updated: "2026-04-05T..."
 outer_loop_count: 0
 max_outer_loops: 5
@@ -736,7 +744,7 @@ timeout: NONE
 - `browser_use.llm.openai.chat.ChatOpenAI` 사용 (GPT-5 모델)
 - Python 3.10 호환 불가 — 반드시 Python 3.11+
 - BrowserConfig 제거됨 — `BrowserProfile` + `BrowserSession` 사용
-- venv 경로: `/home/ubuntu/browser-use-env/`
+- venv 경로: `${BROWSERUSE_VENV}` (preset tools.browseruse_venv에서 설정)
 - **API 키: OPENAI_API_KEY 사용** — `.env`에서 `load_dotenv()`로 로드. Claude OAuth 토큰은 browser-use에서 사용 불가 (Anthropic Messages API가 OAuth 미지원).
 
 ---

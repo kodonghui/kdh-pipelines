@@ -65,7 +65,7 @@ Run as background subagent: `/dream`
 ```
 1. tsc 체크: 전 패키지 (server, admin, app)
    - 에러 수 기록
-2. console.log 잔여 체크 (packages/app + packages/admin)
+2. console.log 잔여 체크 (project-context.yaml의 monorepo.packages 참조)
 3. bun.lock 변경 감지:
    - git diff HEAD -- bun.lock | head -1
    - 변경 있으면 "lockfile changed" 경고
@@ -121,7 +121,7 @@ ecc-3h-log.md 기록:
 
 ## 주 1회 확장 (일요일 자정 KST)
 
-Remote trigger로 자동 실행 (trig_017oqLsrT4yeiRsAZwuGj7fu):
+Remote trigger로 자동 실행 (프로젝트별 trigger ID 설정):
 
 ```
 1. 보안 스캔 — .claude/ 시크릿/취약점

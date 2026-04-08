@@ -28,7 +28,7 @@ Sprint 실행 파이프라인. 스토리별 개발 + 리뷰 + 테스트 + E2E + 
 while true; do claude -p "/kdh-dev-pipeline 계속"; sleep 5; done
 ```
 
-### 보고 형식 (한국어)
+### 보고 형식 (preset gate.language)
 ```
 시작:    "Sprint {N} 이어서 합니다. 스토리 {M}개 남았어요."
 스토리:  "스토리 {id} 완료. 리뷰 평균: {X.X}/10. ({N}/{M} 진행)"
@@ -386,14 +386,21 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 
    === UI STORY GATE (v10 — 오케스트레이터 주도, dev는 MCP 접근 불가) ===
    1c. Check: does this story create or modify UI pages? (*.tsx in features/)
-       If YES → Subframe Design Gate (오케스트레이터가 직접 실행):
-         i.   오케스트레이터: Subframe MCP design_page → 페이지 레이아웃 생성
-         ii.  오케스트레이터: [GATE page-design] → CEO 디자인 승인
-         iii. 오케스트레이터: get_page_info → Subframe 코드 추출
-         iv.  오케스트레이터: packages/admin/src/features/{page}.tsx 작성 (Subframe 컴포넌트 사용)
-         v.   dev 에이전트: Subframe 코드 위에 비즈니스 로직 구현 (API 연결, 폼 검증)
-         ★ dev에게 "Subframe 써라" 지시 금지 — MCP 접근 안 됨
-       If NO → skip to step 2
+       IF project-context.yaml ui.components == "subframe":
+         If YES → Subframe Design Gate (오케스트레이터가 직접 실행):
+           i.   오케스트레이터: Subframe MCP design_page → 페이지 레이아웃 생성
+           ii.  오케스트레이터: [GATE page-design] → CEO 디자인 승인
+           iii. 오케스트레이터: get_page_info → Subframe 코드 추출
+           iv.  오케스트레이터: {admin_package_path}/src/features/{page}.tsx 작성 (from project-context.yaml, Subframe 컴포넌트 사용)
+           v.   dev 에이전트: Subframe 코드 위에 비즈니스 로직 구현 (API 연결, 폼 검증)
+           ★ dev에게 "Subframe 써라" 지시 금지 — MCP 접근 안 됨
+         If NO → skip to step 2
+       ELSE (non-Subframe projects):
+         If YES → UI Design Gate:
+           i.   오케스트레이터: 프로젝트 UI 컴포넌트 라이브러리로 페이지 레이아웃 작성
+           ii.  오케스트레이터: [GATE page-design] → CEO 디자인 승인
+           iii. dev 에이전트: 비즈니스 로직 구현 (API 연결, 폼 검증)
+         If NO → skip to step 2
 
 2. dev implements REAL working code (no stubs/mocks/placeholders)
    2b. UI stories: apply active theme from themes.ts, use consistent layout from Subframe reference
@@ -406,37 +413,42 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 5. Save: context-snapshots/stories/{story-id}-phase-b.md
 ```
 
-### Subframe + Theme Workflow (v10 — Sprint 0 검증 반영)
+### UI Component + Theme Workflow (conditional on project-context.yaml)
 
 ```
-Subframe Setup (Sprint 0, 1회):
-  1. npx @subframe/cli@latest init --auth-token {token} -p {projectId} \
-       --dir ./src/ui --alias "@/ui/*" --tailwind --css-path src/index.css --install --sync
-  2. 44개 컴포넌트 src/ui/components/에 sync됨
-  3. UI는 반드시 Subframe 컴포넌트로 구현 (@/ui/components/* 필수 — 수동 React/Tailwind 금지)
+IF ui.components == "subframe":
 
-UI Story Flow (오케스트레이터 주도):
-  1. 오케스트레이터: Subframe MCP design_page → CEO에게 GATE (디자인 확인)
-  2. 오케스트레이터: Subframe MCP get_page_info → 페이지 코드 추출
-  3. 오케스트레이터: packages/admin/src/features/{page}.tsx 작성
-     - @/ui/components/Button 등 Subframe 컴포넌트 직접 사용
-     - 테마는 Subframe 디자인 토큰 사용 (brand-600, neutral-border 등)
-     - CEO 5개 테마 전환: CSS 변수 오버라이드로 구현
-  4. dev 에이전트: 비즈니스 로직 추가 (API 연결, 폼 검증, 라우팅)
-  
-  dev 에이전트는 Subframe MCP에 접근 불가 → 오케스트레이터가 직접 처리
-  import 경로: @/ui/components/Button (tsconfig paths alias)
-  컴포넌트 업데이트: npx @subframe/cli@latest sync Button TextField ...
+  Subframe Setup (Sprint 0, 1회):
+    1. npx @subframe/cli@latest init --auth-token {token} -p {projectId} \
+         --dir ./src/ui --alias "@/ui/*" --tailwind --css-path src/index.css --install --sync
+    2. 44개 컴포넌트 src/ui/components/에 sync됨
+    3. UI는 반드시 Subframe 컴포넌트로 구현 (@/ui/components/* 필수 — 수동 React/Tailwind 금지)
 
-Theme System:
-  - CSS 변수 기반 테마 전환 (5개 테마: 벚꽃, Toss 라이트/다크, 라벤더 등)
-  - Subframe 디자인 토큰과 호환
-  - 새 테마 추가 = CSS 변수 세트 1개 추가
+  UI Story Flow (오케스트레이터 주도):
+    1. 오케스트레이터: Subframe MCP design_page → CEO에게 GATE (디자인 확인)
+    2. 오케스트레이터: Subframe MCP get_page_info → 페이지 코드 추출
+    3. 오케스트레이터: {admin_package_path}/src/features/{page}.tsx 작성 (from project-context.yaml)
+       - @/ui/components/Button 등 Subframe 컴포넌트 직접 사용
+       - 테마는 Subframe 디자인 토큰 사용 (brand-600, neutral-border 등)
+       - CEO 5개 테마 전환: CSS 변수 오버라이드로 구현
+    4. dev 에이전트: 비즈니스 로직 추가 (API 연결, 폼 검증, 라우팅)
+    
+    dev 에이전트는 Subframe MCP에 접근 불가 → 오케스트레이터가 직접 처리
+    import 경로: @/ui/components/Button (tsconfig paths alias)
+    컴포넌트 업데이트: npx @subframe/cli@latest sync Button TextField ...
 
-Sprint Zero GATE #17 (theme-select):
-  - Sprint Zero 완료 후 CSS 변수 기반 후보 테마 5개 준비
-  - CEO에게 dev 서버 또는 HTML 파일로 보여주기
-  - CEO가 기본 테마 선택 → defaultTheme 설정
+  Theme System:
+    - CSS 변수 기반 테마 전환 (프로젝트 preset 또는 design-references에서 테마 목록 참조)
+    - Subframe 디자인 토큰과 호환
+    - 새 테마 추가 = CSS 변수 세트 1개 추가
+
+  Sprint Zero GATE #17 (theme-select):
+    - Sprint Zero 완료 후 CSS 변수 기반 후보 테마 5개 준비
+    - CEO에게 dev 서버 또는 HTML 파일로 보여주기
+    - CEO가 기본 테마 선택 → defaultTheme 설정
+
+ELSE (non-Subframe):
+  Use project's component library. Theme system from project preset.
 ```
 
 ### Phase D: Test + QA (v10.1 — Phase E 통합)
@@ -860,12 +872,12 @@ Claude = 최종 판정 (Second Opinion + 자체 분석 종합)
    import하는 파일이 있고 + export 시그니처가 바뀌었으면 → INTEGRATION-WARNING
 
 2. 미들웨어 체인 일관성:
-   packages/server/src/routes/*.ts 파일들의 미들웨어 사용 비교:
+   {server_package_path}/src/routes/*.ts 파일들의 미들웨어 사용 비교 (from project-context.yaml):
      requireAuth, verifyTeamOwnership 등
    Story A가 미들웨어 추가/변경했는데 다른 라우트에 영향 → WARNING
 
 3. 프론트 라우팅 일관성:
-   packages/admin/src/main.tsx의 Route 정의
+   {admin_package_path}/src/main.tsx의 Route 정의 (from project-context.yaml)
    vs 실제 페이지 컴포넌트의 auth 요구사항
    ProtectedRoute 안의 페이지가 비인증 접근 시도 → WARNING
 
@@ -898,7 +910,7 @@ Claude = 최종 판정 (Second Opinion + 자체 분석 종합)
    tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
      --sandbox read-only \
      -o _bmad-output/party-logs/{sprint}-batch-{N}-second-opinion.md \
-     -C /home/ubuntu/corthex-v3 <<'"'"'PROMPT'"'"'
+     -C $PROJECT_ROOT <<'"'"'PROMPT'"'"'
    Integration review for batch {N}.
    Read /tmp/batch-diff.txt and analyze for cross-story integration issues.
    Focus: shared component changes, middleware consistency, auth flow,
@@ -1002,10 +1014,10 @@ sprint-status.yaml 업데이트:
 
 2. 간접 영향 분석:
    이번 Sprint가 수정한 공유 모듈:
-     packages/shared/src/
-     packages/server/src/middleware/
-     packages/admin/src/lib/
-     packages/admin/src/components/ (공용 컴포넌트)
+     {shared_package_path}/src/ (from project-context.yaml)
+     {server_package_path}/src/middleware/ (from project-context.yaml)
+     {admin_package_path}/src/lib/ (from project-context.yaml)
+     {admin_package_path}/src/components/ (공용 컴포넌트, from project-context.yaml)
    이 모듈을 이전 Sprint 파일이 import하는지:
    → import 있으면 → REGRESSION-WARNING
 
@@ -1047,7 +1059,7 @@ sprint-status.yaml 업데이트:
    tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
      --sandbox read-only \
      -o _bmad-output/party-logs/{sprint}-sprint-second-opinion.md \
-     -C /home/ubuntu/corthex-v3 <<'"'"'PROMPT'"'"'
+     -C $PROJECT_ROOT <<'"'"'PROMPT'"'"'
    Sprint integration review for sprint {N}.
    Read /tmp/sprint-diff.txt and analyze regressions against previous sprint.
    Focus: shared module changes, auth flow consistency, env vars, API envelope format.

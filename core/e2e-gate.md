@@ -69,12 +69,12 @@ CHANGED_PAGES=$(git diff --name-only HEAD~1 HEAD | grep -E 'packages/(app|admin)
 
 ```
 Admin 테스트: 
-  browser_navigate → localhost:{PORT}/admin/login
-  browser_fill_form → admin / admin1234
+  browser_navigate → preset e2e.dev_admin_url/login
+  browser_fill_form → preset e2e.admin_login 참조
   browser_click → 세션 시작
 
 App 테스트:
-  browser_navigate → localhost:{PORT}/login
+  browser_navigate → preset e2e.dev_app_url/login
   browser_fill_form → ceo / {password}
   browser_click → INITIALIZE COMMAND
 ```
@@ -214,12 +214,10 @@ Failure report format:
 ```yaml
 e2e_gate:
   enabled: true
-  admin_url: "http://localhost:5173"
-  app_url: "http://localhost:5174"
-  api_url: "http://localhost:3000/api"
-  admin_credentials:
-    username: "admin"
-    password: "admin1234"
+  admin_url: "preset e2e.dev_admin_url"
+  app_url: "preset e2e.dev_app_url"
+  api_url: "preset e2e.dev_api_url"
+  admin_credentials: "preset e2e.admin_login 참조"
   app_credentials:
     username: "ceo"
     password: "{from-env}"
