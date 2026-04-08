@@ -533,7 +533,7 @@ Step 3: /kdh-bug-fix-pipeline 필수 실행 ★
 
 Step 4: 5개 테마 스크린샷
   - browser-use 또는 Playwright로 주요 페이지 × 5테마 스크린샷
-  - 저장: _bmad-output/phase-{N}/e2e-screenshots/sprint-end/
+  - Sprint End 스크린샷은 bugfix 파이프라인이 관리: _bmad-output/bug-fix/e2e-screenshots/
 
 Step 5: CEO GATE #19 (브라우저 확인)
   - "Sprint N 완료! 브라우저에서 확인해주세요."
@@ -577,7 +577,7 @@ Implement real, working features. Fix based on critic feedback. No stubs.
 
 ## Mode C: Parallel Story Dev
 
-Usage: `/kdh-full-auto-pipeline parallel 9-1 9-2 9-3` (max 3 workers)
+Usage: `/kdh-dev-pipeline parallel 9-1 9-2 9-3` (max 3 workers)
 Requires: stories are independent (no mutual dependencies, different files)
 
 ```
@@ -603,7 +603,7 @@ Contract & Wiring in Parallel (v9.4):
 
 ## Mode D: Swarm Auto-Epic
 
-Usage: `/kdh-full-auto-pipeline swarm epic-9`
+Usage: `/kdh-dev-pipeline swarm epic-9`
 
 ```
 Step 0: Project Auto-Scan → load project-context.yaml
@@ -696,24 +696,27 @@ If any UI check fails → fix → re-run → must pass.
 
 ---
 
-## Pipeline Interconnection: UXUI Redesign → Code Review
+## Pipeline Interconnection (v11.0)
 
-When `/kdh-uxui-redesign-full-auto-pipeline` completes, auto-trigger full code review:
+### Planning → Dev (입력)
+Planning Stage 8 완료 → pipeline-state.yaml `mode: sprint` 감지 → Sprint 시작.
+입력 산출물: epics-and-stories.md, architecture.md, api-contracts.md, sprint-status.yaml
+경로: `_bmad-output/phase-{N}/planning-artifacts/`
 
-```
-Review context:
-  type: "uxui-redesign"
-  risk_level: HIGH (forced)
+### Dev → Bugfix (Sprint End)
+Sprint 내 모든 스토리 완료 → Sprint End Step 3 → `/kdh-bug-fix-pipeline` 실행.
+(Core Rule #40)
 
-Required checks:
-  1. Theme consistency across ALL pages
-  2. Full interaction E2E on ALL pages (not just changed)
-  3. Router integrity (all imports resolve, no 404s)
-  4. Accessibility baseline (WCAG AA contrast, keyboard nav, screen reader)
-  5. Performance sanity (bundle size, no render-blocking imports)
+### Bugfix → Dev (design 에스컬레이션 수신)
+bug-fix-state.yaml에서 `escalation: dev-pipeline` + `escalation_status: pending` 발견 시:
+1. CEO 확인 후 해당 Story 재개발 or 설계 검토
+2. origin=design인 버그의 root_cause를 참고하여 Story Phase A에서 반영
 
-Output: _qa-e2e/uxui-redesign-review-{date}.md
-```
+### 스크린샷 경로 표준
+- Story별: `_bmad-output/phase-{N}/e2e-screenshots/story-{id}/`
+- Sprint End(bugfix): `_bmad-output/bug-fix/e2e-screenshots/`
+
+참조: `_bmad-output/pipeline-protocol.md`
 
 ---
 

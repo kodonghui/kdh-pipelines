@@ -916,3 +916,20 @@ Non-BMAD stages use 4-agent party mode (1 Writer + 3 Critics with generic roles)
 
 ---
 
+## Pipeline Interconnection (v10.5)
+
+### Planning → Dev (Sprint 시작 신호)
+Stage 8 Sprint Planning 완료 후:
+1. sprint-status.yaml 생성 → `_bmad-output/phase-{N}/planning-artifacts/`
+2. pipeline-state.yaml에 `mode: sprint` 설정
+3. Dev 파이프라인이 pipeline-state.yaml 읽고 Sprint 시작
+
+★ Planning이 dev를 직접 호출하지 않음 — pipeline-state.yaml이 신호.
+
+### Bugfix → Planning (requirements 에스컬레이션 수신)
+bug-fix-state.yaml에서 `escalation: planning-pipeline` + `escalation_status: pending` 발견 시:
+1. CEO 확인 후 해당 Stage(주로 Stage 2 PRD 또는 Stage 4 Architecture) 재검토
+2. 수정된 산출물 → Dev에 영향 스토리 재개발 신호
+
+참조: `_bmad-output/pipeline-protocol.md`
+
