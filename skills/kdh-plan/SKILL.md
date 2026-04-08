@@ -258,10 +258,11 @@ C) 더 분석 필요
 - [ ] **Codex 실행 완료?** ← 필수
 - [ ] CEO 요약 반 페이지 이내?
 
-## 3명령어 워크플로우
+## 4명령어 워크플로우
 
 ```
-/kdh-research [주제]  → 조사 (7각도, 2라운드, 교차검증)
+/kdh-discuss [주제]   → 논의 (선택지 + 반대의견 + 다음 행동)
+/kdh-research [주제]  → 조사 (7각도, 검색원 라우팅, 신뢰도 점수)
 /kdh-analyze [주제]   → 분석 (6관점, pre-mortem, self-attack, Codex)
 /kdh-plan [작업]      → 실행 계획 (DAG 분해, 롤백, Codex 필수)
 CEO: "A"             → 즉시 실행
