@@ -9,7 +9,6 @@ description: >
   "/kdh-discuss", "kdh-discuss".
   Switches Claude into active thinking partner mode — no code execution,
   opinionated analysis, structured options with clear recommendation and next action.
-disable-model-invocation: true
 ---
 
 # /kdh-discuss — CEO 논의 파트너 v3
