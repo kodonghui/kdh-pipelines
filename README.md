@@ -1,4 +1,4 @@
-# KDH Pipeline Suite v11.0
+# KDH Pipeline Suite v11.1
 
 > 3 파이프라인 + 4 명령어 + ECC 자동화 = AI 에이전트 개발 풀스택 하네스
 
@@ -57,7 +57,7 @@ All feature work starts with 4 preparatory commands before entering a pipeline:
 
 | Command | Skill | Purpose |
 |---------|-------|---------|
-| `/kdh-discuss` | `kdh-discuss` | CEO와 기능 방향 논의. 요구사항 명확화. |
+| `/kdh-discuss` | `kdh-discuss` | CEO 논의 파트너. 법학논문 형식 + Claude↔Codex 교차 토론. |
 | `/kdh-research` | `kdh-research` | 기술 조사. GitHub/docs/Exa 다층 검색. |
 | `/kdh-analyze` | `kdh-analyze` | 코드베이스 분석. 영향 범위 + 의존성 매핑. |
 | `/kdh-plan` | `kdh-plan` | 실행 계획 생성. CEO 보고 후 승인 필요. |
@@ -128,7 +128,7 @@ cp _pipeline/presets/example.yaml presets/my-project.yaml
 
 | Skill | Description |
 |-------|-------------|
-| `kdh-discuss` | CEO discussion partner. Direction clarification. |
+| `kdh-discuss` | CEO discussion partner v3. Claude↔Codex cross-debate (2-3 rounds). |
 | `kdh-research` | Multi-source research (GitHub → docs → Exa). |
 | `kdh-analyze` | Codebase analysis. Impact + dependency mapping. |
 | `kdh-plan` | Plan generation. CEO report required before execution. |
@@ -260,6 +260,7 @@ kdh-pipelines/
 │   ├── typescript/ python/ golang/ rust/
 │   ├── swift/ kotlin/ java/ cpp/ php/ perl/ csharp/
 ├── hooks/
+│   ├── code-edit-guard.sh          # PreToolUse: packages/ 코드 수정 시 pipeline-state 체크 → 차단
 │   ├── party-mode-nudge.sh
 │   ├── pipeline-guard.sh
 │   ├── loop-detector.js
@@ -285,7 +286,8 @@ kdh-pipelines/
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **v11.0** | 2026-04-08 | 3-pipeline interconnection via protocol doc; kdh-bug-fix-pipeline v2.0 (origin classification, escalation routing, loop detection, dedup, metrics); kdh-planning-pipeline v10.5 (Anti-Pattern #15/#16, bias detection, trajectory log); kdh-dev-pipeline v11.0 (Anti-Pattern #6/#7, trajectory checklist); 4-cmd workflow hardened; ECC v2 (6-phase 12h); CONDITIONAL_PASS banned; john critic removed |
+| **v11.1** | 2026-04-09 | kdh-discuss v3: 법학논문 형식 (I~VI장) + Claude↔Codex 교차 토론 2-3 rounds + 명령어 연동 계약 (discuss→research/analyze/plan) |
+| v11.0 | 2026-04-08 | 3-pipeline interconnection via protocol doc; kdh-bug-fix-pipeline v2.0 (origin classification, escalation routing, loop detection, dedup, metrics); kdh-planning-pipeline v10.5 (Anti-Pattern #15/#16, bias detection, trajectory log); kdh-dev-pipeline v11.0 (Anti-Pattern #6/#7, trajectory checklist); 4-cmd workflow hardened; ECC v2 (6-phase 12h); CONDITIONAL_PASS banned; john critic removed |
 | v10.2 | 2026-04-02 | Full sync: 33 agents, 12 rule dirs, 4 hooks, harness v10.2 |
 | v10.1 | 2026-03-31 | D1-D6 rubric enforced, auto-fail gate, pipeline guard hook |
 | v10.0 | 2026-03-31 | Complete redesign: 1 monolith → 15 skills, Generator≠Evaluator |
