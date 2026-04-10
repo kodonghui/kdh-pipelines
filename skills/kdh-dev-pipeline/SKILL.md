@@ -19,8 +19,17 @@ Sprint 실행 파이프라인. 스토리별 개발 + 리뷰 + 테스트 + E2E + 
 ```
 1. GATE → 자동 통과 ([AUTO] 표시)
 2. FAIL 스토리 → 1회 재시도 → SKIP + 기록
-3. ★ Codex FAIL은 자동 진행 금지
+3. ★ Codex+Gemini FAIL은 자동 진행 금지
 4. ★ 3 stories마다 save-session + 새 세션 (v4.0)
+5. ★★★ 계속 모드 = GATE만 자동 통과. 나머지 절차 100% 동일. ★★★
+   - Phase A→B→D→Codex 전부 실행 (생략/축약 금지)
+   - Party Mode 2명(winston+quinn) 필수 실행 (생략 금지)
+   - Codex+Gemini 필수 실행 (생략 금지)
+   - TeamCreate/TeamDelete 필수 (생략 금지)
+   - tsc + bun test 필수 (생략 금지)
+   - context-snapshot 필수 (생략 금지)
+   - "계속이니까 빨리빨리" = 절차 건너뛰기가 아님. 속도는 병렬화로만.
+   - CEO 지시 (2026-04-10): "계속 모드라고 해서 파이프라인 대충 건너뛰지 말고 천천히"
 ```
 
 ### Ralph Loop (밤샘 최안정)
@@ -801,10 +810,10 @@ bug-fix-state.yaml에서 `escalation: dev-pipeline` + `escalation_status: pendin
 22. **Contract types are single source of truth.** API types defined in Contract Stage (6.5). Story dev imports from contracts, never defines inline. Type changes require contract update FIRST, tsc pass, then implementation.
 23. **Wiring stories mandatory for cross-package connections.** If a story creates a component consumed by another package, a wiring story must exist. Skip only for same-directory connections.
 24. **Integration gate before story completion.** ALL tsc commands run (cross-package), not just the changed package. Import chains verified. Contract compliance checked.
-25. **Codex second opinion mandatory (Phase B.5).** After 2-critic party review PASS (winston+quinn), run Codex (GPT-5.4) in tmux. 1 run + max 1 re-run. Context-irrelevant findings may be self-skipped (record reason). Codex FAIL blocks commit. See kdh-sprint Phase B.5 for details.
-26. **Sprint mode (kdh-sprint absorbed).** `sprint N` argument runs full sprint orchestration: TeamCreate → story loop (build→review→Codex→commit) → batch integration → sprint integration → E2E → GATE. kdh-sprint skill is deprecated; its logic lives here.
-27. **Context judgment autonomy.** Orchestrator makes obvious technical decisions autonomously (REST vs RPC, DB structure, code patterns). Only ask CEO about feature meaning/intent/direction. Codex findings clearly irrelevant to project context may be self-skipped with recorded reason.
-28. **Batch integration review.** Every 3 completed stories (or last batch in sprint), run kdh-integration batch with Codex. Cross-dependency, middleware consistency, env var sync. PASS until Codex PASS.
+25. **Cross-model verification mandatory (Phase D 후).** Codex(GPT-5.4) + Gemini(3.1 Pro) 병렬 실행 via `codex-review.sh`. **둘 다 FAIL → 자동 진행 금지. 수정 후 재실행 → PASS까지 반복 (횟수 제한 없음).** 하나만 FAIL + 다른 쪽 치명 이슈 없으면 CEO 판단. Context-irrelevant findings may be self-skipped (record reason). 기존 "max 1회 재실행" 규칙은 폐기 (v11.0 2026-04-10 CEO 승인).
+26. **Sprint mode (kdh-sprint absorbed).** `sprint N` argument runs full sprint orchestration: TeamCreate → story loop (build→review→Codex+Gemini→commit) → batch integration → sprint integration → E2E → GATE. kdh-sprint skill is deprecated; its logic lives here.
+27. **Context judgment autonomy.** Orchestrator makes obvious technical decisions autonomously (REST vs RPC, DB structure, code patterns). Only ask CEO about feature meaning/intent/direction. Codex/Gemini findings clearly irrelevant to project context may be self-skipped with recorded reason.
+28. **Batch integration review.** Every 3 completed stories (or last batch in sprint), run kdh-integration batch with **Codex + Gemini parallel**. Cross-dependency, middleware consistency, env var sync. 둘 다 PASS까지 반복.
 29. **Agent prompts include kdh-build rules verbatim.** When spawning dev agents, include kdh-build SKILL.md rules as full text in prompt, never summarized. Missing rules = CEO deletes code.
 30. **pipeline-state.yaml은 항상 멀티라인 (v10.1).** 인라인 YAML `{ key: value }` 금지. pre-commit hook이 yq 우선 + sed 폴백으로 파싱하지만, 멀티라인이 가장 안전. 예: `phase_d:\n  status: pass\n  tests: 87` (O), `phase_d: { status: pass, tests: 87 }` (X).
 31. **Phase D critic 로그 필수 (v11.0).** Phase D: quinn(Writer) + dev/winston(Critics) 3개 로그. pre-commit hook이 파일 존재 검증. critic 로그 없으면 커밋 차단.
@@ -815,19 +824,25 @@ bug-fix-state.yaml에서 `escalation: dev-pipeline` + `escalation_status: pendin
 38. **mock-only Phase D = FAIL (v10.6).**
 43. **스토리 간 에이전트 재사용 절대 금지 (v11.1).** Story X 완료 → Shutdown ALL → TeamDelete → Story Y에서 TeamCreate + 새 에이전트 소환. SendMessage로 "다음 스토리 해라" 지시 금지 — fresh context 필수. 같은 스토리 내 Phase 전환(A→B→D)은 에이전트 유지 OK.
 44. **FAIL 재리뷰 시 fresh agent 필수 (v11.1).** Phase D FAIL → dev 수정 → 재리뷰 시: 기존 critic Shutdown → 새 critic 소환. 기존 에이전트에 SendMessage "다시 봐라" 금지 — 옛날 결과 반복함. 원인: sonnet 에이전트가 긴 히스토리에서 이전 리뷰와 현재 지시를 혼동. Phase D Layer 2 (integration test, 실제 HTTP 요청) 최소 1개 필수. mock만 있으면 FAIL. compliance YAML에 integration_tests_count 기록.
-40. **Sprint End = /kdh-bug-fix-pipeline 필수 (v11.0).** Sprint 내 모든 스토리 완료 후 /kdh-bug-fix-pipeline 실행. 0 bugs 아니면 다음 Sprint 진입 금지. Playwright 전체 suite + browser-use 전수 탐색 + Codex batch.
+40. **Sprint End = /kdh-bug-fix-pipeline 필수 (v11.0).** Sprint 내 모든 스토리 완료 후 /kdh-bug-fix-pipeline 실행. 0 bugs 아니면 다음 Sprint 진입 금지. Playwright 전체 suite + browser-use 전수 탐색 + **Codex + Gemini batch 병렬**.
 42. **Reference Code Search 필수 (v10.9).** Phase B Step 1d — dev가 코드 짜기 전에 `gh search repos` + `gh search code` + npm 검색 필수. 검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용. 검색 결과(채택/기각 사유) party-log에 "## Reference Code" 섹션 기록. 검색 0건이어도 기록 필수.
 
 ---
 
 ## Integration Review (Story간 + Sprint간 통합 검증)
 
-## Codex 역할 분담 (중요)
+## Cross-Model 역할 분담 (Codex + Gemini 병렬)
 
-- **스토리 레벨 Codex**: kdh-sprint Phase B.5에서 1회 실행 (최대 1회 재실행)
-- **배치/스프린트 레벨 Codex**: kdh-integration에서 실행 — 여기서 꼼꼼히 돌림
-- 스토리별 Codex에서 놓친 것은 배치/스프린트 Codex가 잡는다.
+**v11.0 업데이트 (2026-04-10 CEO 승인):** Codex(GPT-5.4) + Gemini(3.1 Pro) 병렬 실행. 두 모델이 서로 다른 blind spot을 보완 — party mode critics가 놓치는 race condition/signal handling 이슈를 Codex가, 아키텍처 정합성을 Gemini가 잡는 식.
+
+- **스토리 레벨 (Phase D 후)**: `~/.claude/scripts/codex-review.sh` 실행 → Codex+Gemini 병렬 결과. 둘 다 FAIL이면 수정 후 재실행 → **PASS까지 반복** (횟수 제한 없음, v11.0).
+- **배치/스프린트 레벨**: kdh-integration에서 동일 병렬 실행. 스토리 레벨에서 놓친 cross-story 이슈 포착.
 - 중복 실행 금지 — kdh-integration은 통합 검증에 집중.
+- 두 모델 판정:
+  - 둘 다 PASS → 커밋 가능
+  - 둘 다 FAIL → 자동 진행 금지, 수정 후 재실행
+  - 하나만 FAIL + 치명 이슈 → CEO 판단 (false positive 판별)
+  - 하나만 FAIL + 경미 이슈 → 기록 후 진행 OK
 
 ---
 
@@ -909,58 +924,45 @@ Claude = 최종 판정 (Second Opinion + 자체 분석 종합)
      fallback이 localhost면 → WARNING
 ```
 
-### Phase 1.5: 세컨드 오피니언 — Codex CLI (1차) + Claude Agent (백업)
+### Phase 1.5: Cross-Model Verification — Codex + Gemini 병렬
 
 ```
-1차: Codex CLI (npx @openai/codex) exec 모드 — GPT-5.4 fresh session, 별도 모델 독립 시각
-2차: Codex 실패 시 Claude Agent fallback
+v11.0 업데이트 (2026-04-10): tmux 실시간 패턴 폐기. codex-review.sh 병렬 실행으로 교체.
+두 모델: Codex(GPT-5.4) + Gemini(3.1 Pro). 매번 fresh session (편향 방지).
 
-인증: ~/.codex/auth.json (device-auth 방식, 이미 완료)
-모드: exec (비대화형, TTY 불필요)
-세션: 매번 fresh session (편향 방지 — 영속 세션 안 씀)
+--- 실행 ---
 
---- Codex CLI (1차 시도) — tmux 실시간 패턴 (CEO가 봄) ---
+1. git diff {batch-start}..HEAD > /tmp/batch-diff.patch
+   (untracked 파일은 별도 cat으로 append)
 
-1. git diff {batch-start}..HEAD > /tmp/batch-diff.txt
+2. codex-review.sh 병렬 실행 (Bash run_in_background):
+   bash ~/.claude/scripts/codex-review.sh /tmp/batch-diff.patch \
+     "Batch {N} integration review. Cross-story integration issues: shared component changes, middleware consistency, auth flow, env vars, type signature changes. Focus on regression/race condition/resource leak. 한국어로 답해라."
 
-2. Codex tmux 창 열기 + 리뷰 보내기 (Bash 도구):
-   # Codex 창 열기 — CEO가 실시간으로 작업 과정을 봄
-   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
-   tmux select-pane -t $CODEX_PANE -T "codex-batch-reviewer"
+3. 완료 대기 (background task notification)
 
-   # Codex한테 통합 리뷰 보내기
-   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
-     --sandbox read-only \
-     -o _bmad-output/party-logs/{sprint}-batch-{N}-second-opinion.md \
-     -C $PROJECT_ROOT <<'"'"'PROMPT'"'"'
-   Integration review for batch {N}.
-   Read /tmp/batch-diff.txt and analyze for cross-story integration issues.
-   Focus: shared component changes, middleware consistency, auth flow,
-   env vars, type signature changes.
-   DO NOT modify source code — read-only analysis only.
-   PROMPT' C-m
+4. 결과 파싱:
+   - codex-review.sh output 끝에 "Complete. Codex:{PASS|FAIL} Gemini:{PASS|FAIL}"
+   - party-logs/{sprint}-batch-{N}-codex.md + party-logs/{sprint}-batch-{N}-gemini.md 저장
 
-3. 완료 대기 (프롬프트 복귀 확인):
-   while ! tmux capture-pane -t $CODEX_PANE -p | grep -q '❯'; do sleep 3; done
-
-4. 결과 파일 읽기 (-o 플래그로 자동 저장됨) → Phase 2로 이동
-
-5. Codex 창 닫기: tmux kill-pane -t $CODEX_PANE
-
---- Codex 실패 시 (인증/타임아웃) ---
+--- 실행 실패 시 (인증/타임아웃) ---
 
 ★ Claude Agent fallback 금지 (CLAUDE.md 절대 규칙) ★
-Codex가 못 돌아가면 → 멈추고 CEO에게 보고. 자동 스킵 금지.
-CEO가 '스킵 OK' → sprint-status.yaml에 codex_skipped: true 기록.
-CEO 응답 없으면 → 대기.
+Codex 또는 Gemini 중 하나라도 못 돌아가면 → 멈추고 CEO 보고. 자동 스킵 금지.
+CEO 승인 시 sprint-status.yaml에 {codex,gemini}_skipped: true 기록.
 
---- Codex FAIL 판정 시 ---
+--- 판정 ---
 
-★ Codex FAIL → 수정 후 Codex 재실행 → PASS까지 반복 ★
-★ "범위 밖" 핑계로 무시 금지 ★
-1. Codex 지적 사항을 party-logs/{sprint}-batch-{N}-codex-fixes.md에 기록
-2. 해당 스토리 dev에게 수정 지시
-3. dev 수정 → Codex 재실행 (횟수 제한 없음 — PASS까지)
+★ 둘 다 PASS → Phase 2로 진행
+★ 둘 다 FAIL → 자동 진행 금지. 수정 후 재실행 → PASS까지 반복 (v11.0 CEO 승인)
+★ 하나만 FAIL + 치명 이슈 → CEO 판단 (false positive 판별)
+★ 하나만 FAIL + 경미 이슈 → 기록 후 진행 OK
+★ "범위 밖" 핑계로 치명 이슈 무시 금지
+
+FAIL 수정 사이클:
+1. 지적 사항을 party-logs/{sprint}-batch-{N}-fixes.md에 기록
+2. 해당 스토리 dev(fresh instance)에게 수정 지시
+3. dev 수정 → codex-review.sh 재실행 (횟수 제한 없음 — 둘 다 PASS까지)
 4. PASS 나올 때까지 끝까지 고친다. ESCALATE 없음.
 ```
 
@@ -1067,40 +1069,37 @@ sprint-status.yaml 업데이트:
    main.tsx Route 변경 → ProtectedRoute 조건과 일치하는지
 ```
 
-### Phase 2.5: 세컨드 오피니언 — Sprint (Codex 1차 + Claude Agent 백업)
+### Phase 2.5: Cross-Model Verification — Sprint (Codex + Gemini 병렬)
 
 ```
---- Codex CLI (1차 시도) — tmux 실시간 패턴 (CEO가 봄) ---
+v11.0 업데이트 (2026-04-10): tmux 실시간 패턴 폐기. codex-review.sh 병렬 실행.
 
-1. git diff {previous-sprint-end}..HEAD > /tmp/sprint-diff.txt
+--- 실행 ---
 
-2. Codex tmux 창 열기 + 리뷰 보내기 (Bash 도구):
-   CODEX_PANE=$(tmux split-window -h -P -F '#{pane_id}' "bash")
-   tmux select-pane -t $CODEX_PANE -T "codex-sprint-reviewer"
+1. git diff {previous-sprint-end}..HEAD > /tmp/sprint-diff.patch
 
-   tmux send-keys -t $CODEX_PANE 'npx @openai/codex exec - --json \
-     --sandbox read-only \
-     -o _bmad-output/party-logs/{sprint}-sprint-second-opinion.md \
-     -C $PROJECT_ROOT <<'"'"'PROMPT'"'"'
-   Sprint integration review for sprint {N}.
-   Read /tmp/sprint-diff.txt and analyze regressions against previous sprint.
-   Focus: shared module changes, auth flow consistency, env vars, API envelope format.
-   DO NOT modify source code — read-only analysis only.
-   PROMPT' C-m
+2. codex-review.sh 병렬 실행 (Bash run_in_background):
+   bash ~/.claude/scripts/codex-review.sh /tmp/sprint-diff.patch \
+     "Sprint {N} regression review against previous sprint. Shared module changes, auth flow consistency, env vars, API envelope format. Read-only analysis. 한국어로 답해라."
 
-3. 완료 대기 → 결과 종합 → tmux kill-pane -t $CODEX_PANE
+3. 완료 대기 → 결과 파싱:
+   - party-logs/{sprint}-sprint-codex.md + party-logs/{sprint}-sprint-gemini.md 저장
 
---- Codex 실패 시 (인증/타임아웃) ---
+--- 실행 실패 시 (인증/타임아웃) ---
 
 ★ Claude Agent fallback 금지 (CLAUDE.md 절대 규칙) ★
-Codex가 못 돌아가면 → 멈추고 CEO에게 보고. 자동 스킵 금지.
+Codex 또는 Gemini 실행 실패 → 멈추고 CEO 보고. 자동 스킵 금지.
 
---- Codex FAIL 판정 시 ---
+--- 판정 ---
 
-★ Codex FAIL → 수정 후 Codex 재실행 → PASS까지 반복 ★
-1. Codex 지적 사항 기록
-2. 해당 스토리 dev에게 수정 지시
-3. dev 수정 → Codex 재실행 (횟수 제한 없음 — PASS까지)
+★ 둘 다 PASS → E2E 진행
+★ 둘 다 FAIL → 자동 진행 금지. 수정 후 재실행 → PASS까지 반복
+★ 하나만 FAIL → CEO 판단 (치명이면 수정, false positive면 기록 후 진행)
+
+FAIL 수정 사이클:
+1. 지적 사항 기록
+2. 해당 스토리 dev(fresh instance)에게 수정 지시
+3. dev 수정 → codex-review.sh 재실행 (횟수 제한 없음)
 4. PASS 나올 때까지 끝까지 고친다. ESCALATE 없음.
 ```
 
@@ -1145,24 +1144,29 @@ sprint-status.yaml 업데이트:
 
 ---
 
-## Second Opinion 규칙
+## Cross-Model Verification 규칙 (v11.0)
 
 ```
-1. Codex CLI (npx codex) — 다른 모델의 독립 시각 제공
-2. Codex 실행 실패 → 멈추고 CEO 보고 (Claude Agent fallback 금지 — CLAUDE.md)
-3. Codex FAIL 판정 → 수정 후 재실행 → PASS까지 반복 (횟수 제한 없음)
-4. 항상 fresh context (이전 대화 맥락 없이)
-5. 읽기 전용 (소스 코드 수정 절대 안 함 — 분석만)
-6. "범위 밖" 핑계로 Codex 지적 무시 금지
+1. Codex(GPT-5.4) + Gemini(3.1 Pro) 병렬 — 두 모델의 독립 시각
+2. codex-review.sh 사용 (둘 다 실행 후 결과 합산)
+3. 하나라도 실행 실패 → 멈추고 CEO 보고 (Claude Agent fallback 금지 — CLAUDE.md)
+4. 둘 다 FAIL → 자동 진행 금지. 수정 후 재실행 → PASS까지 반복 (횟수 제한 없음)
+5. 하나만 FAIL → CEO 판단:
+   - 치명 이슈 (race condition, data loss, crash) → 수정 필수
+   - 경미 이슈 (스타일, 추가 개선) → 기록 후 진행 OK
+6. 항상 fresh context (이전 대화 맥락 없이)
+7. 읽기 전용 (소스 코드 수정 절대 안 함 — 분석만)
+8. "범위 밖" 핑계로 치명 이슈 무시 금지
+9. 두 모델의 blind spot 보완: Codex = race condition/signal/리소스 누수, Gemini = 아키텍처 정합성/요구사항 매핑
 ```
 
 ## Anti-Patterns
 
 ```
-1. Second Opinion 에이전트에 코드 수정 시키지 않음 — 읽기 전용만
-2. Second Opinion 의견을 무조건 따르지 않음 — Claude가 판단
+1. Cross-Model 리뷰어에 코드 수정 시키지 않음 — 읽기 전용만
+2. Codex/Gemini 의견을 무조건 따르지 않음 — Claude가 판단
 3. false positive에 과민 반응 안 함 — HIGH만 테스트 재실행
-4. 순환 의존성 무한 루프 안 됨 — 최대 1회 재실행, 2회 FAIL → GATE
+4. PASS까지 반복 (v11.0) — "max 1회" 규칙 폐기
 5. 전체 파일 다 읽으려 안 함 — 교차점만 분석
 6. DA(Phase D) 미실행 시 compliance YAML에 `da_skipped: true` + `da_skip_reason` 필수. Story completion checklist에서 검증. 없으면 REJECT. (ref: planning-pipeline Anti-Pattern #16)
 7. Self-enhancement bias 플래그 — fixes 후 직전 라운드 대비 3명 critics 점수가 모두 같은 방향으로 ≥1.0 상승 시, 오케스트레이터가 bias 의심 플래그. compliance YAML에 `bias_flag: true/false` 기록. bias_flag=true 시 독립 재채점 경고. (ref: planning-pipeline Anti-Pattern #8, PoLL study)
@@ -1175,8 +1179,10 @@ sprint-status.yaml 업데이트:
 ```
 party-logs/
   {sprint}-batch-{N}-integration.md           ← Level 2 Batch 리포트
-  {sprint}-batch-{N}-second-opinion.md        ← Second Opinion Batch 의견
+  {sprint}-batch-{N}-codex.md                 ← Codex Batch 의견 (GPT-5.4)
+  {sprint}-batch-{N}-gemini.md                ← Gemini Batch 의견 (3.1 Pro)
   {sprint}-sprint-integration.md              ← Level 3 Sprint 리포트
-  {sprint}-sprint-second-opinion.md           ← Second Opinion Sprint 리뷰
+  {sprint}-sprint-codex.md                    ← Codex Sprint 리뷰
+  {sprint}-sprint-gemini.md                   ← Gemini Sprint 리뷰
 sprint-status.yaml                            ← integration_state, batch_reviews
 ```
