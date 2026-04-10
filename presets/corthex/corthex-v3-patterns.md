@@ -188,7 +188,7 @@ FORBIDDEN          — 권한이 없습니다
 2. **실제 작동** — stub/mock 금지, 실제 DB+API+UI
 3. **한국어** — 모든 UI, 에러, 빈 상태 메시지
 4. **shadcn/ui** — Phase 3 마이그레이션 후 shadcn/ui 컴포넌트 사용
-5. **Claude SDK만** — Gemini 금지
+5. **Claude SDK만** — Gemini 금지 (제품 코드 한정. 코드리뷰 도구로 Codex+Gemini 병렬 OK)
 6. **단일 회사** — 멀티테넌트 아님
 7. **브라우저 검증** — CEO가 직접 확인
 8. **Phase 3 재진입 트리거** — Phase 3 Sprint 1 시작 시: Storybook 전체 도입 + shadcn/ui 실제 설치 + Subframe 컴포넌트 교체
