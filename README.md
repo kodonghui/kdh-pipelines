@@ -219,7 +219,7 @@ The hook enforces pipeline integrity on every commit:
 |-------|-----------|
 | Party Mode | `<2` named critics in party-log |
 | Codex | No PASS log for current story |
-| UI stories | No `subframe-design.md` |
+| UI stories | No `ui-design.md` |
 | TypeScript | `tsc` fails on any package |
 | CLAUDE.md | File modified without explicit plan |
 | State | `pipeline-state.yaml` missing or null story |

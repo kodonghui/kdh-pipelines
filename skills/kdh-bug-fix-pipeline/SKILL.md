@@ -698,6 +698,11 @@ timeout은 사용하지 않음. 대신 stall 감지:
 john(PM)은 버그 수정에서 불필요 — 제품 방향 결정이 없으므로 소환하지 않음.
 sally(UX)도 소환하지 않음 — UI 버그는 dev + 5테마 검증으로 충분.
 
+analyst 조건부 투입 (v4.4):
+  IF bug origin이 design/requirements로 분류되면, THE SYSTEM SHALL analyst를 자동 소환하여 근본 원인 심층 분석 실행.
+  origin=code인 단순 버그는 기존 3인 체제 유지.
+| `analyst` | `_bmad/bmm/agents/analyst.md` | 조건부 — origin=design/requirements 시 근본 원인 분류 |
+
 ---
 
 ## Model Strategy

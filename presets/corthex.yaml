@@ -31,7 +31,7 @@ ui:
   framework: "react"
   bundler: "vite"
   css: "tailwind"
-  components: "subframe"
+  components: "shadcn"
   themes_path: "packages/admin/src/lib/themes.ts"
 
 e2e:

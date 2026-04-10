@@ -96,12 +96,13 @@ _bmad-output/
    - `codex exec "echo hello"` → 실제 응답 확인
    - 안 되면 → 🚩 BLOCK. 멈춰. CEO 보고. 자동 로그인 하지 마.
 
-3. Subframe MCP (★ 무조건 체크, Stage 무관):
-   - ToolSearch로 subframe 도구 검색
-   - `mcp__plugin_subframe_subframe__authenticate`만 보이면 = 미인증 → 🚩 BLOCK
-   - `mcp__plugin_subframe_subframe__design_page` 등 실제 도구가 보여야 = ✅
-   - 안 되면 → 🚩 BLOCK. 멈춰. CEO에게 "Subframe 브라우저 인증 필요" 보고.
-   - ★ "지금 Stage에서 안 쓰니까 WARNING만" 같은 예외 없음. 초장에 안 되면 멈춤.
+3. UI Design System (project-context.yaml `ui.components` 기반):
+   - IF `ui.components == "shadcn"`:
+     → shadcn/ui 사용. MCP 체크 불필요. ✅ 자동 통과.
+   - IF `ui.components == "subframe"`:
+     → ToolSearch로 subframe 도구 검색 → 미인증이면 🚩 BLOCK
+   - IF 비어있으면:
+     → ⚠️ WARNING. UI 컴포넌트 라이브러리 미설정.
 
 4. Helper Script:
    - `test -x ~/.claude/scripts/codex-review.sh` → 실행 권한 확인
@@ -114,7 +115,7 @@ _bmad-output/
 출력:
   ✅/🚩 Codex CLI: [버전 or FAIL]
   ✅/🚩 Codex 인증: [OK or FAIL]
-  ✅/🚩 Subframe MCP: [연결됨 or 미인증]
+  ✅/🚩 UI Design System: [shadcn ✅ | subframe 연결됨 | 미설정]
   ✅/🚩 Helper script: [OK or FAIL]
   ✅/⚠️ Design references: [OK or MISSING]
 
@@ -253,6 +254,14 @@ ALL agents are spawned with their **real BMAD names** and **full persona files l
 
 Every agent MUST be spawned with this structure:
 
+**MANDATORY party-log rule (v4.4):**
+Critics MUST write their review to a party-log FILE using the Write tool BEFORE sending SendMessage.
+Path: `_bmad-output/phase-{N}/party-logs/story-{id}-phase-{phase}-{critic-name}.md`
+Include: D1-D6 scores with rationale, referenced file paths from the diff, inline code quotes (`backticks`), verdict.
+Minimum: 1500B, 20+ lines, 3+ D-score references, 2+ code quotes.
+SendMessage는 party-log 파일 경로만 전달. 리뷰 내용은 파일에.
+오케스트레이터가 직접 party-log를 작성하면 = 기만 행위. 절대 금지.
+
 ```
 You are {NAME} in team "{team_name}". Role: {Writer|Critic}.
 
@@ -384,31 +393,25 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
      - General best practices → WebSearch first
      - Each source evaluated with 3-question credibility (type, recency, evidence)
 
-   === UI STORY GATE (v10 — 오케스트레이터 주도, dev는 MCP 접근 불가) ===
+   === UI STORY GATE (v11 — 오케스트레이터 주도) ===
    1c. Check: does this story create or modify UI pages? (*.tsx in features/)
-       IF project-context.yaml ui.components == "subframe":
-         If YES → Subframe Design Gate (오케스트레이터가 직접 실행):
-           i.   오케스트레이터: Subframe MCP design_page → 페이지 레이아웃 생성
-           ii.  오케스트레이터: [GATE page-design] → CEO 디자인 승인
-           iii. 오케스트레이터: get_page_info → Subframe 코드 추출
-           iv.  오케스트레이터: {admin_package_path}/src/features/{page}.tsx 작성 (from project-context.yaml, Subframe 컴포넌트 사용)
-           v.   dev 에이전트: Subframe 코드 위에 비즈니스 로직 구현 (API 연결, 폼 검증)
-           ★ dev에게 "Subframe 써라" 지시 금지 — MCP 접근 안 됨
-         If NO → skip to step 2
-       ELSE (non-Subframe projects):
-         If YES → UI Design Gate:
-           i.   오케스트레이터: 프로젝트 UI 컴포넌트 라이브러리로 페이지 레이아웃 작성
-           ii.  오케스트레이터: [GATE page-design] → CEO 디자인 승인
-           iii. dev 에이전트: 비즈니스 로직 구현 (API 연결, 폼 검증)
-         If NO → skip to step 2
+       If YES → UI Design Gate:
+         i.   오케스트레이터: 프로젝트 UI 컴포넌트 라이브러리(shadcn/ui 등)로 페이지 레이아웃 작성
+         ii.  오케스트레이터: ui-design.md 저장 (party-logs/story-{id}-ui-design.md)
+         iii. 오케스트레이터: [GATE page-design] → CEO 디자인 승인
+         iv.  dev 에이전트: 승인된 레이아웃 위에 비즈니스 로직 구현 (API 연결, 폼 검증)
+       If NO → skip to step 2
 
 2. dev implements REAL working code (no stubs/mocks/placeholders)
-   2b. UI stories: apply active theme from themes.ts, use consistent layout from Subframe reference
+   2b. UI stories: apply active theme from themes.ts, use consistent layout from ui-design.md reference
 3. Party mode: dev sends [Review Request] with changed files list
    - winston: architecture compliance, contract compliance, 전체 코드베이스 패턴 일관성 (타입, API 호출 방식, 미들웨어)
    - quinn: code quality, error handling, test hooks
    - john: acceptance criteria 충족, 사용자 경험 갭, 제품 수준 품질 (에러 메시지, 상태 유실, UX 흐름)
-   - sally: (UI stories only) design matches approved Subframe layout
+   - sally: (UI stories only) design matches approved ui-design.md layout
+   Critics MUST write to FILE first: party-logs/story-{id}-phase-b-{critic-name}.md (v4.4 필수)
+   Then SendMessage with file path only. 리뷰 내용은 파일에.
+   Critics include D1-D6 scores with rationale per dimension, diff file paths, inline code quotes
 4. Fix → verify → PASS
 5. Save: context-snapshots/stories/{story-id}-phase-b.md
 ```
@@ -416,49 +419,52 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
 ### UI Component + Theme Workflow (conditional on project-context.yaml)
 
 ```
-IF ui.components == "subframe":
+IF ui.components == "shadcn":
 
-  Subframe Setup (Sprint 0, 1회):
-    1. npx @subframe/cli@latest init --auth-token {token} -p {projectId} \
-         --dir ./src/ui --alias "@/ui/*" --tailwind --css-path src/index.css --install --sync
-    2. 44개 컴포넌트 src/ui/components/에 sync됨
-    3. UI는 반드시 Subframe 컴포넌트로 구현 (@/ui/components/* 필수 — 수동 React/Tailwind 금지)
+  shadcn/ui Setup (Sprint 0 또는 Phase 3 Sprint 1):
+    1. npx shadcn@latest init (Tailwind CSS + CSS variables 설정)
+    2. npx shadcn@latest add button card dialog input ... (필요한 컴포넌트 설치)
+    3. 컴포넌트는 src/components/ui/ 에 copy-paste (코드 소유)
+    4. import 경로: @/components/ui/button (tsconfig paths alias)
 
   UI Story Flow (오케스트레이터 주도):
-    1. 오케스트레이터: Subframe MCP design_page → CEO에게 GATE (디자인 확인)
-    2. 오케스트레이터: Subframe MCP get_page_info → 페이지 코드 추출
-    3. 오케스트레이터: {admin_package_path}/src/features/{page}.tsx 작성 (from project-context.yaml)
-       - @/ui/components/Button 등 Subframe 컴포넌트 직접 사용
-       - 테마는 Subframe 디자인 토큰 사용 (brand-600, neutral-border 등)
-       - CEO 5개 테마 전환: CSS 변수 오버라이드로 구현
+    1. 오케스트레이터: shadcn/ui + Tailwind로 페이지 레이아웃 작성
+    2. 오케스트레이터: ui-design.md 저장 → CEO에게 GATE (디자인 확인)
+    3. 오케스트레이터: {admin_package_path}/src/features/{page}.tsx 작성
+       - @/components/ui/* shadcn 컴포넌트 사용
+       - CSS variable 기반 테마 토큰 사용 (--primary, --background 등)
+       - 5개 테마 전환: body 클래스 변경으로 구현
     4. dev 에이전트: 비즈니스 로직 추가 (API 연결, 폼 검증, 라우팅)
-    
-    dev 에이전트는 Subframe MCP에 접근 불가 → 오케스트레이터가 직접 처리
-    import 경로: @/ui/components/Button (tsconfig paths alias)
-    컴포넌트 업데이트: npx @subframe/cli@latest sync Button TextField ...
 
   Theme System:
-    - CSS 변수 기반 테마 전환 (프로젝트 preset 또는 design-references에서 테마 목록 참조)
-    - Subframe 디자인 토큰과 호환
+    - CSS 변수 기반 테마 전환 (:root + .theme-{name} 클래스)
+    - Semantic tokens: --primary, --background, --foreground, --border, --accent
     - 새 테마 추가 = CSS 변수 세트 1개 추가
+    - tweakcn.com 으로 초기 테마 생성 가능
+
+  Storybook (Phase 3):
+    - Phase 3 Sprint 1: 핵심 15개 컴포넌트 story 작성 (재진입 트리거)
+    - Phase 3 전체: Storybook 전체 도입
+    - ★ 재진입 조건: Phase 3 Sprint 1 시작 시 필수. 미루기 금지.
 
   Sprint Zero GATE #17 (theme-select):
     - Sprint Zero 완료 후 CSS 변수 기반 후보 테마 5개 준비
     - CEO에게 dev 서버 또는 HTML 파일로 보여주기
     - CEO가 기본 테마 선택 → defaultTheme 설정
 
-ELSE (non-Subframe):
+ELSE:
   Use project's component library. Theme system from project preset.
 ```
 
 ### Phase D: Test + QA (v10.1 — Phase E 통합)
 
 ```
-Team: quinn(Writer), dev(Critic), winston(Critic), john(Critic) = 4
+Team: quinn(Writer), dev(Critic), winston(Critic), john(Critic) = 4. UI stories: +sally(Critic) = 5
 Reference: TEA risk-based test strategy + QA acceptance checklist
 
 Phase D = 기존 Phase D (테스트 작성) + Phase E (QA 검증) 통합.
 quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
+sally (UI stories only): 상호작용 흐름 자연스러움, 접근성, UX 시나리오 커버리지. john=요구사항 충족, sally=UX 품질 (비중복).
 
 오케스트레이터 MUST (v11.0):
   1. quinn을 Writer로 Agent 소환
@@ -486,8 +492,9 @@ quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
    - dev: implementability, test framework compliance, code completeness
    - winston: architecture test coverage, boundary tests
    - john: acceptance criteria met? user value delivered? 제품 수준 검증
-   Critics write to: party-logs/story-{id}-phase-d-{critic-name}.md (필수)
-   Critics include D1-D6 scores with rationale per dimension
+   Critics MUST write to FILE first: party-logs/story-{id}-phase-d-{critic-name}.md (v4.4 필수)
+   Then SendMessage with file path only. 리뷰 내용은 파일에.
+   Critics include D1-D6 scores with rationale per dimension, diff file paths, inline code quotes
 6. Fix → verify → PASS
 7. Run all tests — must pass
 8. Save: context-snapshots/stories/{story-id}-phase-d.md
@@ -514,6 +521,14 @@ Phase D PASS 후 실행. 에이전트 소환 불필요 — 오케스트레이터
 ★ Codex FAIL = 자동 진행 금지 (계속 모드에서도)
 ★ Codex = GPT-5.4 (다른 모델로 교차 검증)
 ```
+
+### Phase transition party-log verification (v4.4)
+
+오케스트레이터는 Phase 전환 전에 반드시:
+1. 해당 Phase의 모든 critic party-log 파일 존재 확인 (Glob)
+2. 각 파일이 1500B 이상인지 확인
+3. 파일이 없거나 크기 부족 → critic에게 재작성 요청
+4. 오케스트레이터가 직접 party-log를 작성하면 = 기만 행위. 절대 금지.
 
 ### Phase transitions
 
@@ -698,7 +713,7 @@ Story Dev completion checklist (C안 — v11.0):
   [ ] tsc passes (cross-package, not just changed package)
   [ ] Contract compliance: all API types imported from shared contracts (no inline overrides)
   [ ] Real functionality (no stub/mock/placeholder)
-  [ ] If UI story: Subframe MCP로 디자인 + theme consistency
+  [ ] If UI story: ui-design.md 작성 + theme consistency
   [ ] If wiring story: upstream → downstream connected end-to-end
   [ ] Compliance YAML trajectory: fixes_rounds, critic_agreement_rate, da_skipped/da_skip_reason, bias_flag 기록됨
 ```

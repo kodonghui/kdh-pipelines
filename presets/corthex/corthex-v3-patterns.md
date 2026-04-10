@@ -46,12 +46,12 @@ packages/
 │   │   └── __tests__/    # Bun 테스트
 │   └── drizzle/          # SQL 마이그레이션
 │
-├── admin/           # React + Vite + Subframe (어드민 패널)
+├── admin/           # React + Vite + shadcn/ui (어드민 패널)
 │   ├── src/
 │   │   ├── features/     # 기능별 페이지 (auth/, company/, team/, ...)
 │   │   ├── components/   # 공통 컴포넌트
 │   │   ├── lib/          # api-client, auth-context, protected-route
-│   │   ├── ui/           # Subframe 컴포넌트 (sync됨)
+│   │   ├── ui/           # shadcn/ui 컴포넌트
 │   │   └── __tests__/    # 테스트
 │   └── tests/            # 통합 테스트
 │
@@ -109,13 +109,13 @@ cd packages/server && bun run db:generate
 cd packages/server && bun run db:migrate
 ```
 
-### Subframe UI 업데이트
+### shadcn/ui 컴포넌트 추가
 ```bash
-# 컴포넌트 동기화
-cd packages/admin && npx @subframe/cli@latest sync
+# 새 컴포넌트 추가 (Phase 3 Sprint 1 이후)
+cd packages/admin && npx shadcn@latest add button card dialog
 
-# 특정 컴포넌트만
-npx @subframe/cli@latest sync Button TextField
+# 기존 컴포넌트 업데이트: diff 확인 후 선택적 반영
+npx shadcn@latest diff
 ```
 
 ### 타입 체크 (전체)
@@ -187,7 +187,8 @@ FORBIDDEN          — 권한이 없습니다
 1. **Phase 1만** — 5개 기능만, 36개 전체 아님
 2. **실제 작동** — stub/mock 금지, 실제 DB+API+UI
 3. **한국어** — 모든 UI, 에러, 빈 상태 메시지
-4. **Subframe** — 수동 React/Tailwind 금지, Subframe 컴포넌트만
+4. **shadcn/ui** — Phase 3 마이그레이션 후 shadcn/ui 컴포넌트 사용
 5. **Claude SDK만** — Gemini 금지
 6. **단일 회사** — 멀티테넌트 아님
 7. **브라우저 검증** — CEO가 직접 확인
+8. **Phase 3 재진입 트리거** — Phase 3 Sprint 1 시작 시: Storybook 전체 도입 + shadcn/ui 실제 설치 + Subframe 컴포넌트 교체
