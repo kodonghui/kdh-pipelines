@@ -82,6 +82,12 @@ description: >
 
 **최소 2라운드, 최대 3라운드.** Claude가 최종 판정권을 보유하되, Codex 반대 의견은 반드시 기록.
 
+**★ v2 (2026-04-11 Plan v4): 모든 `bash ~/.claude/scripts/codex-review.sh` 호출은 Bash `run_in_background: true`로 실행하라.**
+- 프로젝트 맥락(Sprint/story/phase)은 스크립트가 자동 주입
+- 결과 도착 알림 받고 파일 읽기
+- Timestamp 10분 초과 시 재실행
+- Codex 실패 + Gemini 성공 = partial OK (스크립트 기본 동작)
+
 #### Round 1 — 공격
 1. Claude가 I~III (문제의 제기, 검토, 결론)을 작성한다.
 2. Codex에게 결론을 공격시킨다:

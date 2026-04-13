@@ -109,15 +109,18 @@ CEO에게 보여주기 전, **3가지 편향 자가 진단**:
 왜: 같은 모델(Claude)이 쓰고 검증하면 self-preference bias 발생 (arxiv 2410.21819).
 다른 모델(GPT-5.4 Codex)이 검증하면 correlated failures를 깨뜨림.
 
-실행 방법:
+실행 방법 (v2 — 2026-04-11 Plan v4: 백그라운드 + 맥락 자동 주입):
 ```bash
 # 분석 결과를 임시 파일에 저장
 echo "[분석 요약 + 추천 + self-attack 결과]" > /tmp/kdh-analyze-review.md
 
-# Codex CLI로 cross-verification
-codex exec "다음 분석 결과를 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향을 찾아라. Respond in preset gate.language.
-$(cat /tmp/kdh-analyze-review.md)" 2>&1 | tail -60
+# codex-review.sh v2 사용 — ★ Bash run_in_background: true 로 호출 ★
+# 프로젝트 맥락(Sprint/story/phase)은 스크립트가 자동 주입
+bash ~/.claude/scripts/codex-review.sh /tmp/kdh-analyze-review.md \
+  "다음 분석 결과를 공격적으로 리뷰해라. 틀린 부분, 빠진 관점, 편향을 찾아라. 한국어로 답해라."
 ```
+
+**Bash 호출 지침:** `run_in_background: true` 필수. 결과 도착 알림 받고 파일 읽기. Timestamp 10분 초과 시 재실행.
 
 Codex 결과 처리:
 - Codex가 찾은 이슈 → 분석에 반영 (수정 or "Codex 지적했지만 이유로 유지" 기록)
@@ -178,7 +181,7 @@ CEO 선택: [A/B/C 또는 "대기중"]
 
 ## 출력 규칙
 
-- **preset gate.language** — 기술 용어 최소화, 비유로 설명
+- **한국어** — 기술 용어 최소화, 비유로 설명
 - **구체적** — "좋은 방법"이 아니라 "이 파일의 이 부분을 이렇게"
 - **선택지** — 마지막에 항상 A/B/C 선택지 제시
 - **짧은 요약 먼저** — TL;DR 3줄 (confidence 포함) → 상세 분석

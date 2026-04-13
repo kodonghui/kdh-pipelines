@@ -5,6 +5,32 @@ description: 'Planning Pipeline — BMAD 9 Stages (Brief→PRD→Arch→UX→Epi
 
 # Universal Full Pipeline v10
 
+## ★ v4 최적화 (2026-04-11 Plan v4) — BMAD 8 Stage 수 유지, 속도 최적화
+
+### Stage Review Matrix
+BMAD 8 stage 순서는 100% 유지한다. 각 stage의 **리뷰 cycle만** 다음과 같이 분류.
+
+| Stage | BMAD 역할 | Review Mode | Party Mode |
+|-------|----------|-------------|------------|
+| 0 — Brief | 비전/범위 정의 | Grade A (정식) | ✅ winston+quinn |
+| 1 — Research | 기술 조사 | Grade C (Writer Solo) | ❌ 자동 PASS |
+| 2 — PRD | 요구사항 정의 | Grade A (정식) | ✅ winston+quinn |
+| 3 — Validate | PRD 검증 | Grade C (Writer Solo) | ❌ 자동 PASS |
+| 4 — Architecture | 설계 | Grade A (정식) | ✅ winston+quinn |
+| 5 — UX | UX 설계 | Grade C (Writer Solo) | ❌ 자동 PASS |
+| 6 — Epics | 스토리 분해 | Grade A (정식) | ✅ winston+quinn |
+| 7 — Readiness | 최종 검증 | Grade A (정식) | ✅ winston+quinn + Codex+Gemini 병렬 |
+
+### 규칙
+- **Grade A stage:** winston + quinn Party Mode 필수. 결과물 + party-log 2개 생성.
+- **Grade C stage:** Writer Solo. **결과물 생성 필수** (Stage 건너뛰기 금지). party-log만 생략.
+- **Codex/Gemini 병렬화:** Grade A stage에서 Party Mode와 Codex+Gemini 백그라운드 동시 실행 (순차 → 병렬). codex-review.sh v2 사용.
+- **Stage 순서 변경/삭제 절대 금지** — BMAD 방법론 유지.
+
+### Codex 비동기 호출
+`bash ~/.claude/scripts/codex-review.sh`는 반드시 `run_in_background: true`로 실행.
+맥락 주입은 스크립트가 pipeline-state.yaml에서 자동으로 가져옴.
+
 ## Mode Selection
 
 - **no args** 또는 **`auto`**: 상태 자동 감지 → 다음 할 일 판단 → 실행 (kdh-go 흡수)

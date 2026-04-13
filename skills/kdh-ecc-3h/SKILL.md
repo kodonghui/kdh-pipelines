@@ -59,21 +59,27 @@ Run as background subagent: `/dream`
 4. 보고: "Plans: N active, N done, N expired"
 ```
 
-### Phase 3: Lint (코드 위생) — 20초
+### Phase 3: Lint (코드 위생) — 30초
 > delta: 항상 실행 (has_changes 무관)
 
 ```
 1. tsc 체크: 전 패키지 (server, admin, app)
    - 에러 수 기록
-2. console.log 잔여 체크 (project-context.yaml의 monorepo.packages 참조)
+2. console.log 잔여 체크 (packages/app + packages/admin)
 3. bun.lock 변경 감지:
    - git diff HEAD -- bun.lock | head -1
    - 변경 있으면 "lockfile changed" 경고
 4. toast-without-api 린트 (hook 있으면):
    - bash .claude/hooks/toast-without-api-check.sh
+5. Biome 린트:
+   - bunx --bun @biomejs/biome check packages/ --reporter=summary 2>&1 | tail -3
+   - 에러 수 기록. 0이면 "biome:OK", 있으면 "biome:N errors"
+6. Knip dead code 리포트 (has_changes=true일 때만):
+   - bunx knip --reporter json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log('unused files:'+d.files?.length+' exports:'+d.exports?.length+' deps:'+d.unlisted?.length)" 2>/dev/null || echo "knip:SKIP"
+   - 결과 기록 (숫자만 — 자동 삭제 절대 금지, 보고만)
 ```
 
-### Phase 4: Update Log (업데이트 로그) — 15초
+### Phase 4: Update Log + Codesight 갱신 — 20초
 > delta: has_changes=false이면 SKIP
 
 ```
@@ -82,6 +88,9 @@ Run as background subagent: `/dream`
 3. 이번 세션에서 한 작업을 카테고리별로 기록:
    - Bug Fixes, Features, Infrastructure, Memory, Discussion 등
 4. 커밋 로그(git log --since="today")에서 자동 추출 + 세션 컨텍스트 반영
+5. Codesight 위키 갱신 (has_changes=true + .codesight/ 존재할 때만):
+   - npx codesight --wiki 2>/dev/null && echo "codesight:UPDATED" || echo "codesight:SKIP"
+   - 코드 변경 후 에이전트들이 최신 구조 파악할 수 있게 위키 최신화
 ```
 
 ### Phase 5: Report (1줄 요약 + 12h 감시) — 5초
@@ -121,7 +130,7 @@ ecc-3h-log.md 기록:
 
 ## 주 1회 확장 (일요일 자정 KST)
 
-Remote trigger로 자동 실행 (프로젝트별 trigger ID 설정):
+Remote trigger로 자동 실행 (trig_017oqLsrT4yeiRsAZwuGj7fu):
 
 ```
 1. 보안 스캔 — .claude/ 시크릿/취약점

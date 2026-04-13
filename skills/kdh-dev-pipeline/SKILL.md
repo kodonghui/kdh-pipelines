@@ -7,6 +7,29 @@ description: 'Dev Pipeline — Sprint 실행 (Story Loop + Party Mode + Integrat
 
 Sprint 실행 파이프라인. 스토리별 개발 + 리뷰 + 테스트 + E2E + Codex + 통합 검증.
 
+## ★ v4 최적화 (2026-04-11 Plan v4)
+
+### 구조 유지 (절대)
+- Phase A → B → D → Codex **4 Phase 유지**
+- Party Mode **winston + quinn 2 critics 유지**
+- Codex **매 스토리 1회 필수** (CLAUDE.md 규칙 유지)
+
+### 속도 최적화
+1. **Codex + Gemini 병렬화**: Party Mode(winston+quinn) 실행과 **동시에** Codex+Gemini 백그라운드로 호출. 기존 순차 실행 대비 40% 시간 절감.
+   - 호출: `bash ~/.claude/scripts/codex-review.sh` with Bash `run_in_background: true`
+   - 결과 수집: Party Mode 완료 후 Codex 결과 파일 읽기
+2. **Gemini 빈도 조정 (CEO 승인, Plan v4)**: Codex는 매 스토리 필수. **Gemini는 3 스토리마다 1회 + Sprint End 전수.** 비용 절감, Codex로 안전장치 유지.
+3. **Context-snapshot 경량화**: Phase A 완료 시 + Phase D 완료 시 저장. **Phase B 생략** (코드 자체가 기록).
+
+### Codex 비동기 호출 패턴
+```bash
+# ★ Bash 도구 사용 시 run_in_background: true 필수 ★
+bash ~/.claude/scripts/codex-review.sh /tmp/story-review.md \
+  "[story {id}] 코드 리뷰: ... 한국어로 답해라."
+# 맥락(Sprint/story/phase)은 스크립트가 자동 주입
+# 결과 timestamp 10분 만료 체크
+```
+
 ## Mode Selection
 
 - **`sprint N`**: Sprint N 실행 — 스토리 루프
@@ -20,7 +43,8 @@ Sprint 실행 파이프라인. 스토리별 개발 + 리뷰 + 테스트 + E2E + 
 1. GATE → 자동 통과 ([AUTO] 표시)
 2. FAIL 스토리 → 1회 재시도 → SKIP + 기록
 3. ★ Codex+Gemini FAIL은 자동 진행 금지
-4. ★ 3 stories마다 save-session + 새 세션 (v4.0)
+4. ★ 3 stories마다 save-session 자동 저장 (CEO 확인 없이 즉시 계속) (v4.0)
+   - save-session 완료 즉시 다음 스토리 진행. 멈추지 않는다. (CEO 지시 2026-04-12)
 5. ★★★ 계속 모드 = GATE만 자동 통과. 나머지 절차 100% 동일. ★★★
    - Phase A→B→D→Codex 전부 실행 (생략/축약 금지)
    - Party Mode 2명(winston+quinn) 필수 실행 (생략 금지)
@@ -826,6 +850,7 @@ bug-fix-state.yaml에서 `escalation: dev-pipeline` + `escalation_status: pendin
 44. **FAIL 재리뷰 시 fresh agent 필수 (v11.1).** Phase D FAIL → dev 수정 → 재리뷰 시: 기존 critic Shutdown → 새 critic 소환. 기존 에이전트에 SendMessage "다시 봐라" 금지 — 옛날 결과 반복함. 원인: sonnet 에이전트가 긴 히스토리에서 이전 리뷰와 현재 지시를 혼동. Phase D Layer 2 (integration test, 실제 HTTP 요청) 최소 1개 필수. mock만 있으면 FAIL. compliance YAML에 integration_tests_count 기록.
 40. **Sprint End = /kdh-bug-fix-pipeline 필수 (v11.0).** Sprint 내 모든 스토리 완료 후 /kdh-bug-fix-pipeline 실행. 0 bugs 아니면 다음 Sprint 진입 금지. Playwright 전체 suite + browser-use 전수 탐색 + **Codex + Gemini batch 병렬**.
 42. **Reference Code Search 필수 (v10.9).** Phase B Step 1d — dev가 코드 짜기 전에 `gh search repos` + `gh search code` + npm 검색 필수. 검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용. 검색 결과(채택/기각 사유) party-log에 "## Reference Code" 섹션 기록. 검색 0건이어도 기록 필수.
+45. **Phase B party-log는 Phase D 진입 전 필수 (v11.2, 2026-04-12 A.1b 사고).** Phase B(dev 구현) 완료 후 반드시 winston + quinn이 party-log(story-{id}-phase-b-winston.md, story-{id}-phase-b-quinn.md)를 작성해야 Phase D로 전환 가능. Phase B critics 리뷰를 생략하고 Phase D로 진행 금지 — party-log 없으면 pre-commit hook이 차단하고 Phase B critics 소급 소환이 필요해짐. 소급 리뷰는 실제 수정 기회가 줄어든다. 원인: Story A.1b에서 Phase A 3 cycle 후 Phase B critics 리뷰 없이 Phase D로 진행 → hook 차단 → 소급 리뷰에서 Test 5.3 grep no-op 버그 발견 → 수정 필요.
 
 ---
 
