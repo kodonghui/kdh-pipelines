@@ -6,9 +6,10 @@ description: >
   "A랑 B 중", "둘 중 뭐가", "어느 쪽이", "선택 못 하겠어",
   "판단해줘", "추천해줘", "결정 도와줘", "이 방향 맞아?",
   "반박해줘", "이 논리 구멍", "검증해줘",
+  "council", "카운실", "여러 관점에서", "깊게 논의", "다각도로",
   "/kdh-discuss", "kdh-discuss".
-  Switches Claude into active thinking partner mode — no code execution,
-  opinionated analysis, structured options with clear recommendation and next action.
+  Switches Claude into active thinking partner mode. Council mode available
+  for multi-perspective analysis with 3 sub-agents.
 ---
 
 # /kdh-discuss — CEO 논의 파트너 v3
@@ -206,3 +207,55 @@ VI. 제언
 ```
 
 예제는 1개만 유지. 추가 금지 — 출력 길이 통제 + 초점 유지 목적.
+
+---
+
+## Council Mode (서브에이전트 논의)
+
+### 발동 조건
+
+CEO가 다음 중 하나를 말하면 Council Mode 활성화:
+- "council", "카운실", "여러 관점에서", "깊게 논의", "다각도로"
+- 명시 없으면 기본 모드 (Claude + Codex)
+
+### 프로토콜
+
+1. **질문 추출**: CEO 발언에서 핵심 결정 사항 1문장으로 요약
+
+2. **서브에이전트 3명 병렬 스폰** (Agent 도구):
+   각 에이전트는 질문 + 맥락만 받음. 세션 히스토리 안 받음 (컨텍스트 오염 방지).
+
+   | 역할 | 에이전트명 | 관점 | 프롬프트 핵심 |
+   |------|----------|------|-------------|
+   | Skeptic | council-skeptic | 반대/위험 | "이 결정이 왜 안 되는지 가장 강한 반대 논거 3개. 숨은 가정과 실패 시나리오." |
+   | Pragmatist | council-pragmatist | 현실/실행 | "현실적으로 실행 가능한 옵션 비교. 시간/비용/복잡도 기준. 타협점." |
+   | Visionary | council-visionary | 장기/전략 | "6개월 뒤를 보고 판단. 확장성/유연성 영향. 놓치고 있는 기회." |
+
+3. **3명 응답 수집 + 종합**:
+   | 역할 | 핵심 주장 | 강도 | 근거 |
+   |------|----------|------|------|
+   | Skeptic | ... | HIGH/MED/LOW | ... |
+   | Pragmatist | ... | ... | ... |
+   | Visionary | ... | ... | ... |
+
+4. **Claude 종합 판단**: 3명 의견을 반영하여 I~VI 작성
+   - Skeptic 반대 강하면 → IV. 소수의견에 반영
+   - Pragmatist 타협안 나으면 → III. 결론 수정
+   - Visionary 장기 시각 유효하면 → V. 미결 쟁점에 추가
+
+5. **Codex 교차 토론**: 기존 프로토콜 그대로 (Round 1~3)
+   Council + Codex = 가장 깊은 논의.
+
+### Council vs 기본 모드
+
+| | 기본 모드 | Council Mode |
+|--|---------|-------------|
+| 관점 수 | Claude + Codex | Claude + 3명 + Codex |
+| 토큰 소비 | 보통 | 높음 (서브에이전트 3개) |
+| 적합한 상황 | 대부분의 논의 | 아키텍처 결정, 전략 방향, 대형 투자 |
+| 발동 | 기본 | CEO "council" 명시 시 |
+
+<HARD-GATE>
+Council Mode에서 서브에이전트 응답을 요약 없이 무시 금지.
+각 에이전트 응답에 대해 수용/기각 판단을 명시해야 함.
+</HARD-GATE>

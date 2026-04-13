@@ -1,12 +1,16 @@
 ---
 name: kdh-ecc-3h
-description: "3시간 자동 유지보수 v2 — dream + plan audit + lint + update log + report. 변경 없으면 lint만 실행. 세션 중 크론으로 자동 실행되거나 수동 호출 가능."
-tags: [maintenance, memory, automated]
+description: "3시간 분석 루틴 v3 — observations.jsonl 기반 분석 + dream + plan audit + lint + report. 수집은 훅이 100% 함."
+tags: [maintenance, memory, analysis]
 ---
 
-# KDH ECC 3시간 유지보수 v2
+# KDH ECC 3시간 분석 루틴 v3
 
-3시간마다 자동 실행되는 경량 유지보수 루틴. 5 Phase만 실행.
+> v3 변경: 수집 로직 제거. observation-collector 훅이 100% 수집.
+> 이 스킬은 observations.jsonl + compliance-violations.jsonl을 읽어 분석만 함.
+> Lint는 cwd 기반 동적 감지로 프로젝트 독립적.
+
+3시간마다 자동 실행되는 경량 분석 루틴. 5 Phase만 실행.
 변경 없으면 Lint만 돌리고 나머지는 SKIP.
 
 비유: 3시간마다 사무실을 한 바퀴 돌면서 문 잠겼는지(tsc), 쓰레기통 비었는지(console.log) 확인하는 야간 경비원.
@@ -24,9 +28,10 @@ tags: [maintenance, memory, automated]
 ```
 1. .last-3h-run 타임스탬프 읽기 (없으면 → 전체 실행)
 2. git log --since="[.last-3h-run 시각]" --oneline | head -1
-3. 결과 있으면 → has_changes=true (전체 실행)
-4. 결과 없으면 → has_changes=false (Phase 3 Lint만 실행, 나머지 SKIP)
-5. 실행 완료 후 .last-3h-run 타임스탬프 갱신
+3. observations.jsonl에서 .last-3h-run 이후 Edit/Write 이벤트 유무 확인
+4. git log 결과 있거나 Edit/Write 이벤트 하나라도 있으면 → has_changes=true (전체 실행)
+5. 둘 다 없으면 → has_changes=false (Phase 3 Lint만 실행, 나머지 SKIP)
+6. 실행 완료 후 .last-3h-run 타임스탬프 갱신
 ```
 
 ## 실행 흐름 (5 Phase)
@@ -63,8 +68,10 @@ Run as background subagent: `/dream`
 > delta: 항상 실행 (has_changes 무관)
 
 ```
-1. tsc 체크: 전 패키지 (server, admin, app)
-   - 에러 수 기록
+1. tsc 체크:
+   - cwd에 tsconfig.json 존재 확인
+   - 없으면 "tsc:SKIP (no tsconfig)"
+   - 있으면 전 패키지 (server, admin, app) 에러 수 기록
 2. console.log 잔여 체크 (packages/app + packages/admin)
 3. bun.lock 변경 감지:
    - git diff HEAD -- bun.lock | head -1
@@ -72,7 +79,9 @@ Run as background subagent: `/dream`
 4. toast-without-api 린트 (hook 있으면):
    - bash .claude/hooks/toast-without-api-check.sh
 5. Biome 린트:
-   - bunx --bun @biomejs/biome check packages/ --reporter=summary 2>&1 | tail -3
+   - cwd에 biome.json 또는 biome.jsonc 존재 확인
+   - 없으면 "biome:SKIP (no config)"
+   - 있으면 bunx --bun @biomejs/biome check packages/ --reporter=summary 2>&1 | tail -3
    - 에러 수 기록. 0이면 "biome:OK", 있으면 "biome:N errors"
 6. Knip dead code 리포트 (has_changes=true일 때만):
    - bunx knip --reporter json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log('unused files:'+d.files?.length+' exports:'+d.exports?.length+' deps:'+d.unlisted?.length)" 2>/dev/null || echo "knip:SKIP"
@@ -83,12 +92,20 @@ Run as background subagent: `/dream`
 > delta: has_changes=false이면 SKIP
 
 ```
-1. 오늘 날짜 파일 확인: _bmad-output/update-log/YYYY-MM-DD.md
+1. 오늘 날짜 파일: _bmad-output/update-log/YYYY-MM-DD.md
 2. 없으면 새로 생성, 있으면 append
-3. 이번 세션에서 한 작업을 카테고리별로 기록:
-   - Bug Fixes, Features, Infrastructure, Memory, Discussion 등
-4. 커밋 로그(git log --since="today")에서 자동 추출 + 세션 컨텍스트 반영
-5. Codesight 위키 갱신 (has_changes=true + .codesight/ 존재할 때만):
+3. 데이터 소스 2개 병합:
+   a. git log --since="[.last-3h-run 시각]" --oneline
+   b. observations.jsonl에서 최근 3시간 도구 사용 요약:
+      - Edit/Write 대상 파일 Top 10
+      - Bash 명령어 중 빌드/테스트 실행 횟수
+      - Party Mode 관련 이벤트 (TeamCreate, SendMessage) 건수
+4. 카테고리 자동 분류:
+   - Bug Fixes: fix 커밋
+   - Features: feat 커밋
+   - Infrastructure: chore/ci 커밋
+   - Review: party-log 관련 이벤트
+5. Codesight 갱신 (has_changes=true + .codesight/ 존재할 때만):
    - npx codesight --wiki 2>/dev/null && echo "codesight:UPDATED" || echo "codesight:SKIP"
    - 코드 변경 후 에이전트들이 최신 구조 파악할 수 있게 위키 최신화
 ```
@@ -97,7 +114,21 @@ Run as background subagent: `/dream`
 
 출력 형식:
 ```
-[ECC-3H] Dream:OK|SKIP Plan:N active|SKIP Lint:tsc(S/A/P) log(N) lock(OK|CHG) Log:OK|SKIP 12h:OK|15h-WARN|24h-CRIT
+[ECC-3H] Dream:OK|SKIP Plan:N active|SKIP Lint:tsc(S/A/P) log(N) lock(OK|CHG) Log:OK|SKIP Obs:{N}events Comp:{N}violations 12h:OK|15h-WARN|24h-CRIT
+```
+
+Obs 계산:
+```
+- observations.jsonl 총 줄 수 카운트
+- 파일 미존재 → "NO-DATA"
+```
+
+Comp 계산:
+```
+- compliance-violations.jsonl에서 .last-3h-run 이후 항목 건수
+- 파일 미존재 → "NO-DATA"
+- 0건 → "0"
+- 1건 이상 → "{N}!"
 ```
 
 12h 감시 로직:
@@ -112,7 +143,7 @@ Run as background subagent: `/dream`
 
 ecc-3h-log.md 기록:
 ```
-## YYYY-MM-DD HH:MM UTC — Dream:OK|SKIP Plan:OK|SKIP Lint:tsc(S/A/P) log(N) lock(OK) Log:OK|SKIP 12h:OK
+## YYYY-MM-DD HH:MM UTC — Dream:OK|SKIP Plan:OK|SKIP Lint:tsc(S/A/P) log(N) lock(OK) Log:OK|SKIP Obs:{N}events Comp:{N}violations 12h:OK
 ```
 
 ## 12시간 확장 (kdh-ecc-12h)

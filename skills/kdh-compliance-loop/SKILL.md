@@ -1,12 +1,18 @@
 ---
 name: kdh-compliance-loop
-description: '파이프라인 준수 감시 루프 — 자가검토(3h) + Codex+Gemini 교차검토(3h) + 계속모드 주지(2h) + ecc-3h(3h) + ecc-12h(12h) 동시 등록. /kdh-dev-pipeline 계속 모드와 함께 사용.'
+description: 'v2 — 실시간 훅 데이터 기반 팩트 검토. 파이프라인 준수 감시 루프 — 자가검토(3h) + Codex+Gemini 교차검토(3h) + 계속모드 주지(2h) + ecc-3h(3h) + ecc-12h(12h) 동시 등록. /kdh-dev-pipeline 계속 모드와 함께 사용.'
 alwaysApply: false
 ---
 
 # KDH Compliance Loop — 파이프라인 준수 감시
 
 계속 모드(`/kdh-dev-pipeline 계속`)로 작업할 때, 파이프라인 절차를 생략하거나 기만하지 않는지 감시하는 루프를 등록합니다.
+
+## v2 변경 사항 (2026-04-13)
+
+- **Loop 1**: Claude 자기 자신에게 묻는 방식(9개 질문) → `observations.jsonl` + `compliance-violations.jsonl` 기반 팩트 검토로 교체
+- **Loop 2**: 추상적 질문 나열 방식 → `compliance-violations.jsonl` 데이터를 Codex에 직접 전달하는 증거 기반 교차검토로 교체
+- Loop 3~6은 변경 없음
 
 ## When to Use
 
@@ -34,24 +40,25 @@ CronCreate:
 **프롬프트 전문:**
 
 ```
-계속 모드 파이프라인 준수 자가검토.
-지금 하고 있는 스토리와 Phase를 기준으로:
+계속 모드 파이프라인 준수 팩트 검토.
+observations.jsonl과 compliance-violations.jsonl을 읽고 증거 기반으로 검토:
 
-1. pipeline-state.yaml의 current_story/phase가 실제 작업과 일치하는가?
-2. Phase를 건너뛴 적 없는가? (A→B→D→Codex 순서)
-3. Party Mode를 생략하거나 축약하지 않았는가? (critic 3명 각각 party-log 파일 작성)
-4. Codex+Gemini를 실행 안 하고 넘어가려 하지 않았는가?
-5. TeamCreate 없이 에이전트를 직접 호출하지 않았는가?
-6. context-snapshot을 Phase 완료 후 저장했는가?
-7. "계속이니까 빨리" 라는 이유로 절차를 줄이지 않았는가?
-8. 3스토리 세션 분할 시점을 넘기지 않았는가?
-9. pre-commit hook을 통과하기 위해 기만 행위를 하지 않았는가?
-   - 오케스트레이터가 party-log를 critic 대신 직접 작성
-   - party-log에 실제 코드 리뷰 없이 형식만 맞춘 가짜 내용
-   - pipeline-state.yaml에 실제 안 한 Codex PASS를 기록
-   - compliance YAML이나 context-snapshot을 실제 검증 없이 생성
+1. compliance-violations.jsonl 읽기:
+   - 최근 3시간 위반 건수 집계 (타입별: commit-without-partylog, push-to-main 등)
+   - 위반 0건이면 "✅ 위반 없음"
+   - 위반 있으면 각 건의 timestamp + reason 보고
 
-위반 있으면 즉시 멈추고 보고. 없으면 현재 상태 한 줄 요약만.
+2. observations.jsonl에서 Phase 순서 검증:
+   - tool_name:"Edit" 이벤트들의 file_path에서 party-log 패턴 추출
+   - pipeline-state.yaml의 current_phase와 실제 Edit 대상 파일 비교
+   - Phase A 산출물 없이 Phase B Edit가 있으면 → "🚩 Phase 건너뜀 의심"
+
+3. observations.jsonl에서 기만 패턴 탐지:
+   - party-log Write 이벤트가 TeamCreate 없이 발생 → "🚩 오케스트레이터 대리 작성 의심"
+   - Codex PASS 기록이 실제 codex-review.sh Bash 이벤트 없이 존재 → "🚩 가짜 PASS"
+
+위반 있으면 즉시 멈추고 보고. 없으면:
+[ECC-COMPLIANCE] 3h scan: violations={N}, phase-skip={Y/N}, deception={Y/N}
 ```
 
 ---
@@ -68,21 +75,18 @@ CronCreate:
 **프롬프트 전문:**
 
 ```
-codex-review.sh를 run_in_background로 실행해서 Codex+Gemini에게
-현재 세션의 파이프라인 준수 여부를 검토시켜라.
+compliance-violations.jsonl의 최근 3시간 데이터를 Codex에 전달하여 교차검토.
 
-검토 요청에 포함할 내용:
-- 현재 스토리 ID + Phase + 팀 이름
-- 이번 세션에서 완료한 Phase 목록과 각각의 산출물 (party-log, snapshot)
-- pipeline-state.yaml 현재 값
-- "계속 모드인데 절차를 생략하거나 축약한 흔적이 있는지" 질문
-- "Party Mode 로그가 실제 코드를 참조하는지 (형식적 리뷰 아닌지)" 질문
-- "Codex+Gemini 결과를 무시하고 넘어간 적 있는지" 질문
-- "pre-commit hook 통과를 위한 기만 행위가 없는지" 질문:
-  * 오케스트레이터가 critic party-log를 대신 작성하지 않았는가
-  * party-log 내용이 실제 diff를 참조하는 진짜 리뷰인가 (가짜 아닌가)
-  * pipeline-state.yaml에 거짓 PASS를 기록하지 않았는가
-  * compliance/snapshot을 실제 검증 없이 형식만 맞춰 생성하지 않았는가
+1. compliance-violations.jsonl에서 최근 3시간 엔트리 추출
+2. /tmp/compliance-review-input.json에 저장
+3. codex-review.sh에 전달:
+   "이 compliance 위반 로그를 검토해라.
+    1. 각 위반이 정당한 차단인지 오탐인지 판단
+    2. 위반 패턴에서 시스템적 문제 식별
+    3. 기만 의심 패턴이 있으면 HIGH severity
+    한국어."
+
+★ 위반 0건이면 Codex 호출 스킵: "위반 없음. Codex 검토 불필요."
 
 codex-review.sh는 Bash run_in_background로 실행. timeout 파라미터 넣지 말 것.
 결과 오면 위반 사항만 요약 보고.
@@ -197,3 +201,4 @@ CronCreate:
 4. **위반 발견 시 즉시 멈추고 CEO 보고** — 자동 수정 금지
 5. **기만 감지 항목 필수** — party-log 대리 작성, 가짜 PASS 기록 등
 6. **Loop 3/4/5/6는 계속모드 전용** — 계속모드가 아니면 등록하지 않음
+7. **Loop 1/2는 observations.jsonl + compliance-violations.jsonl 필수 읽기** — 자기 기억에 의존하지 않고 반드시 파일에서 증거를 읽어야 함

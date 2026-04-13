@@ -4,7 +4,8 @@
 # git commit 시도 전에 파이프라인 준수 여부 검증
 # ═══════════════════════════════════════════════════════════
 
-PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+# 경로 동적화: 환경변수 > cwd > 기본값
+PROJECT_ROOT="${CORTHEX_PROJECT_ROOT:-${PWD:-/home/ubuntu/corthex-v3}}"
 STATE_FILE="$PROJECT_ROOT/_bmad-output/pipeline-state.yaml"
 PARTY_DIR="$PROJECT_ROOT/_bmad-output/party-logs"
 

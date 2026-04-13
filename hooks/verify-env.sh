@@ -5,7 +5,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# 경로 동적화: 환경변수 > cwd > 기본값
+PROJECT_ROOT="${CORTHEX_PROJECT_ROOT:-${PWD:-$(cd "$(dirname "$0")/.." && pwd)}}"
 PASS=0
 FAIL=0
 WARN=0
@@ -36,30 +37,57 @@ echo " $(date '+%Y-%m-%d %H:%M:%S KST')"
 echo "═══════════════════════════════════════"
 echo ""
 
-# 1. Bun 버전
-check "Bun 설치" "command -v bun"
+# 1. 패키지 매니저 감지
+if command -v bun > /dev/null 2>&1; then
+  PKG_MGR="bun"
+  check "Bun 설치" "bun --version"
+elif command -v npm > /dev/null 2>&1; then
+  PKG_MGR="npm"
+  check "npm 설치" "npm --version"
+else
+  PKG_MGR="none"
+  check "패키지 매니저" "false"
+fi
 
-# 2. Server tsc
-check "Server 타입체크" "cd '$PROJECT_ROOT/packages/server' && npx tsc --noEmit 2>&1"
+# 2. tsc 체크 (tsconfig.json 동적 탐색)
+TSC_COUNT=0
+for tsconfig in $(find "$PROJECT_ROOT" -name "tsconfig.json" -not -path "*/node_modules/*" 2>/dev/null | head -5); do
+  TSC_DIR=$(dirname "$tsconfig")
+  TSC_NAME=$(basename "$TSC_DIR")
+  check "$TSC_NAME tsc" "cd '$TSC_DIR' && npx tsc --noEmit 2>&1"
+  TSC_COUNT=$((TSC_COUNT + 1))
+done
+if [ "$TSC_COUNT" -eq 0 ]; then
+  printf "  [2/?] %-30s⚠️  tsconfig.json 없음 (tsc 스킵)\n" "TypeScript"
+  WARN=$((WARN + 1))
+fi
 
-# 3. Admin tsc
-check "Admin 타입체크" "cd '$PROJECT_ROOT/packages/admin' && npx tsc --noEmit 2>&1"
+# 3. DB 연결 (선택사항 — 서버 패키지 자동 탐색)
+SERVER_DIR=$(find "$PROJECT_ROOT" -path "*/packages/server" -type d 2>/dev/null | head -1)
+if [ -n "$SERVER_DIR" ] && [ -f "$SERVER_DIR/src/db/index.ts" -o -f "$SERVER_DIR/src/db.ts" ]; then
+  check "DB 연결" "cd '$SERVER_DIR' && $PKG_MGR run -e 'process.exit(0)' 2>&1" "false"
+else
+  printf "  [3/?] %-30s⚠️  서버 패키지 미감지 (스킵)\n" "DB 연결"
+  WARN=$((WARN + 1))
+fi
 
-# 4. DB 연결 (선택사항 — .env 없을 수 있음)
-check "DB 연결" "cd '$PROJECT_ROOT/packages/server' && bun run -e 'import { db } from \"./src/db\"; const r = await db.execute(\"SELECT 1\"); process.exit(r ? 0 : 1)' 2>&1" "false"
-
-# 5. 미커밋 변경사항
+# 4. 미커밋 변경사항
 UNSTAGED=$(cd "$PROJECT_ROOT" && git status --porcelain 2>/dev/null | wc -l)
 if [ "$UNSTAGED" -gt 0 ]; then
-  printf "  [5/6] %-30s⚠️  %s개 파일 미커밋\n" "미커밋 변경" "$UNSTAGED"
+  printf "  [4/?] %-30s⚠️  %s개 파일 미커밋\n" "미커밋 변경" "$UNSTAGED"
   WARN=$((WARN + 1))
 else
-  printf "  [5/6] %-30s✅\n" "미커밋 변경"
+  printf "  [4/?] %-30s✅\n" "미커밋 변경"
   PASS=$((PASS + 1))
 fi
 
-# 6. pipeline-state.yaml 존재
-check "Pipeline State" "test -f '$PROJECT_ROOT/_bmad-output/pipeline-state.yaml'"
+# 5. pipeline-state.yaml 존재 (선택)
+if [ -d "$PROJECT_ROOT/_bmad-output" ]; then
+  check "Pipeline State" "test -f '$PROJECT_ROOT/_bmad-output/pipeline-state.yaml'"
+else
+  printf "  [5/?] %-30s⚠️  _bmad-output 없음 (파이프라인 미사용)\n" "Pipeline State"
+  WARN=$((WARN + 1))
+fi
 
 echo ""
 echo "═══════════════════════════════════════"

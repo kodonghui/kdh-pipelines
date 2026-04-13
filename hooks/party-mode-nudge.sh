@@ -11,7 +11,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+# 경로 동적화: 환경변수 > cwd > 기본값
+PROJECT_ROOT="${CORTHEX_PROJECT_ROOT:-${PWD:-/home/ubuntu/corthex-v3}}"
 PARTY_DIR="$PROJECT_ROOT/_bmad-output/party-logs/planning-v2"
 CONTEXT_FILE="$PROJECT_ROOT/_bmad-output/party-mode-context.json"
 
@@ -99,7 +100,25 @@ if [ "$AGENT_NAME" = "$WRITER" ]; then
   fi
 
   if [ "$FIXES_EXIST" = true ]; then
-    # fixes 썼으면 → verified 기다리는 중 → idle 허용
+    # fixes 작성됨 → 모든 critic이 verified했는지 확인
+    ALL_VERIFIED=true
+    for c in $CRITICS; do
+      if file_exists "$c"; then
+        if ! grep -q "\[Verified\]\|verified\|VERIFIED\|post-fix\|Post-fix" "$PARTY_DIR/${PREFIX}-${c}.md" 2>/dev/null; then
+          ALL_VERIFIED=false
+        fi
+      else
+        ALL_VERIFIED=false
+      fi
+    done
+
+    if [ "$ALL_VERIFIED" = true ]; then
+      # 모든 critic verified → Writer 작업 완료 → 자동 종료
+      echo '{"continue": false, "stopReason": "모든 critic이 fixes를 검증했습니다. Party Mode 완료."}'
+      exit 0
+    fi
+
+    # 아직 verified 안 된 critic → idle 허용 (기다림)
     exit 0
   fi
 
@@ -129,7 +148,28 @@ for critic in $CRITICS; do
       fi
     fi
 
-    # 3. cross-talk 체크 (상대방이 보냈는데 내가 안 읽은 경우)
+    # 3. 내가 verified + 다른 모든 critic도 verified → 자동 종료
+    if file_exists "fixes" && grep -q "\[Verified\]\|verified\|VERIFIED\|post-fix\|Post-fix" "$PARTY_DIR/${PREFIX}-${critic}.md" 2>/dev/null; then
+      ALL_OTHERS_VERIFIED=true
+      for other_c in $CRITICS; do
+        if [ "$other_c" != "$critic" ]; then
+          if file_exists "$other_c"; then
+            if ! grep -q "\[Verified\]\|verified\|VERIFIED\|post-fix\|Post-fix" "$PARTY_DIR/${PREFIX}-${other_c}.md" 2>/dev/null; then
+              ALL_OTHERS_VERIFIED=false
+            fi
+          else
+            ALL_OTHERS_VERIFIED=false
+          fi
+        fi
+      done
+
+      if [ "$ALL_OTHERS_VERIFIED" = true ]; then
+        echo '{"continue": false, "stopReason": "모든 리뷰가 검증되었습니다. Party Mode 완료."}'
+        exit 0
+      fi
+    fi
+
+    # 4. cross-talk 체크 (상대방이 보냈는데 내가 안 읽은 경우)
     # cross-talk은 critic 파일 내 섹션이므로, 파일이 이미 있으면 OK
 
     exit 0  # 할 일 없음
