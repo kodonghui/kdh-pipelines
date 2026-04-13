@@ -1,0 +1,136 @@
+#!/bin/bash
+# ═══════════════════════════════════════════════════════════
+# CORTHEX Polytank — Pre-commit Hook v5.0
+#
+# 적용 시점: 폐관수련 완료 + CEO 승인 + main 병합 직전
+# 현재는 reference 파일 (활성화 안 됨).
+# 활성화 방법: cp .claude/hooks/pre-commit.v5 .git/hooks/pre-commit
+#
+# 변경점 vs v4.5:
+# - quinn(QA) 의존성 제거 — BMAD v6.3에서 공식 삭제됨
+# - Amelia(dev+qa 통합) / sally(ux-designer) 기반으로 재편
+# - D7 디자인 품질 차원 강제
+# - HTML 목업 존재 확인 (UI 스토리)
+# - design-check.spec.ts PASS 확인
+# - CEO 승인 파일 존재 확인
+# - 기존 Biome/tsc/CLAUDE.md 보호는 유지
+# ═══════════════════════════════════════════════════════════
+
+set -e
+
+# ── CEO 긴급 override ──
+if [ "$CORTHEX_CEO_OVERRIDE" = "true" ]; then
+  echo "⚠️  CEO override 활성 — 파이프라인 검증 스킵"
+  exit 0
+fi
+
+# ── CLAUDE.md 변경 보호 ──
+CLAUDE_CHANGED=$(git diff --cached --name-only | grep "^CLAUDE.md$" | head -1)
+if [ -n "$CLAUDE_CHANGED" ]; then
+  echo "❌ BLOCKED: CLAUDE.md 변경은 CEO 승인 필요"
+  echo "   승인 후: CORTHEX_CEO_OVERRIDE=true git commit"
+  exit 1
+fi
+
+# ── Biome lint check ──
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^packages/.*\.(ts|tsx)$' | grep -v '__tests__\|\.test\.\|\.spec\.' || true)
+if [ -n "$STAGED_TS" ]; then
+  echo "🔍 Biome lint..."
+  if ! bunx --bun @biomejs/biome check $STAGED_TS 2>&1 | tail -5; then
+    echo "❌ BLOCKED: Biome lint errors"
+    exit 1
+  fi
+fi
+
+# ── tsc check ──
+if [ -d "packages/server" ]; then
+  if ! bunx tsc -p packages/server --noEmit 2>&1 | tail -20; then
+    echo "❌ BLOCKED: tsc failed on packages/server"
+    exit 1
+  fi
+fi
+if [ -d "packages/admin" ]; then
+  if ! bunx tsc -p packages/admin --noEmit 2>&1 | tail -20; then
+    echo "❌ BLOCKED: tsc failed on packages/admin"
+    exit 1
+  fi
+fi
+
+# ── Pipeline state 읽기 ──
+STATE_FILE="_bmad-output/pipeline-state.yaml"
+if [ ! -f "$STATE_FILE" ]; then
+  echo "❌ BLOCKED: pipeline-state.yaml 없음"
+  exit 1
+fi
+
+CURRENT_STORY=$(grep "^current_story:" "$STATE_FILE" | head -1 | sed 's/.*: *//;s/"//g;s/ //g' || echo "")
+MODE=$(grep "^mode:" "$STATE_FILE" | head -1 | sed 's/.*: *//;s/"//g;s/ //g' || echo "")
+
+# ── 코드 파일 변경 감지 ──
+CODE_CHANGED=$(git diff --cached --name-only | grep "^packages/" | head -1)
+UI_CHANGED=$(git diff --cached --name-only | grep -E "^packages/(admin|app|ui)/" | head -1)
+
+# ── docs-only commit 통과 ──
+if [ -z "$CODE_CHANGED" ]; then
+  echo "✅ docs-only commit — v5.0 승인"
+  exit 0
+fi
+
+# ── Story 기반 작업 검증 ──
+if [ -z "$CURRENT_STORY" ] || [ "$CURRENT_STORY" = "null" ]; then
+  echo "❌ BLOCKED: current_story가 없음. pipeline-state.yaml 확인."
+  exit 1
+fi
+
+# ── UI 스토리 = HTML 목업 + design-check 필수 ──
+if [ -n "$UI_CHANGED" ]; then
+  echo "🎨 UI 스토리 — v5.0 디자인 GATE 검증"
+
+  # ① HTML 목업 존재 (BMAD step-09)
+  PHASE_NUM=$(grep "current_phase_number:" "$STATE_FILE" | head -1 | sed 's/.*: *//;s/"//g;s/ //g')
+  MOCKUP_FILE="_bmad-output/phase-${PHASE_NUM}/planning-artifacts/ux-design-directions-${CURRENT_STORY}.html"
+  if [ ! -f "$MOCKUP_FILE" ]; then
+    echo "❌ BLOCKED: HTML 목업 없음: $MOCKUP_FILE"
+    echo "   BMAD step-09 먼저 실행해서 3 variant HTML 목업 생성 + CEO 선택"
+    exit 1
+  fi
+
+  # ② CEO 디자인 방향 선택 기록
+  DIRECTION_FILE="_bmad-output/phase-${PHASE_NUM}/party-logs/story-${CURRENT_STORY}-design-direction.md"
+  if [ ! -f "$DIRECTION_FILE" ]; then
+    echo "❌ BLOCKED: CEO 디자인 방향 선택 기록 없음: $DIRECTION_FILE"
+    echo "   CEO에게 목업 3개 제시 후 선택 결과 기록 필요"
+    exit 1
+  fi
+
+  # ③ design-check.spec.ts PASS (최근 결과 JSON)
+  DESIGN_CHECK_RESULT="_bmad-output/phase-${PHASE_NUM}/party-logs/story-${CURRENT_STORY}-design-check.json"
+  if [ -f "$DESIGN_CHECK_RESULT" ]; then
+    if ! grep -q '"status": *"pass"' "$DESIGN_CHECK_RESULT"; then
+      echo "❌ BLOCKED: design-check FAIL — $DESIGN_CHECK_RESULT"
+      exit 1
+    fi
+  else
+    echo "⚠️  design-check 결과 파일 없음 — Phase B.5 먼저 실행하세요"
+    exit 1
+  fi
+fi
+
+# ── sally party-log 필수 (UI 스토리) ──
+if [ -n "$UI_CHANGED" ]; then
+  SALLY_LOG=$(ls _bmad-output/phase-${PHASE_NUM}/party-logs/story-${CURRENT_STORY}-*-sally.md 2>/dev/null | head -1)
+  if [ -z "$SALLY_LOG" ]; then
+    echo "❌ BLOCKED: sally(ux-designer) party-log 없음 — UI 스토리는 sally critic 필수"
+    exit 1
+  fi
+fi
+
+# ── winston party-log 필수 (모든 스토리) ──
+WINSTON_LOG=$(ls _bmad-output/phase-${PHASE_NUM}/party-logs/story-${CURRENT_STORY}-*-winston.md 2>/dev/null | head -1)
+if [ -z "$WINSTON_LOG" ]; then
+  echo "❌ BLOCKED: winston(architect) party-log 없음"
+  exit 1
+fi
+
+echo "✅ Pipeline v5.0 — 모든 검증 통과"
+exit 0

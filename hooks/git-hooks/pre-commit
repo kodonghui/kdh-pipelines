@@ -1,0 +1,404 @@
+#!/bin/bash
+# ═══════════════════════════════════════════════════════════
+# CORTHEX v3 — Pipeline Pre-commit Hook v4.5
+#
+# v4.5: Planning mode enforcement (party-log Cross-Validation + compliance YAML)
+#       - docs-only commits under planning_active=true are now validated
+#       - Rule #39 Cross-Validation section mandatory on critic logs
+#       - Compliance YAML mandatory fields: critic_agreement_rate,
+#         fixes_rounds, bias_flag, da_skipped|da_file
+# v4.4: diff 파일 참조 + 코드 인용 검증 + bugfix 모드 분기
+# v4.3: party-log 내용 검증 (크기 + D점수 + 줄수) — 기만 방지
+# v4.2: current_story=null 구멍 봉쇄 + CLAUDE.md 보호
+# 검증: tsc + party-log 내용 + Codex + UI design gate + planning mode
+# ═══════════════════════════════════════════════════════════
+
+set -e
+
+# ── CEO 긴급 override (유일한 예외) ──
+if [ "$CORTHEX_CEO_OVERRIDE" = "true" ]; then
+  echo "⚠️  CEO override 활성 — 파이프라인 검증 스킵"
+  exit 0
+fi
+
+# ── Polytank rebuild branch 예외 (2026-04-13) ──
+# rebuild 브랜치는 격리된 재빌드 작업용이므로 v4.5 파이프라인 강제 규칙 면제.
+# 최종 병합 시점에 새 v5.0 규칙으로 재검증됨. Biome + tsc만 유지.
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+if [ "$CURRENT_BRANCH" = "rebuild" ]; then
+  echo "🏯 Polytank rebuild branch — v4.5 party-log/Codex/planning 규칙 면제"
+  # Biome lint check (staged TS files only)
+  STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^packages/.*\.(ts|tsx)$' | grep -v '__tests__\|\.test\.\|\.spec\.' || true)
+  if [ -n "$STAGED_TS" ]; then
+    if ! bunx --bun @biomejs/biome check $STAGED_TS 2>&1 | tail -5; then
+      echo "❌ BLOCKED: Biome lint errors on rebuild branch"
+      exit 1
+    fi
+  fi
+  # tsc check on server package (polytank essential)
+  if [ -d "packages/server" ]; then
+    if ! bunx tsc -p packages/server --noEmit 2>&1 | tail -20; then
+      echo "❌ BLOCKED: tsc failed on packages/server"
+      exit 1
+    fi
+  fi
+  echo "✅ Polytank checks passed"
+  exit 0
+fi
+
+# ── Biome lint check (v4.6 — 2026-04-11 Plan v4) ──
+# staged .ts/.tsx 파일이 있으면 biome check 실행
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^packages/.*\.(ts|tsx)$' | grep -v '__tests__\|\.test\.\|\.spec\.' || true)
+if [ -n "$STAGED_TS" ]; then
+  echo "🔍 Biome lint check on staged files..."
+  if ! bunx --bun @biomejs/biome check $STAGED_TS 2>&1 | tail -5; then
+    echo "❌ BLOCKED: Biome lint errors"
+    echo "   수정: bun run lint:fix"
+    exit 1
+  fi
+  echo "✅ Biome OK"
+fi
+
+# ── CLAUDE.md 변경 보호 (v4.2) ──
+CLAUDE_CHANGED=$(git diff --cached --name-only | grep "^CLAUDE.md$" | head -1)
+if [ -n "$CLAUDE_CHANGED" ]; then
+  echo "❌ BLOCKED: CLAUDE.md 변경 감지"
+  echo "   규칙 파일 수정은 CEO 승인 필수."
+  echo "   승인 받았으면: CORTHEX_CEO_OVERRIDE=true git commit"
+  exit 1
+fi
+
+# ── Pipeline state 읽기 (v4.5: planning 검증을 위해 일찍 읽음) ──
+STATE_FILE="_bmad-output/pipeline-state.yaml"
+if [ -f "$STATE_FILE" ]; then
+  PLANNING_ACTIVE=$(grep "^planning_active:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*: *//;s/"//g;s/ //g')
+  PIPELINE_MODE_CHECK=$(grep "^mode:" "$STATE_FILE" 2>/dev/null | head -1 | sed 's/.*: *//;s/"//g;s/ //g')
+  PHASE_NUM=$(grep "current_phase_number:" "$STATE_FILE" | head -1 | sed 's/.*: *//;s/"//g;s/ //g')
+  if [ -z "$PHASE_NUM" ]; then PHASE_NUM="1"; fi
+else
+  PLANNING_ACTIVE="false"
+  PIPELINE_MODE_CHECK=""
+  PHASE_NUM="1"
+fi
+
+# ── 코드 파일 변경 확인 ──
+CODE_CHANGED=$(git diff --cached --name-only | grep "^packages/" | head -1)
+
+# ═══════════════════════════════════════════════════════════
+# v4.5: Planning mode validation (docs-only commits)
+# packages/ 변경 없을 때 실행. planning_active=true면 party-log +
+# compliance YAML 검증. 그렇지 않으면 통과.
+# ═══════════════════════════════════════════════════════════
+if [ -z "$CODE_CHANGED" ]; then
+  IS_PLANNING=0
+  if [ "$PLANNING_ACTIVE" = "true" ] || [ "$PIPELINE_MODE_CHECK" = "planning" ]; then
+    IS_PLANNING=1
+  fi
+
+  if [ "$IS_PLANNING" -eq 0 ]; then
+    exit 0
+  fi
+
+  echo "🔍 Pipeline v4.5: Planning mode validation (docs-only commit)"
+  PLANNING_ERRORS=0
+  MIN_SIZE_PLAN=1500
+  MIN_LINES_PLAN=20
+  MIN_D_SCORES_PLAN=3
+
+  # staged planning party-logs
+  STAGED_PARTY_LOGS=$(git diff --cached --name-only | grep -E '^_bmad-output/phase-[^/]+/party-logs/.*\.md$' || true)
+
+  # staged compliance YAMLs
+  STAGED_COMPLIANCE=$(git diff --cached --name-only | grep -E '^_bmad-output/phase-[^/]+/compliance/.*\.ya?ml$' || true)
+
+  # 각 staged party-log 검증
+  for LOG_PATH in $STAGED_PARTY_LOGS; do
+    BASENAME=$(basename "$LOG_PATH")
+
+    # staged content 읽기
+    CONTENT=$(git show ":${LOG_PATH}" 2>/dev/null || cat "$LOG_PATH" 2>/dev/null || true)
+    if [ -z "$CONTENT" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} 내용 읽기 실패"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+      continue
+    fi
+
+    SIZE=$(printf '%s' "$CONTENT" | wc -c)
+    LINES=$(printf '%s' "$CONTENT" | wc -l)
+
+    # 최소 크기 (모든 party-log 공통, 자작 방지)
+    if [ "$SIZE" -lt "$MIN_SIZE_PLAN" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — ${SIZE}B < ${MIN_SIZE_PLAN}B (자작 의심)"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+      continue
+    fi
+
+    # 최소 줄수
+    if [ "$LINES" -lt "$MIN_LINES_PLAN" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — ${LINES}줄 < ${MIN_LINES_PLAN}줄"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+      continue
+    fi
+
+    # Fixes / DA / replacement / gate-draft / verify / cycle-N-fixes: critic-specific 검증 스킵
+    # (이들은 Writer 또는 targeted verify 산출물이지 full critic review가 아님)
+    # v4.5.1: 'verify' 추가 — targeted verification passes use binary checklist, not D1-D6
+    if echo "$BASENAME" | grep -qiE 'fixes|devils-advocate|replacement|gate-draft|verify'; then
+      continue
+    fi
+
+    # Critic log: D1-D6 패턴
+    D_COUNT=$(printf '%s' "$CONTENT" | grep -cE "D[1-6][ :|]|Dimension|차원" || true)
+    if [ "$D_COUNT" -lt "$MIN_D_SCORES_PLAN" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — D점수 패턴 ${D_COUNT}개 < ${MIN_D_SCORES_PLAN}개"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+    fi
+
+    # Critic log: Cross-Validation 섹션 필수 (Rule #39)
+    CV_HEADING=$(printf '%s' "$CONTENT" | grep -ciE '^#+[[:space:]]*cross.?validation' || true)
+    if [ "$CV_HEADING" -lt 1 ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — ## Cross-Validation 섹션 없음 (Rule #39)"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+      continue
+    fi
+
+    # Critic log: Cross-Validation 내용이 placeholder가 아닌지 검증
+    # CV 섹션 본문 추출 (다음 ## level-2 헤딩 전까지, ### subsection은 유지)
+    # v4.5 bugfix: /^#+ / → /^## [^#]/ — subsection heading이 capture 종료 안 하도록
+    CV_BODY=$(printf '%s\n' "$CONTENT" | awk '
+      /^#+[[:space:]]*[Cc]ross.?[Vv]alidation/ { capture=1; next }
+      /^## [^#]/ { if (capture) capture=0 }
+      capture { print }
+    ')
+    CV_BODY_SIZE=$(printf '%s' "$CV_BODY" | wc -c)
+
+    # CV 본문이 200B 미만 = placeholder 의심
+    if [ "$CV_BODY_SIZE" -lt 200 ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — Cross-Validation 본문 ${CV_BODY_SIZE}B < 200B (placeholder 의심)"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+      continue
+    fi
+
+    # placeholder 키워드 감지
+    if printf '%s' "$CV_BODY" | grep -qiE 'to be filled|placeholder|phase c 후|_to be|tbd'; then
+      echo "❌ BLOCKED: ${LOG_PATH} — Cross-Validation placeholder 키워드 감지 (채워야 함)"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+    fi
+  done
+
+  # 각 staged compliance YAML 검증
+  for YAML_PATH in $STAGED_COMPLIANCE; do
+    YAML_CONTENT=$(git show ":${YAML_PATH}" 2>/dev/null || cat "$YAML_PATH" 2>/dev/null || true)
+    if [ -z "$YAML_CONTENT" ]; then
+      continue
+    fi
+
+    # 필수 필드: critic_agreement_rate (정확명, 접미사 불가)
+    if ! printf '%s' "$YAML_CONTENT" | grep -qE '^[[:space:]]*critic_agreement_rate[[:space:]]*:'; then
+      echo "❌ BLOCKED: ${YAML_PATH} — critic_agreement_rate 필드 없음 (접미사 붙은 변형 불가)"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+    fi
+
+    # 필수 필드: fixes_rounds
+    if ! printf '%s' "$YAML_CONTENT" | grep -qE '^[[:space:]]*fixes_rounds[[:space:]]*:'; then
+      echo "❌ BLOCKED: ${YAML_PATH} — fixes_rounds 필드 없음"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+    fi
+
+    # 필수 필드: bias_flag
+    if ! printf '%s' "$YAML_CONTENT" | grep -qE '^[[:space:]]*bias_flag[[:space:]]*:'; then
+      echo "❌ BLOCKED: ${YAML_PATH} — bias_flag 필드 없음"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+    fi
+
+    # DA 필드 필수: da_skipped 또는 da_file 중 하나 (Rule #38)
+    if ! printf '%s' "$YAML_CONTENT" | grep -qE '^[[:space:]]*(da_skipped|da_file)[[:space:]]*:'; then
+      echo "❌ BLOCKED: ${YAML_PATH} — da_skipped 또는 da_file 필드 없음 (Rule #38)"
+      PLANNING_ERRORS=$((PLANNING_ERRORS + 1))
+    fi
+  done
+
+  if [ "$PLANNING_ERRORS" -gt 0 ]; then
+    echo ""
+    echo "══════════════════════════════════════"
+    echo "🚫 커밋 차단: Planning 검증 ${PLANNING_ERRORS}건 위반"
+    echo "  필수: critic log Cross-Validation + compliance YAML 필드"
+    echo "  우회 불가. CEO 긴급: CORTHEX_CEO_OVERRIDE=true git commit"
+    echo "══════════════════════════════════════"
+    exit 1
+  fi
+
+  echo "✅ Pipeline v4.5 planning mode passed"
+  exit 0
+fi
+
+# ═══════════════════════════════════════════════════════════
+# 코드 변경 있음 — v4.4 기존 로직 진행
+# ═══════════════════════════════════════════════════════════
+
+# ── tsc 검증 (항상 실행, 우회 불가) ──
+TSC_FAIL=0
+for tsconfig in packages/server/tsconfig.json packages/app/tsconfig.json packages/admin/tsconfig.json packages/shared/tsconfig.json; do
+  if [ -f "$tsconfig" ]; then
+    dir=$(dirname "$tsconfig")
+    if ! (cd "$dir" && npx tsc --noEmit 2>/dev/null); then
+      echo "❌ tsc FAIL: $dir"
+      TSC_FAIL=1
+    fi
+  fi
+done
+if [ "$TSC_FAIL" -eq 1 ]; then
+  exit 1
+fi
+
+# ── Pipeline state 재검증 (코드 변경 시만 필수) ──
+if [ ! -f "$STATE_FILE" ]; then
+  echo "❌ BLOCKED: pipeline-state.yaml 없음 — 코드 커밋 불가"
+  exit 1
+fi
+
+PARTY_DIR="_bmad-output/phase-${PHASE_NUM}/party-logs"
+
+# 현재 스토리 (동적 — sprint 하드코딩 없음)
+CURRENT_STORY=$(grep "current_story:" "$STATE_FILE" | head -1 | sed 's/.*current_story: *//;s/"//g;s/ //g')
+
+# 활성 스토리 없으면 차단 (v4.2: 구멍 봉쇄)
+if [ -z "$CURRENT_STORY" ] || [ "$CURRENT_STORY" = "null" ]; then
+  echo "❌ BLOCKED: packages/ 코드 변경인데 active story 없음"
+  echo "   pipeline-state.yaml의 current_story를 먼저 설정하세요."
+  echo "   ECC/chore 커밋이면: CORTHEX_CEO_OVERRIDE=true git commit"
+  exit 1
+fi
+
+# ── bugfix 모드 감지 (v4.4) ──
+PIPELINE_MODE=$(grep "^mode:" "$STATE_FILE" | head -1 | sed 's/.*: *//;s/"//g;s/ //g')
+
+if [ "$PIPELINE_MODE" = "bugfix" ]; then
+  echo "🔍 Pipeline v4.5: Bugfix mode — $CURRENT_STORY"
+  BUGFIX_STATE="_bmad-output/bug-fix/bug-fix-state.yaml"
+  if [ -f "$BUGFIX_STATE" ]; then
+    BF_CODEX=$(grep "codex:" "$BUGFIX_STATE" | head -1 | grep -oE "pass|null" || echo "none")
+    if [ "$BF_CODEX" = "fail" ]; then
+      echo "❌ BLOCKED: bug-fix Codex FAIL"
+      exit 1
+    fi
+  fi
+  echo "✅ Bugfix mode — tsc clean, 커밋 허용"
+  exit 0
+fi
+
+echo "🔍 Pipeline v4.5: Story $CURRENT_STORY"
+ERRORS=0
+
+# ═══════════════════════════════════════════════════════════
+# 1. Story Dev Party-log 내용 검증 (v4.3+v4.4 로직 그대로)
+# ═══════════════════════════════════════════════════════════
+MIN_SIZE=1500
+MIN_D_SCORES=3
+MIN_LINES=20
+
+for PHASE in b d; do
+  for CRITIC in winston quinn; do
+    LOG_PATH="$PARTY_DIR/story-${CURRENT_STORY}-phase-${PHASE}-${CRITIC}.md"
+
+    if [ ! -f "$LOG_PATH" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} 없음"
+      ERRORS=$((ERRORS + 1))
+      continue
+    fi
+
+    STAGED_CONTENT=$(git show ":${LOG_PATH}" 2>/dev/null || true)
+    if [ -z "$STAGED_CONTENT" ]; then
+      STAGED_CONTENT=$(cat "$LOG_PATH" 2>/dev/null || true)
+    fi
+    if [ -z "$STAGED_CONTENT" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} 내용 읽기 실패"
+      ERRORS=$((ERRORS + 1))
+      continue
+    fi
+
+    SIZE=$(printf '%s' "$STAGED_CONTENT" | wc -c)
+    if [ "$SIZE" -lt "$MIN_SIZE" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — ${SIZE}B < ${MIN_SIZE}B (자작 의심)"
+      ERRORS=$((ERRORS + 1))
+      continue
+    fi
+
+    LINE_COUNT=$(printf '%s' "$STAGED_CONTENT" | wc -l)
+    if [ "$LINE_COUNT" -lt "$MIN_LINES" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — ${LINE_COUNT}줄 < ${MIN_LINES}줄"
+      ERRORS=$((ERRORS + 1))
+      continue
+    fi
+
+    D_COUNT=$(printf '%s' "$STAGED_CONTENT" | grep -cE "D[1-6][ :|]|Dimension|차원별" || true)
+    if [ "$D_COUNT" -lt "$MIN_D_SCORES" ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — D점수/차원 패턴 ${D_COUNT}개 < ${MIN_D_SCORES}개"
+      ERRORS=$((ERRORS + 1))
+    fi
+
+    # ── v4.4: diff 파일 경로 참조 검증 ──
+    DIFF_FILES=$(git diff --cached --name-only | grep "^packages/\|^\.github/" | head -20)
+    if [ -n "$DIFF_FILES" ]; then
+      DIFF_FILE_COUNT=$(echo "$DIFF_FILES" | wc -l)
+      MIN_FILE_REFS=$((DIFF_FILE_COUNT < 2 ? DIFF_FILE_COUNT : 2))
+      FILE_MATCH_COUNT=0
+      for DIFF_FILE in $DIFF_FILES; do
+        DIFF_BASENAME=$(basename "$DIFF_FILE")
+        if printf '%s' "$STAGED_CONTENT" | grep -qF "$DIFF_BASENAME"; then
+          FILE_MATCH_COUNT=$((FILE_MATCH_COUNT + 1))
+        fi
+      done
+      if [ "$FILE_MATCH_COUNT" -lt "$MIN_FILE_REFS" ]; then
+        echo "❌ BLOCKED: ${LOG_PATH} — 변경 파일 참조 ${FILE_MATCH_COUNT}개 < ${MIN_FILE_REFS}개 (실제 코드 안 봤음)"
+        ERRORS=$((ERRORS + 1))
+      fi
+    fi
+
+    # ── v4.4: 인라인 코드 인용 검증 ──
+    CODE_QUOTE_COUNT=$(printf '%s' "$STAGED_CONTENT" | grep -cE '`[^`]+`|```' || true)
+    if [ "$CODE_QUOTE_COUNT" -lt 2 ]; then
+      echo "❌ BLOCKED: ${LOG_PATH} — 코드 인용 ${CODE_QUOTE_COUNT}개 < 2개 (구체성 부족)"
+      ERRORS=$((ERRORS + 1))
+    fi
+  done
+done
+
+# ═══════════════════════════════════════════════════════════
+# 2. Codex 상태
+# ═══════════════════════════════════════════════════════════
+STORY_KEY="story_${CURRENT_STORY//-/_}"
+CODEX_STATUS=$(grep -A10 "${STORY_KEY}:" "$STATE_FILE" | grep "codex:" | head -1 | sed 's/.*: *//;s/"//g;s/ //g')
+
+if [ "$CODEX_STATUS" != "PASS" ] && [ "$CODEX_STATUS" != "pass" ]; then
+  echo "❌ BLOCKED: Codex 미실행 또는 FAIL — status: ${CODEX_STATUS:-none}"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# ═══════════════════════════════════════════════════════════
+# 3. UI Design gate
+# ═══════════════════════════════════════════════════════════
+TSX_STAGED=$(git diff --cached --name-only | grep -E 'packages/(admin|app)/src/(pages|features|components)/.*\.tsx$' | head -1)
+if [ -n "$TSX_STAGED" ]; then
+  UI_DESIGN_LOG="$PARTY_DIR/story-${CURRENT_STORY}-ui-design.md"
+  if [ ! -f "$UI_DESIGN_LOG" ]; then
+    echo "❌ BLOCKED: UI 파일 변경 — ui-design.md 없음"
+    ERRORS=$((ERRORS + 1))
+  fi
+fi
+
+# ═══════════════════════════════════════════════════════════
+# Result
+# ═══════════════════════════════════════════════════════════
+if [ $ERRORS -gt 0 ]; then
+  echo ""
+  echo "══════════════════════════════════════"
+  echo "🚫 커밋 차단: ${ERRORS}건 위반"
+  echo "  필수: Phase B + Phase D party-log + Codex PASS"
+  echo "  우회 방법 없음."
+  echo "══════════════════════════════════════"
+  exit 1
+fi
+
+echo "✅ Pipeline v4.5 passed (Story $CURRENT_STORY)"
+exit 0
