@@ -90,7 +90,9 @@ function run(data) {
       /\.tmp$/,
       /\.gateguard\.yml$/,
       /CHANGELOG\.md$/i,
-      /\/update-log\//
+      /\/update-log\//,
+      /pipelines-qa-bug-report\//,
+      /\/skills\/[^/]+\/SKILL\.md$/
     ];
     if (SAFE_PATTERNS.some(p => p.test(filePath))) return null;
   }
