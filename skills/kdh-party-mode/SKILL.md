@@ -249,3 +249,4 @@ critic 피드백을 무시하는 것도 금지. 반박하려면 기술적 평가
 38. **DA는 반드시 fresh instance.** 기존 critic(winston/quinn/john) 겸임 금지. 이전 리뷰 맥락 0인 새 에이전트만. DA 미실행 시 compliance YAML에 `da_skipped: true` + `da_skip_reason` 필수 기록.
 39. **Cross-Validation은 독립 리뷰 후.** 리뷰 중 대화(cross-talk) 금지. 독립 리뷰 완료 → 파일 기반 상호 검증.
 40. **Critic 전문 영역 집중.** winston=아키텍처, quinn=QA/보안, john=제품/요구사항.
+41. **완료된 sub-agent는 즉시 종료.** Stage/Phase party-log 작성 완료 후 해당 critic(winston/quinn/john/sally/dev-fix 등)은 **다음 spawn 전에 반드시 TeamDelete** 로 제거. 유휴 sub-agent 누적 = 컨텍스트 낭비 + 중복 invocation 위험. 관측 증거: 2026-04-14 CORTHEX v3 세션에서 `@quinn-d`가 **3회 중복 스폰**되어 "This review was already completed"라고 자가 거절한 사례 있음. **규칙: 새 Phase 진입 전 이전 Phase 팀원 일괄 TeamDelete.** CEO 지시(2026-04-14 17:42): "무슨 팀 에이전트가 존나많이 떠있어 얘들 좀 죽이면서 하라고 ... 작업 끝난애들은".
