@@ -48,6 +48,38 @@ function run(data) {
   // Edit, Write, MultiEdit만 감시
   if (!['Edit', 'Write', 'MultiEdit'].includes(toolName)) return null;
 
+  // 스마트 기본 면제 (gateguard와 동일 패턴, 2026-04-14 추가)
+  // 1) 신규 파일: 디스크에 없으면 검색할 선행 코드 없음
+  // 2) 안전 패턴: 세션 로그/임시 파일/시스템 tmp는 코드 아님
+  const filePath = (data.tool_input && data.tool_input.file_path) || null;
+  if (filePath) {
+    if (!fs.existsSync(filePath)) return null;
+    const SAFE_PATTERNS = [
+      /\.claude\/sessions\//,
+      /_bmad-output\//,
+      /\.tmp$/,
+      /^\/tmp\//,
+      /\.research-guard\.yml$/,
+      /\.gateguard\.yml$/,
+      /CHANGELOG\.md$/i,
+      /\/update-log\//
+    ];
+    if (SAFE_PATTERNS.some(p => p.test(filePath))) return null;
+  }
+
+  // 프로젝트별 .research-guard.yml 면제
+  try {
+    const cwd = data.cwd || process.cwd();
+    const excludeFile = path.join(cwd, '.research-guard.yml');
+    if (fs.existsSync(excludeFile) && filePath) {
+      const content = fs.readFileSync(excludeFile, 'utf8');
+      const excludes = content.split('\n')
+        .filter(l => l.trim() && !l.startsWith('#'))
+        .map(l => l.trim());
+      if (excludes.some(ex => filePath.includes(ex))) return null;
+    }
+  } catch (e) { /* 무시 */ }
+
   // 세션 ID 추출
   const sessionId = data.session_id || 'unknown';
   const flagFile = path.join(FLAG_DIR, `state-${sessionId}.json`);
