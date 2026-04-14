@@ -249,3 +249,8 @@ critic 피드백을 무시하는 것도 금지. 반박하려면 기술적 평가
 38. **DA는 반드시 fresh instance.** 기존 critic(winston/quinn/john) 겸임 금지. 이전 리뷰 맥락 0인 새 에이전트만. DA 미실행 시 compliance YAML에 `da_skipped: true` + `da_skip_reason` 필수 기록.
 39. **Cross-Validation은 독립 리뷰 후.** 리뷰 중 대화(cross-talk) 금지. 독립 리뷰 완료 → 파일 기반 상호 검증.
 40. **Critic 전문 영역 집중.** winston=아키텍처, quinn=QA/보안, john=제품/요구사항.
+41. **Team cleanup + escalation (v12 신규).** Triggered by 2026-04-14 `@restore` stuck 2시간+ 사고 + quinn TeamDelete Catch-22 60분+ stall + main "dev 위임 후 idle" 반복 패턴.
+    - **(a) 스토리 완료 시 TeamDelete 자발** — 4 critics 작업 끝나면 team-lead가 Shutdown request 발송 필수. 유휴 상태 유지 금지 (Rule 43 fresh team 전제).
+    - **(b) TeamDelete 3회 무응답 시 force kill** — "Already leading team" Catch-22 방지. 순서: (1) TeamDelete 재시도 3회 (각 30초 간격) (2) 실패 시 Bash `ps aux | grep <teammate>` PID 확인 → `kill -9` (3) 그 후 fresh TeamCreate 진행. 무한 대기 금지.
+    - **(c) dev 위임 5분+ 무응답 시 main이 직접 처리** — main이 dev에 task 위임 후 dev 무응답 5분+ = main이 해당 task를 직접 Read/Edit로 실행. Conductor 외부 개입 없이 self-escalate. 2026-04-14 23:50 MF-1 stall + 00:20 dev-fix stall 2회 관찰.
+    - **(d) 매 잡도리 cron 5분 주기에 (a)(b)(c) 자동 진단** — LOOP-6 "진척 점검" + Rule 41 위반 여부 체크. 위반 시 즉시 escalate.
