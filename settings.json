@@ -74,6 +74,16 @@
             "command": "node ~/.claude/hooks/config-protection.js"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/state-guard.sh",
+            "timeout": 3000
+          }
+        ]
       }
     ],
     "PostToolUse": [
