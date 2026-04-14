@@ -160,7 +160,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash /home/elddlwkd/.claude/statusline.sh"
+    "command": "bash ~/.claude/hooks/statusline.sh"
   },
   "enabledPlugins": {
     "github@claude-plugins-official": true,
