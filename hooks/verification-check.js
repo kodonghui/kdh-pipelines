@@ -90,19 +90,17 @@ function run(data) {
   if (hasVerification) return null;
 
   // 완료 표현 있는데 검증 없음 → 차단
+  // Stop hook 스키마: {decision, reason, systemMessage} 최상위. hookSpecificOutput 금지
   return {
-    hookSpecificOutput: {
-      hookEventName: 'Stop',
-      decision: 'block',
-      additionalContext:
-        '완료를 선언하기 전에 검증 명령어를 실행하세요.\n' +
-        '증거 없는 완료 선언은 허용되지 않습니다.\n' +
-        '다음 중 하나 이상을 실행하세요:\n' +
-        '  - bun test (또는 npm test)\n' +
-        '  - npx tsc --noEmit\n' +
-        '  - npx playwright test\n' +
-        '검증 통과 후 다시 완료를 선언하세요.'
-    }
+    decision: 'block',
+    reason:
+      '완료를 선언하기 전에 검증 명령어를 실행하세요.\n' +
+      '증거 없는 완료 선언은 허용되지 않습니다.\n' +
+      '다음 중 하나 이상을 실행하세요:\n' +
+      '  - bun test (또는 npm test)\n' +
+      '  - npx tsc --noEmit\n' +
+      '  - npx playwright test\n' +
+      '검증 통과 후 다시 완료를 선언하세요.'
   };
 }
 
