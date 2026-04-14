@@ -231,4 +231,45 @@ Contract 충돌 → sequential merge + tsc. Wiring Story → 같은 batch 필수
 - config-protection: 설정 파일 수정 경고
 - quality-gate: Edit 후 타입 체크/린트 (async)
 - verification-check: 증거 없이 완료 선언 차단
+
+## Emergency File Recovery SOP
+
+**Triggered by**: 2026-04-14 architecture.md 손실 (101KB/1605줄 1.5시간 복구 stuck) + user-feedback #3 🔴 "Bash redirect 차단" + "Write 32K 초과".
+
+**근본 제약**: Claude Code 서버 환경(corthex-v3 ARM)은 sandbox로 다음을 **silent no-op**:
+- Bash tool `>` redirect (`cat/git show > file`)
+- Bash tool `tee`, `dd of=`
+- Bash tool `cp` (working tree write)
+- SSH 직접 `echo > file`
+- tmux new-window shell의 모든 write 계열
+
+**유일한 우회 경로**: **Claude Code Write tool**. 단 output 32K 토큰 제약 (1회 call ≤ 약 400줄).
+
+### 복구 절차 (5단계, 대용량 파일 전용)
+
+1. **원본 확인**: `Bash: git show <commit>:<path> | wc -l` — 줄 수 파악
+2. **1차 chunk**: `Bash: git show <commit>:<path> | sed -n '1,400p'` → Write tool로 빈 파일에 저장
+3. **2-N차 chunks**: `Bash: git show <commit>:<path> | sed -n 'X,Yp'` 받아서 Read 현재 파일 마지막 줄 → Edit tool로 append
+4. **검증**: `wc -l` = 원본 줄 수 근접 확인
+5. **state 복원**: pipeline-state.yaml 임시 변경(planning_active 등) 있으면 **반드시 원복**
+
+### 절대 금지 (치명적 실패 패턴)
+
+❌ **Write tool 1회 call로 1500+ 줄 저장** — 32K 토큰 초과로 API 에러, 세션 stuck (2026-04-14 @dev 49m baked + @restore 5m Clauding 실패).
+❌ **test stub 4바이트 덮어쓰기** — 실수로 "test" 문자열로 기존 내용 말살 (2026-04-14 17:14 사고).
+❌ **Bash `>` redirect 의존** — silent no-op, 디버깅 시간 낭비.
+❌ **sub-agent 자율 판단에 맡김** — Sonnet/Opus 모두 1605줄 통째 Write 본능 선호. **chunked 전략을 프롬프트에 명시 강제**.
+
+### Conductor Emergency Intervention
+
+서버 Claude가 "Clauding/Wrangling/Inferring" 장시간(>5분) stuck 시:
+1. `tmux send-keys -t claude:<pane> Escape` × 3회 → "Interrupted · What should Claude do instead?" 프롬프트
+2. chunked 지시 재주입 (위 5단계 절차 명시)
+3. **Esc 개입 전 capture-pane -S -5로 직전 발화 확인 필수** — "Write 시도 직전" vs "stuck"은 구분해야 함 (오판 방지).
+
+### 관측 가능한 조기 경보 신호
+
+- Write tool "Creating..." 3분 이상 + thinking token > 5000 → 32K 초과 직전 가능성
+- pane 상태바 Ctx > 80% → chunked 더 잘게 쪼갤 것
+- "No such file or directory" after `>` redirect → sandbox 차단 확정, 즉시 Write tool 전환
 - loop-detector: 같은 파일 5번+ 수정 경고
