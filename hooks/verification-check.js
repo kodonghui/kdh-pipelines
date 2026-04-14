@@ -73,23 +73,42 @@ process.stdin.on('end', () => {
   }
 });
 
+function hasBuildableProject(cwd) {
+  try {
+    const pkg = path.join(cwd, 'package.json');
+    if (fs.existsSync(pkg)) {
+      const j = JSON.parse(fs.readFileSync(pkg, 'utf8'));
+      if (j.scripts && (j.scripts.test || j.scripts.build)) return true;
+    }
+    if (fs.existsSync(path.join(cwd, 'Cargo.toml'))) return true;
+    if (fs.existsSync(path.join(cwd, 'go.mod'))) return true;
+    if (fs.existsSync(path.join(cwd, 'pyproject.toml'))) return true;
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
 function run(data) {
-  // Stop hook: data에 stop_hook_active 또는 last_assistant_message 포함
+  // 무한 루프 방지 — block 재호출 시 통과
+  if (data && data.stop_hook_active === true) return null;
+
+  // 학습/문서 프로젝트 skip — 검증 가능한 빌드 도구 없으면 통과
+  const cwd = (data && data.cwd) || process.cwd();
+  if (!hasBuildableProject(cwd)) return null;
+
   const message = data.last_assistant_message
     || data.stop_reason
     || '';
 
   if (!message) return null;
 
-  // 완료 표현 감지
   const hasCompletion = COMPLETION_PATTERNS.some(p => p.test(message));
   if (!hasCompletion) return null;
 
-  // 검증 명령어 실행 이력 확인
   const hasVerification = checkVerificationLog();
   if (hasVerification) return null;
 
-  // 완료 표현 있는데 검증 없음 → 차단
   // Stop hook 스키마: {decision, reason, systemMessage} 최상위. hookSpecificOutput 금지
   return {
     decision: 'block',

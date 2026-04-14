@@ -10,10 +10,12 @@
 const MAX_INPUT = 1024 * 1024;
 
 // 차단 패턴
+// -n 단축은 git의 특정 하위 명령에서만 --no-verify 의미를 가짐
+// (commit/merge/rebase/cherry-pick/am). 다른 맥락의 -n (grep -n 등)은 false positive 방지
 const BLOCKED_FLAGS = [
   /--no-verify/,
   /--no-gpg-sign/,
-  /-n\s/  // git commit -n (--no-verify 단축)
+  /\bgit\s+(commit|merge|rebase|cherry-pick|am)\b[^|&;]*\s-n\b/
 ];
 
 let raw = '';
