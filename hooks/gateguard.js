@@ -79,6 +79,22 @@ function run(data) {
 
   if (!filePath) return null;
 
+  // 스마트 기본 면제 (모든 프로젝트 공통, 2026-04-14 추가)
+  // 1) 신규 파일: 디스크에 없으면 import될 존재 자체가 없음
+  // 2) 안전 패턴: 핸드오프/로그/임시 파일은 코드가 아님
+  if (['Edit', 'Write', 'MultiEdit'].includes(toolName)) {
+    if (!fs.existsSync(filePath)) return null;
+    const SAFE_PATTERNS = [
+      /\.claude\/sessions\//,
+      /_bmad-output\//,
+      /\.tmp$/,
+      /\.gateguard\.yml$/,
+      /CHANGELOG\.md$/i,
+      /\/update-log\//
+    ];
+    if (SAFE_PATTERNS.some(p => p.test(filePath))) return null;
+  }
+
   // .gateguard.yml 제외 경로 확인
   try {
     const cwd = data.cwd || process.cwd();
