@@ -1,5 +1,5 @@
 ---
-description: Save current session state to a dated file in ~/.claude/session-data/ so work can be resumed in a future session with full context.
+description: Save current session state to a dated file in <project>/.claude/sessions/ (프로젝트 폴더 내부) so work can be resumed in a future session with full context. 프로젝트 cwd 기준으로 자동 스코프 — Conductor/Study/Work 세션이 절대 섞이지 않고, 폴더를 다른 컴퓨터로 옮겨도 세션 기록이 함께 따라간다.
 ---
 
 # Save Session Command
@@ -24,17 +24,25 @@ Before writing the file, collect:
 - Note any errors encountered and how they were resolved (or not)
 - Check current test/build status if relevant
 
-### Step 2: Create the sessions folder if it doesn't exist
+### Step 2: Determine session root (프로젝트 로컬)
 
-Create the canonical sessions folder in the user's Claude home directory:
+**세션 저장 위치 (중요 — 세션 분리의 핵심):**
 
 ```bash
-mkdir -p ~/.claude/session-data
+# 프로젝트 루트 = git toplevel, 없으면 현재 cwd
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+SESSIONS_DIR="$ROOT/.claude/sessions"
+mkdir -p "$SESSIONS_DIR"
 ```
+
+- 세션 파일은 **프로젝트 폴더 내부** `<project>/.claude/sessions/`에 저장된다.
+- cwd 기준으로 자연스럽게 스코프되므로 별도 슬러그 로직이 필요 없다.
+- 프로젝트를 다른 컴퓨터로 옮기면 세션 기록도 함께 따라간다.
+- `.gitignore`에 `/.claude/sessions/` 추가 권장 (세션 파일을 커밋하고 싶지 않다면).
 
 ### Step 3: Write the session file
 
-Create `~/.claude/session-data/YYYY-MM-DD-<short-id>-session.tmp`, using today's actual date and a short-id that satisfies the rules enforced by `SESSION_FILENAME_REGEX` in `session-manager.js`:
+Create `<project>/.claude/sessions/YYYY-MM-DD-<short-id>-session.tmp`, using today's actual date and a short-id that satisfies the rules enforced by `SESSION_FILENAME_REGEX` in `session-manager.js`:
 
 - Compatibility characters: letters `a-z` / `A-Z`, digits `0-9`, hyphens `-`, underscores `_`
 - Compatibility minimum length: 1 character
@@ -43,15 +51,16 @@ Create `~/.claude/session-data/YYYY-MM-DD-<short-id>-session.tmp`, using today's
 Valid examples: `abc123de`, `a1b2c3d4`, `frontend-worktree-1`, `ChezMoi_2`
 Avoid for new files: `A`, `test_id1`, `ABC123de`
 
-Full valid filename example: `2024-01-15-abc123de-session.tmp`
+Full valid filename example: `<project>/.claude/sessions/2024-01-15-abc123de-session.tmp`
 
 The legacy filename `YYYY-MM-DD-session.tmp` is still valid, but new session files should prefer the short-id form to avoid same-day collisions.
 
-**Previous 필드 작성 규칙:**
-1. `~/.claude/session-data/`에서 현재 저장 중인 파일을 제외하고 가장 최근 수정 파일 선택
+**Previous 필드 작성 규칙 (같은 프로젝트 폴더 안에서만 검색):**
+1. `$SESSIONS_DIR`에서 현재 저장 중인 파일을 제외하고 가장 최근 수정 파일 선택
 2. 같은 날짜 파일이 여러 개면 가장 최근 것
-3. 파일을 찾을 수 없으면 `(첫 세션)`
+3. 파일을 찾을 수 없으면 `(첫 세션 — 이 프로젝트)`
 4. 파일이 존재하지만 경로가 불확실하면 `(경로 불명)`
+5. ⚠️ 다른 프로젝트 폴더나 `~/.claude/session-data/`는 절대 참조하지 않는다.
 
 ### Step 4: Populate the file with all sections below
 
@@ -382,5 +391,8 @@ Then test with Postman — the response should include a `Set-Cookie` header.
 - The "What Did NOT Work" section is the most critical — future sessions will blindly retry failed approaches without it
 - If the user asks to save mid-session (not just at the end), save what's known so far and mark in-progress items clearly
 - The file is meant to be read by Claude at the start of the next session via `/resume-session`
-- Use the canonical global session store: `~/.claude/session-data/`
+- Use the per-project session store: `<project>/.claude/sessions/` (프로젝트 폴더 로컬)
+- 프로젝트 루트 = `git rev-parse --show-toplevel`, fallback = `pwd`
 - Prefer the short-id filename form (`YYYY-MM-DD-<short-id>-session.tmp`) for any new session file
+- 기존에 `~/.claude/session-data/` 루트에 남아 있는 과거 파일은 참조하지 않는다. 필요하면 수동으로 해당 프로젝트의 `.claude/sessions/`로 이동.
+- `.gitignore`에 `/.claude/sessions/` 추가 권장 — 커밋하고 싶다면 생략 가능.
