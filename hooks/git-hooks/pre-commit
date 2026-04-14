@@ -68,6 +68,27 @@ if [ -n "$CLAUDE_CHANGED" ]; then
   exit 1
 fi
 
+# ── Planning artifacts 삭제 차단 (v4.6 — BUG-003 재발 방지) ──
+# 2026-04-14 commit 16b4e2b가 architecture.md(1605줄) + observations.jsonl(653줄) +
+# compliance-violations.jsonl(4줄)을 실수로 삭제한 사건 방지.
+PLANNING_DELETED=$(git diff --cached --name-only --diff-filter=D | grep -E "_bmad-output/phase-[0-9.]+/planning-artifacts/.*\.(md|yaml|jsonl)$" || true)
+OBSERVATIONS_DELETED=$(git diff --cached --name-only --diff-filter=D | grep -E "_bmad-output/(observations\.jsonl|compliance-violations\.jsonl)$" || true)
+if [ -n "$PLANNING_DELETED" ] || [ -n "$OBSERVATIONS_DELETED" ]; then
+  echo "❌ BLOCKED: 핵심 산출물 파일 삭제 감지 (BUG-003 방지)"
+  if [ -n "$PLANNING_DELETED" ]; then
+    echo "   삭제된 planning-artifacts:"
+    echo "$PLANNING_DELETED" | sed 's/^/     /'
+  fi
+  if [ -n "$OBSERVATIONS_DELETED" ]; then
+    echo "   삭제된 observability:"
+    echo "$OBSERVATIONS_DELETED" | sed 's/^/     /'
+  fi
+  echo "   이유: Stage 4/5/6 산출물 + observation 로그는 보존 필수."
+  echo "   실수라면: git restore --staged <파일> 후 내용 복구"
+  echo "   의도적 삭제라면: CORTHEX_CEO_OVERRIDE=true git commit"
+  exit 1
+fi
+
 # ── Pipeline state 읽기 (v4.5: planning 검증을 위해 일찍 읽음) ──
 STATE_FILE="_bmad-output/pipeline-state.yaml"
 if [ -f "$STATE_FILE" ]; then
