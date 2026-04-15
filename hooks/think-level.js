@@ -3,26 +3,59 @@
  * think-level.js — UserPromptSubmit hook
  *
  * 감지 키워드:
- *   think1 → 가벼운 사고 (10K)
- *   think2 → 중간 사고 (32K)
- *   think3 → 풀파워 사고 (128K)
- *   아오/시발/미친/병신/씨발 → think2 (CEO 짜증 = 더 신중하게)
+ *   think1 → 32K thinking
+ *   think2 → 64K thinking
+ *   think3 → 128K thinking (풀파워)
+ *   아오/시발/미친/병신/씨발 → think2 자동 전환 + 카운터
+ *
+ * stdin으로 JSON 받아서 transcript_path에서 마지막 유저 메시지 추출
  */
 
 const fs = require('fs');
+const readline = require('readline');
 
-// stdin에서 유저 입력 읽기
-let input = '';
+// stdin에서 hook 메타데이터 읽기
+let hookData = {};
 try {
-  input = fs.readFileSync('/dev/stdin', 'utf8').trim();
+  const raw = fs.readFileSync('/dev/stdin', 'utf8').trim();
+  hookData = JSON.parse(raw);
 } catch { process.exit(0); }
 
-// JSON 파싱 시도 (hook input이 JSON일 수 있음)
-let userMessage = input;
-try {
-  const parsed = JSON.parse(input);
-  userMessage = parsed.message || parsed.prompt || parsed.content || input;
-} catch { /* plain text */ }
+// transcript에서 마지막 유저 메시지 추출
+let userMessage = '';
+const transcriptPath = hookData.transcript_path;
+
+if (transcriptPath && fs.existsSync(transcriptPath)) {
+  try {
+    const lines = fs.readFileSync(transcriptPath, 'utf8').trim().split('\n');
+    // 뒤에서부터 human 메시지 찾기
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        const entry = JSON.parse(lines[i]);
+        if (entry.type === 'human' || entry.role === 'human' || entry.role === 'user') {
+          // 메시지 내용 추출
+          if (typeof entry.message === 'string') {
+            userMessage = entry.message;
+          } else if (entry.message && entry.message.content) {
+            if (typeof entry.message.content === 'string') {
+              userMessage = entry.message.content;
+            } else if (Array.isArray(entry.message.content)) {
+              userMessage = entry.message.content
+                .filter(c => c.type === 'text')
+                .map(c => c.text)
+                .join(' ');
+            }
+          } else if (typeof entry.content === 'string') {
+            userMessage = entry.content;
+          }
+          break;
+        }
+      } catch { continue; }
+    }
+  } catch { /* transcript read failed */ }
+}
+
+if (!userMessage) process.exit(0);
 
 const msg = userMessage.toLowerCase();
 
@@ -33,11 +66,6 @@ const THINK_LEVELS = {
   'think1': { tokens: 32000,  label: '💡 THINK-1 (32K)',  desc: '중간 사고. 핵심 집중.' },
 };
 
-// ── 짜증 키워드 ──
-const FRUSTRATION_WORDS = ['아오', '시발', '미친', '병신', '씨발'];
-const COUNTER_FILE = '/tmp/kdh-frustration-counter.json';
-
-// Think level 체크
 for (const [keyword, config] of Object.entries(THINK_LEVELS)) {
   if (msg.includes(keyword)) {
     console.log(JSON.stringify({
@@ -48,10 +76,12 @@ for (const [keyword, config] of Object.entries(THINK_LEVELS)) {
   }
 }
 
-// 짜증 키워드 체크
+// ── 짜증 키워드 ──
+const FRUSTRATION_WORDS = ['아오', '시발', '미친', '병신', '씨발'];
+const COUNTER_FILE = '/tmp/kdh-frustration-counter.json';
+
 const found = FRUSTRATION_WORDS.filter(w => msg.includes(w));
 if (found.length > 0) {
-  // 카운터 증가
   let counter = { total: 0, today: '', todayCount: 0 };
   try {
     counter = JSON.parse(fs.readFileSync(COUNTER_FILE, 'utf8'));
@@ -74,5 +104,4 @@ if (found.length > 0) {
   process.exit(0);
 }
 
-// 매칭 없으면 아무것도 안 함
 process.exit(0);
