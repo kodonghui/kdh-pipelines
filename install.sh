@@ -88,7 +88,10 @@ if [ -d "$SCRIPT_DIR/hooks" ]; then
   mkdir -p .claude/hooks
   cp "$SCRIPT_DIR"/hooks/* .claude/hooks/ 2>/dev/null || true
   chmod +x .claude/hooks/*.sh .claude/hooks/*.js 2>/dev/null || true
-  echo "  ✅ Hooks → .claude/hooks/"
+  mkdir -p "$CLAUDE_DIR/hooks"
+  cp "$SCRIPT_DIR"/hooks/* "$CLAUDE_DIR/hooks/" 2>/dev/null || true
+  chmod +x "$CLAUDE_DIR"/hooks/*.sh "$CLAUDE_DIR"/hooks/*.js 2>/dev/null || true
+  echo "  ✅ Hooks → .claude/hooks/ + ~/.claude/hooks/"
 fi
 
 # ── 8. settings.json 설정 (Opus 1M + Max 추론) ──
