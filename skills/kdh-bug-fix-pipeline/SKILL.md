@@ -418,7 +418,7 @@ bugfix-{id}-fixes.md      # dev의 수정 내역
 You are {NAME} in team "{team_name}". Role: {Writer|Critic}.
 
 ## Your Persona
-Read and embody: _bmad/bmm/agents/{file}.md
+Read and embody: bmad-agents/{file}.md
 
 ## Scoring Rubric
 Read: _bmad-output/bug-fix/bug-fix-rubric.md
@@ -711,9 +711,9 @@ timeout은 사용하지 않음. 대신 stall 감지:
 
 | Spawn Name | Persona File | Role in Bug Fix |
 |-----------|-------------|----------------|
-| `dev` | `_bmad/bmm/agents/dev.md` | Writer — 코드 수정 + Playwright 테스트 작성 |
-| `quinn` | `_bmad/bmm/agents/qa.md` | Critic — 테스트 커버리지, 부작용, 에지케이스 |
-| `winston` | `_bmad/bmm/agents/architect.md` | Critic — 근본원인, 코드품질, 아키텍처 영향 |
+| `dev` | `bmad-agents/dev.md` | Writer — 코드 수정 + Playwright 테스트 작성 |
+| `quinn` | `bmad-agents/qa.md` | Critic — 테스트 커버리지, 부작용, 에지케이스 |
+| `winston` | `bmad-agents/architect.md` | Critic — 근본원인, 코드품질, 아키텍처 영향 |
 
 john(PM)은 버그 수정에서 불필요 — 제품 방향 결정이 없으므로 소환하지 않음.
 sally(UX)도 소환하지 않음 — UI 버그는 dev + 5테마 검증으로 충분.
@@ -721,7 +721,7 @@ sally(UX)도 소환하지 않음 — UI 버그는 dev + 5테마 검증으로 충
 analyst 조건부 투입 (v4.4):
   IF bug origin이 design/requirements로 분류되면, THE SYSTEM SHALL analyst를 자동 소환하여 근본 원인 심층 분석 실행.
   origin=code인 단순 버그는 기존 3인 체제 유지.
-| `analyst` | `_bmad/bmm/agents/analyst.md` | 조건부 — origin=design/requirements 시 근본 원인 분류 |
+| `analyst` | `bmad-agents/analyst.md` | 조건부 — origin=design/requirements 시 근본 원인 분류 |
 
 ---
 

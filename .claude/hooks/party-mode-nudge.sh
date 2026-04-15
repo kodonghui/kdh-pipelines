@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+PROJECT_ROOT="/home/ubuntu/corthex-v3"
 PARTY_DIR="$PROJECT_ROOT/_bmad-output/party-logs/planning-v2"
 CONTEXT_FILE="$PROJECT_ROOT/_bmad-output/party-mode-context.json"
 

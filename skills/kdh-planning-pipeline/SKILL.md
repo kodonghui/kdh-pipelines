@@ -268,14 +268,14 @@ ALL agents are spawned with their **real BMAD names** and **full persona files l
 
 | Spawn Name | Persona File | Expertise |
 |-----------|-------------|-----------|
-| `winston` | `_bmad/bmm/agents/architect.md` | Distributed systems, cloud infra, API design, scalable patterns |
-| `quinn` | `_bmad/bmm/agents/qa.md` | Test automation, API testing, E2E, coverage analysis |
-| `john` | `_bmad/bmm/agents/pm.md` | PRD, requirements discovery, stakeholder alignment |
-| `sally` | `_bmad/bmm/agents/ux-designer.md` | User research, interaction design, UI patterns |
-| `bob` | `_bmad/bmm/agents/sm.md` | Scrum master, sprint planning, delivery risk |
-| `dev` | `_bmad/bmm/agents/dev.md` | Implementation, code quality, debugging |
-| `analyst` | `_bmad/bmm/agents/analyst.md` | Analysis, research synthesis |
-| `tech-writer` | `_bmad/bmm/agents/tech-writer/tech-writer.md` | Documentation, technical writing |
+| `winston` | `bmad-agents/architect.md` | Distributed systems, cloud infra, API design, scalable patterns |
+| `quinn` | `bmad-agents/qa.md` | Test automation, API testing, E2E, coverage analysis |
+| `john` | `bmad-agents/pm.md` | PRD, requirements discovery, stakeholder alignment |
+| `sally` | `bmad-agents/ux-designer.md` | User research, interaction design, UI patterns |
+| `bob` | `bmad-agents/sm.md` | Scrum master, sprint planning, delivery risk |
+| `dev` | `bmad-agents/dev.md` | Implementation, code quality, debugging |
+| `analyst` | `bmad-agents/analyst.md` | Analysis, research synthesis |
+| `tech-writer` | `bmad-agents/tech-writer.md` | Documentation, technical writing |
 
 ### Agent Spawn Template
 
@@ -285,7 +285,7 @@ Every agent MUST be spawned with this structure:
 You are {NAME} in team "{team_name}". Role: {Writer|Critic}.
 
 ## Your Persona
-Read and fully embody: _bmad/bmm/agents/{file}.md
+Read and fully embody: bmad-agents/{file}.md
 Load the persona file with the Read tool BEFORE doing anything else.
 
 ## Your Expertise
@@ -522,7 +522,7 @@ Business GATE = 제품 방향/의미/사용자 경험. Technical GATE = 기술 �
 1. **Writer calls Skill tool** — Skill auto-completes all steps internally, bypasses critic review. FIX: Writer MUST NEVER use Skill tool. Read step files with Read tool, write manually.
 2. **Writer batches steps** — Writes steps 2-6 then sends one review. FIX: Write ONE step → party mode → THEN next step.
 3. **Agent spawned with generic name** — `critic-a` or `worker-1` instead of BMAD name. FIX: ALWAYS use real names from BMAD Agent Roster.
-4. **Critic skips persona file** — Reviews without reading `_bmad/bmm/agents/*.md`. FIX: First action MUST be Read persona file.
+4. **Critic skips persona file** — Reviews without reading `bmad-agents/*.md`. FIX: First action MUST be Read persona file.
 5. **GATE step auto-proceeds** — Writer skips user input on GATE step. FIX: GATE steps MUST send [GATE] to Orchestrator and WAIT.
 6. **Shutdown-then-cancel race** — shutdown_request is irreversible. FIX: NEVER send unless 100% committed.
 7. **Writer duplicates prior step content** (v9.1) — Writer copies risk/requirement tables that already exist in earlier steps. FIX: Before writing, Writer MUST Read prior steps' sections on the same topic. If content exists, use `§{section_name} 참조` cross-reference instead of duplicating. (Incident: Step 06/08 risk tables had 6 duplicate entries.)

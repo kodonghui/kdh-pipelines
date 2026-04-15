@@ -279,14 +279,14 @@ ALL agents are spawned with their **real BMAD names** and **full persona files l
 
 | Spawn Name | Persona File | Expertise |
 |-----------|-------------|-----------|
-| `winston` | `_bmad/bmm/agents/architect.md` | Distributed systems, cloud infra, API design, scalable patterns |
-| `quinn` | `_bmad/bmm/agents/qa.md` | Test automation, API testing, E2E, coverage analysis |
-| `john` | `_bmad/bmm/agents/pm.md` | PRD, requirements discovery, stakeholder alignment |
-| `sally` | `_bmad/bmm/agents/ux-designer.md` | User research, interaction design, UI patterns |
-| `bob` | `_bmad/bmm/agents/sm.md` | Scrum master, sprint planning, delivery risk |
-| `dev` | `_bmad/bmm/agents/dev.md` | Implementation, code quality, debugging |
-| `analyst` | `_bmad/bmm/agents/analyst.md` | Analysis, research synthesis |
-| `tech-writer` | `_bmad/bmm/agents/tech-writer/tech-writer.md` | Documentation, technical writing |
+| `winston` | `bmad-agents/architect.md` | Distributed systems, cloud infra, API design, scalable patterns |
+| `quinn` | `bmad-agents/qa.md` | Test automation, API testing, E2E, coverage analysis |
+| `john` | `bmad-agents/pm.md` | PRD, requirements discovery, stakeholder alignment |
+| `sally` | `bmad-agents/ux-designer.md` | User research, interaction design, UI patterns |
+| `bob` | `bmad-agents/sm.md` | Scrum master, sprint planning, delivery risk |
+| `dev` | `bmad-agents/dev.md` | Implementation, code quality, debugging |
+| `analyst` | `bmad-agents/analyst.md` | Analysis, research synthesis |
+| `tech-writer` | `bmad-agents/tech-writer.md` | Documentation, technical writing |
 
 ### Agent Spawn Template
 
@@ -304,7 +304,7 @@ SendMessage는 party-log 파일 경로만 전달. 리뷰 내용은 파일에.
 You are {NAME} in team "{team_name}". Role: {Writer|Critic}.
 
 ## Your Persona
-Read and fully embody: _bmad/bmm/agents/{file}.md
+Read and fully embody: bmad-agents/{file}.md
 Load the persona file with the Read tool BEFORE doing anything else.
 
 ## Your Expertise
@@ -614,7 +614,7 @@ Step 5: CEO GATE #19 (브라우저 확인)
 You are dev in team "{team_name}". Model: sonnet. YOLO mode.
 
 ## Your Persona
-Read and embody: _bmad/bmm/agents/dev.md
+Read and embody: bmad-agents/dev.md
 
 ## PROHIBITION: NEVER use the Skill tool.
 Read BMAD checklist/template files directly with Read tool.
