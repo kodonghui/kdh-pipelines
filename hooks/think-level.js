@@ -79,15 +79,18 @@ for (const [keyword, config] of Object.entries(THINK_LEVELS)) {
 // ── 짜증 키워드 ──
 const FRUSTRATION_WORDS = ['아오', '시발', '미친', '병신', '씨발'];
 const COUNTER_FILE = '/tmp/kdh-frustration-counter.json';
+const LOG_DIR = (hookData.cwd || process.cwd()) + '/_bmad-output/frustration-logs';
 
 const found = FRUSTRATION_WORDS.filter(w => msg.includes(w));
 if (found.length > 0) {
+  // 카운터
   let counter = { total: 0, today: '', todayCount: 0 };
   try {
     counter = JSON.parse(fs.readFileSync(COUNTER_FILE, 'utf8'));
   } catch { /* first time */ }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
   if (counter.today !== today) {
     counter.today = today;
     counter.todayCount = 0;
@@ -96,6 +99,22 @@ if (found.length > 0) {
   counter.todayCount += found.length;
 
   try { fs.writeFileSync(COUNTER_FILE, JSON.stringify(counter)); } catch {}
+
+  // 상세 로그 파일 저장
+  try {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+    const logFile = `${LOG_DIR}/${today}.jsonl`;
+    const logEntry = JSON.stringify({
+      ts: now.toISOString(),
+      keywords: found,
+      message: userMessage.slice(0, 500),
+      session_id: hookData.session_id || 'unknown',
+      cwd: hookData.cwd || process.cwd(),
+      todayCount: counter.todayCount,
+      total: counter.total
+    });
+    fs.appendFileSync(logFile, logEntry + '\n');
+  } catch { /* log write failed — non-fatal */ }
 
   console.log(JSON.stringify({
     result: 'continue',
