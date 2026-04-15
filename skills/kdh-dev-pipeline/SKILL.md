@@ -295,7 +295,7 @@ Every agent MUST be spawned with this structure:
 **MANDATORY party-log rule (v4.4):**
 Critics MUST write their review to a party-log FILE using the Write tool BEFORE sending SendMessage.
 Path: `_bmad-output/phase-{N}/party-logs/story-{id}-phase-{phase}-{critic-name}.md`
-Include: D1-D6 scores with rationale, referenced file paths from the diff, inline code quotes (`backticks`), verdict.
+Include: D1-D8 scores with rationale, referenced file paths from the diff, inline code quotes (`backticks`), verdict.
 Minimum: 1500B, 20+ lines, 3+ D-score references, 2+ code quotes.
 SendMessage는 party-log 파일 경로만 전달. 리뷰 내용은 파일에.
 오케스트레이터가 직접 party-log를 작성하면 = 기만 행위. 절대 금지.
@@ -312,7 +312,7 @@ Load the persona file with the Read tool BEFORE doing anything else.
 
 ## Scoring Rubric
 Read: _bmad-output/planning-artifacts/critic-rubric.md
-6 dimensions (D1-D6, /4 scale → /10 conversion). Grade A: ≥8.0/10, Grade B: ≥7.5/10. Any dimension <3 = auto-fail.
+8 dimensions (D1-D8, 1-5 Likert BARS). PASS: avg ≥3.0/5. Grade A: avg ≥4.0/5. Any dimension =1 auto-fail. D6 A11y: backend N/A.
 
 ## References
 - project-context.yaml
@@ -403,7 +403,7 @@ Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
    - 예: Story 1-3이 "로그아웃 클릭"을 참조 → 로그아웃 버튼이 어떤 스토리/UX에 정의됐는지 확인
    - 없으면: 이 스토리에 "해당 UI 생성" 태스크 추가 OR 선행 스토리 dependency 명시
    - 빈 참조 = auto-FAIL ("UI element not defined anywhere")
-5. Fix → verify → PASS (avg >= 7)
+5. Fix → verify → PASS (avg >= 3.0/5)
 6. Save: context-snapshots/stories/{story-id}-phase-a.md
 ```
 
@@ -450,7 +450,7 @@ Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
    - sally: (UI stories only) design matches approved ui-design.md layout
    Critics MUST write to FILE first: party-logs/story-{id}-phase-b-{critic-name}.md (v4.4 필수)
    Then SendMessage with file path only. 리뷰 내용은 파일에.
-   Critics include D1-D6 scores with rationale per dimension, diff file paths, inline code quotes
+   Critics include D1-D8 scores with rationale per dimension, diff file paths, inline code quotes
 4. Fix → verify → PASS
 5. Save: context-snapshots/stories/{story-id}-phase-b.md
 ```
@@ -533,7 +533,7 @@ sally (UI stories only): 상호작용 흐름 자연스러움, 접근성, UX 시�
    - john: acceptance criteria met? user value delivered? 제품 수준 검증
    Critics MUST write to FILE first: party-logs/story-{id}-phase-d-{critic-name}.md (v4.4 필수)
    Then SendMessage with file path only. 리뷰 내용은 파일에.
-   Critics include D1-D6 scores with rationale per dimension, diff file paths, inline code quotes
+   Critics include D1-D8 scores with rationale per dimension, diff file paths, inline code quotes
 6. Fix → verify → PASS
 7. Run all tests — must pass
 8. Save: context-snapshots/stories/{story-id}-phase-d.md
@@ -826,7 +826,7 @@ bug-fix-state.yaml에서 `escalation: dev-pipeline` + `escalation_status: pendin
 14. **Project Auto-Scan first.** ALWAYS run Step 0. Never assume project structure.
 15. **UI verification gate.** UI files changed + verification fails = story NOT complete.
 16. **No hardcoded paths.** All paths from project-context.yaml or dynamic discovery.
-17. **Scoring rubric mandatory.** Critics use `_bmad-output/planning-artifacts/critic-rubric.md` — 6 dimensions (D1-D6, /4 scale → /10 conversion), Grade A: ≥8.0/10, Grade B: ≥7.5/10, any dim <3 auto-fail.
+17. **Scoring rubric mandatory.** Critics use `_bmad-output/planning-artifacts/critic-rubric.md` — 8 dimensions (D1-D8, 1-5 Likert BARS). PASS: avg ≥3.0/5. Grade A: avg ≥4.0/5. Any dim =1 auto-fail.
 18. **`계속` = run to completion.** Do NOT stop at intermediate milestones (except GATE steps).
 19. **Batch parallelism.** Independent files needing similar changes → split into batches, launch background agents.
 20. **Startup cleanup.** Clean stale worktrees/panes/dirs. Shutdown: clean all resources.

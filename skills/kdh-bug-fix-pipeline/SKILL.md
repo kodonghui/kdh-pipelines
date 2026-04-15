@@ -422,7 +422,7 @@ Read and embody: bmad-agents/{file}.md
 
 ## Scoring Rubric
 Read: _bmad-output/bug-fix/bug-fix-rubric.md
-6 dimensions (D1-D6, /4 scale → /10). Grade B: ≥7.5/10. Any D < 2 = auto-FAIL.
+8 dimensions (D1-D8, 1-5 Likert BARS). PASS: avg ≥3.0/5. Any dim =1 auto-fail.
 
 ## Context
 - Bug report: _bmad-output/bug-fix/bug-fix-state.yaml

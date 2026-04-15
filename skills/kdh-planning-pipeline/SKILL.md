@@ -293,7 +293,7 @@ Load the persona file with the Read tool BEFORE doing anything else.
 
 ## Scoring Rubric
 Read: _bmad-output/planning-artifacts/critic-rubric.md
-6 dimensions (D1-D6, /4 scale → /10 conversion). Grade A: ≥8.0/10, Grade B: ≥7.5/10. Any dimension <3 = auto-fail.
+8 dimensions (D1-D8, 1-5 Likert BARS). PASS: avg ≥3.0/5. Grade A: avg ≥4.0/5. Any dimension =1 auto-fail. D6 A11y: backend N/A.
 
 ## References
 - project-context.yaml
@@ -355,7 +355,7 @@ Phase B: 병렬 독립 리뷰 (spawn 3회, 한 메시지로 동시)
   - winston(Arch, opus): 아키텍처 정합성, 스키마 정확성, 일관성
   - quinn(QA, opus for A / sonnet for B): 테스트 가능성, 보안, 에지 케이스, EARS 준수
   - john(PM, opus for A / sonnet for B): 제품 요구사항 커버리지, AC 추적, 사용자 가치
-  - 각자 party-log 작성 (D1-D6 scoring, 전문 영역 집중)
+  - 각자 party-log 작성 (D1-D8 scoring, 전문 영역 집중)
   - ★ 리뷰 중 서로 대화 없음 (독립성 보장 = 편향 방지)
   - 각 critic은 자기 전문 영역만 집중, 전체를 다 보지 않음
 
@@ -372,7 +372,7 @@ Phase D: 오케스트레이터 후처리 (spawn 0)
   - FAIL: fixes 목록 작성 → Stage Worker에게 전달 (SendMessage)
     → Stage Worker fixes 적용 → Phase B 반복 (max retries: Grade A=2, Grade B=1)
   - PASS: Phase E로 (Grade A) 또는 Phase F로 (Grade B)
-  ★ Planning Grade A 1-cycle 예외: Cycle 1 avg ≥ 8.0 PASS 시, Cycle 2 스킵하고 Phase E(DA)로 바로 진행 가능.
+  ★ Planning Grade A 1-cycle 예외: Cycle 1 avg ≥ 4.0/5 PASS 시, Cycle 2 스킵하고 Phase E(DA)로 바로 진행 가능.
     단, compliance YAML에 `single_cycle_pass: true` + `ceo_approved: [날짜]` 기록 필수.
     Sprint Dev에는 적용 안 됨 — Sprint Dev Grade A는 무조건 2 cycles.
 
@@ -526,14 +526,14 @@ Business GATE = 제품 방향/의미/사용자 경험. Technical GATE = 기술 �
 5. **GATE step auto-proceeds** — Writer skips user input on GATE step. FIX: GATE steps MUST send [GATE] to Orchestrator and WAIT.
 6. **Shutdown-then-cancel race** — shutdown_request is irreversible. FIX: NEVER send unless 100% committed.
 7. **Writer duplicates prior step content** (v9.1) — Writer copies risk/requirement tables that already exist in earlier steps. FIX: Before writing, Writer MUST Read prior steps' sections on the same topic. If content exists, use `§{section_name} 참조` cross-reference instead of duplicating. (Incident: Step 06/08 risk tables had 6 duplicate entries.)
-8. **Score convergence inflation** (v9.1) — All critics give identical scores after fixes (e.g., unanimous 9.00). FIX: Orchestrator checks score standard deviation; if stdev < 0.3, triggers independent re-scoring warning. Additionally: if all 3 critics' scores increase by ≥1.0 in the same direction after fixes, Orchestrator flags potential self-enhancement bias (ref: PoLL study — models favor own output by 10-25%). Phase D records `bias_flag: true/false` in compliance YAML. (Incident: Step 08 all 4 critics scored exactly 9.00.)
+8. **Score convergence inflation** (v9.1) — All critics give identical scores after fixes (e.g., unanimous 9.00). FIX: Orchestrator checks score standard deviation; if stdev < 0.3, triggers independent re-scoring warning. Additionally: if all 3 critics' scores increase by ≥1.0 in the same direction after fixes, Orchestrator flags potential self-enhancement bias (ref: PoLL study — models favor own output by 10-25%). Phase D records `bias_flag: true/false` in compliance YAML. (Incident: Step 08 all 4 critics scored exactly 5.00.)
 9. **Missing party-log files** (v9.1) — Critic reviews sent via message only, no file written. FIX: Orchestrator verifies all `party-logs/{stage}-{step}-{critic-name}.md` files exist before accepting [Step Complete]. Missing file = REJECT. (Incident: Step 02-05 had only winston's logs.)
 10. **Single-cycle rubber stamp** (v9.2) — All critics score 8.5+ on first review, no retry triggered, issues slip through. FIX: Grade A requires MINIMUM 2 cycles regardless of scores. Cycle 2 uses Devil's Advocate mode (1 critic MUST find ≥ 3 issues). (Incident: Stage 2 Step 06-10 all passed with 9.0+ on first cycle, zero retries across 5 steps.)
 11. **Cross-talk skipped** (v9.2) — Critics review independently but never discuss with each other. FIX: Cross-talk is MANDATORY. Each critic log MUST contain "## Cross-talk" section documenting peer discussion. Orchestrator rejects logs without this section. (Incident: Stage 0-3 had zero cross-talk across all steps.)
 12. **Orchestrator skips own checklist** (v9.2) — Rules exist but Orchestrator doesn't follow them. FIX: Step Completion Checklist (v9.2) is BLOCKING — Orchestrator must verify every checkbox before accepting. Pre-commit hook validates party-log file completeness. (Incident: Stage 2 Step 02-05 accepted with only 1/4 critic logs.)
 13. **Inline API type duplication** (v9.4) — Frontend defines response types locally instead of importing from shared contracts. Causes silent type drift when backend changes shape. FIX: Phase F winston checks contract compliance. Inline types matching contract shapes = auto-FAIL. (Incident: 29 integration bugs from 167 stories, all type mismatches.)
 14. **Missing wiring** (v9.4) — Story creates store/endpoint but never connects to consumer. Feature works in unit tests but unreachable at runtime. FIX: Wiring stories auto-generated in Stage 6. Integration verification in Phase D TEA. (Incident: ws-store created but connect() never called from Layout.)
-15. **Consecutive 1-cycle exceptions** (v10.5) — Two or more consecutive Grade A stages using single_cycle_pass. Indicates systemic pressure to rush rather than isolated efficiency. FIX: If Stage N used 1-cycle pass, Stage N+1 MUST run full 2 cycles regardless of scores. Orchestrator checks prior stage compliance YAML before allowing 1-cycle. Reference: Phase D line 331 exception rule — this anti-pattern adds a consecutive-use guard, not a repeal. (Incident: Phase 2 Stage 5 + Stage 6 both used 1-cycle, avg 8.17/8.07 — barely passing.)
+15. **Consecutive 1-cycle exceptions** (v10.5) — Two or more consecutive Grade A stages using single_cycle_pass. Indicates systemic pressure to rush rather than isolated efficiency. FIX: If Stage N used 1-cycle pass, Stage N+1 MUST run full 2 cycles regardless of scores. Orchestrator checks prior stage compliance YAML before allowing 1-cycle. Reference: Phase D line 331 exception rule — this anti-pattern adds a consecutive-use guard, not a repeal. (Incident: Phase 2 Stage 5 + Stage 6 both used 1-cycle, avg 4.1/4.0 — barely passing.)
 16. **DA skip without compliance record** (v10.5) — DA skipped but compliance YAML missing `da_skipped: true` and `da_skip_reason`. Without record, the skip is invisible to future audits. FIX: Phase F checklist verifies compliance YAML contains DA fields when no DA file exists. Missing DA record = REJECT. (Incident: Phase 2 Stage 6.5 DA skipped, zero compliance record written.)
 
 Additional safeguards:
