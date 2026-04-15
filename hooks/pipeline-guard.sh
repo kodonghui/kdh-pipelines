@@ -4,9 +4,8 @@
 # git commit 시도 전에 파이프라인 준수 여부 검증
 # ═══════════════════════════════════════════════════════════
 
-PROJECT_ROOT="${PROJECT_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
-STATE_FILE="$PROJECT_ROOT/_bmad-output/pipeline-state.yaml"
-PARTY_DIR="$PROJECT_ROOT/_bmad-output/party-logs"
+STATE_FILE="/home/ubuntu/corthex-v3/_bmad-output/pipeline-state.yaml"
+PARTY_DIR="/home/ubuntu/corthex-v3/_bmad-output/party-logs"
 
 # Only guard git commit commands
 if [[ "$1" != *"git commit"* ]] && [[ "$1" != *"git push"* ]]; then

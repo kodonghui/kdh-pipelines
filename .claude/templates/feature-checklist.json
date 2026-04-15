@@ -1,0 +1,45 @@
+{
+  "description": "Generic feature checklist template. Customize per project in presets/{project}/feature-checklist.json",
+  "features": [
+    {
+      "name": "Authentication",
+      "sprint": 1,
+      "tests": [
+        "signup flow completes successfully",
+        "login with valid credentials",
+        "login with invalid credentials shows error",
+        "rate limiting on repeated failures"
+      ]
+    },
+    {
+      "name": "Primary Entity CRUD",
+      "sprint": 1,
+      "tests": [
+        "create entity with valid data",
+        "read entity list with pagination",
+        "update entity fields",
+        "delete entity with confirmation",
+        "delete entity with dependencies shows warning"
+      ]
+    },
+    {
+      "name": "Authorization",
+      "sprint": 1,
+      "tests": [
+        "unauthorized access redirects to login",
+        "role-based access control works",
+        "protected routes require authentication"
+      ]
+    },
+    {
+      "name": "UX Quality",
+      "sprint": 1,
+      "tests": [
+        "all screens display correctly",
+        "error messages are user-friendly",
+        "empty states have helpful content",
+        "loading states are visible"
+      ]
+    }
+  ]
+}
