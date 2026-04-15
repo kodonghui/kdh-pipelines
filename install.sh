@@ -156,10 +156,12 @@ SETTINGS_EOF
   echo "  ✅ settings.json 새로 생성"
 fi
 
-# ── 9. 템플릿 설치 ──
+# ── 9. 템플릿 설치 (프로젝트 + 글로벌) ──
 if [ -d "$SCRIPT_DIR/templates" ]; then
   mkdir -p .claude/templates
   cp "$SCRIPT_DIR"/templates/* .claude/templates/ 2>/dev/null || true
+  mkdir -p "$CLAUDE_DIR/templates"
+  cp "$SCRIPT_DIR"/templates/* "$CLAUDE_DIR/templates/" 2>/dev/null || true
 fi
 
 echo ""
