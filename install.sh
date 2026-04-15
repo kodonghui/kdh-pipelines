@@ -87,7 +87,7 @@ echo "[6/7] Hooks 설치..."
 if [ -d "$SCRIPT_DIR/hooks" ]; then
   mkdir -p .claude/hooks
   cp "$SCRIPT_DIR"/hooks/* .claude/hooks/ 2>/dev/null || true
-  chmod +x .claude/hooks/*.sh 2>/dev/null || true
+  chmod +x .claude/hooks/*.sh .claude/hooks/*.js 2>/dev/null || true
   echo "  ✅ Hooks → .claude/hooks/"
 fi
 
@@ -107,6 +107,14 @@ d.setdefault('env', {})
 d['env']['CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS'] = '1'
 
 d.setdefault('hooks', {})
+if 'UserPromptSubmit' not in d['hooks']:
+    d['hooks']['UserPromptSubmit'] = [{
+        'hooks': [{
+            'type': 'command',
+            'command': 'node ~/.claude/hooks/think-level.js',
+            'timeout': 3000
+        }]
+    }]
 if 'TeammateIdle' not in d['hooks']:
     d['hooks']['TeammateIdle'] = [{
         'hooks': [{
