@@ -85,4 +85,7 @@ if [ "$NEEDS_RELOCATE" = "1" ]; then
 fi
 
 # Codex 실행
-exec codex exec --skip-git-repo-check "$PROMPT"
+# stdin을 /dev/null로 닫음 — codex exec가 non-TTY/background 환경에서
+# "Reading additional input from stdin..." 무한 대기하는 이슈 회피.
+# 참조: openai/codex issues #14303, #14314.
+exec codex exec --skip-git-repo-check "$PROMPT" < /dev/null
