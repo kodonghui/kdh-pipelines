@@ -102,12 +102,15 @@ while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
 **파이프라인 시작 전 필수 도구 전부 검증. 하나라도 안 되면 즉시 중지.**
 
 ```
-1. browser-use 환경:
+1. browser-use 3사 환경 (3사 전부 OK 아니면 즉시 중단 + CEO 보고):
    - source ${BROWSERUSE_VENV:-$PROJECT_ROOT/browser-use-env}/bin/activate
      (BROWSERUSE_VENV = preset tools.browseruse_venv. 비어있으면 browser-use 스킵.)
    - python3.11 -c "from browser_use import Agent" → 임포트 확인
-   - python3.11 -c "from browser_use.llm.openai.chat import ChatOpenAI" → LLM 확인
-   - 안 되면 → 🚩 BLOCK. CEO 보고. 자동 설치 시도 금지.
+   - python3.11 -c "from browser_use.llm.openai.chat import ChatOpenAI" → OpenAI 확인
+   - python3.11 -c "from browser_use.llm.google.chat import ChatGoogle" → Gemini 확인
+   - python3.11 -c "from claude_sdk_llm import ChatClaudeSDK" → Claude Agent SDK 확인
+   - 하나라도 안 되면 → 🚩 BLOCK. CEO 보고. 자동 설치 시도 금지.
+   ★ Claude는 Agent SDK (CLI subprocess) 사용. Messages API 아님. OAuth 토큰 필요 없음.
 
 2. Playwright:
    - cd {admin_package_path} && {package_manager}x playwright --version → 설치 확인
@@ -139,16 +142,30 @@ while true; do claude -p "/kdh-bug-fix-pipeline 계속"; sleep 5; done
      → 이 시점의 버그는 "거짓 버그" 의심 → source: server-crash 태그
    - 안 되면 → 🚩 BLOCK.
 
-5. OpenAI API 키 (browser-use용):
-   - python3.11 -c "from dotenv import load_dotenv; import os; load_dotenv('$PROJECT_ROOT/.env'); k=os.environ.get('OPENAI_API_KEY',''); print('OK' if len(k)>10 else 'EMPTY')"
-   - 안 되면 → 🚩 BLOCK. .env에 OPENAI_API_KEY 확인 필요.
+5. 3사 API 키 (browser-use용):
+   - OpenAI: python3.11 -c "...OPENAI_API_KEY..." → 10자+ 확인
+   - Gemini: python3.11 -c "...GEMINI_API_KEY..." → 10자+ 확인
+   - Claude: claude --version → CLI 존재 확인 (API 키 불필요 — Agent SDK는 OAuth 자동 처리)
+   - 하나라도 안 되면 → 🚩 BLOCK. CEO 보고.
+   ★ 3사 전부 작동해야 sweep 시작. 2사만 되면 즉시 중단하고 CEO 보고.
+
+6. 프로덕션 배포 확인 (필수):
+   - git log --oneline -1 로컬 HEAD 확인
+   - git log --oneline -1 origin/main 리모트 HEAD 확인
+   - 로컬 HEAD != origin/main → 🚩 BLOCK. "배포 안 됨. git push 먼저."
+   - curl -sf {e2e.production_url} → 프로덕션 사이트 응답 확인
+     (e2e.production_url = 프로덕션 도메인. nginx/deploy 설정에서 확인.)
+   - 프로덕션 응답 없음 → 🚩 BLOCK. "프로덕션 접속 불가."
+   - 프로덕션 응답 OK → browser-use + Chrome sweep 대상 URL을 프로덕션으로 설정
+   ★ localhost는 browser-use headless만 접근 가능. Chrome 브라우저 테스트는 반드시 프로덕션 URL 사용.
 
 출력:
-  ✅/🚩 browser-use: [OK or FAIL]
+  ✅/🚩 browser-use 3사: OpenAI=[OK/FAIL] Gemini=[OK/FAIL] Claude SDK=[OK/FAIL]
   ✅/🚩 Playwright: [version or FAIL]
   ✅/🚩 Codex CLI: [version or FAIL]
   ✅/🚩 Dev 서버: [OK or FAIL]
-  ✅/🚩 OAuth 토큰: [OK or FAIL or EXPIRED]
+  ✅/🚩 3사 API 키: OpenAI=[OK/FAIL] Gemini=[OK/FAIL] Claude CLI=[OK/FAIL]
+  ✅/🚩 프로덕션 배포: [OK or FAIL — HEAD={hash}, remote={hash}]
 
 판정:
   → 🚩 0개 → Phase 1 진행
