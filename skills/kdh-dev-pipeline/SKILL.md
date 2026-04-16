@@ -591,14 +591,17 @@ Step 2: Codex 일괄 리뷰
   - git diff로 Sprint 전체 변경사항 리뷰
   - FAIL → 수정 후 재실행
 
-Step 3: /kdh-bug-fix-pipeline 필수 실행 ★
-  - Phase 1 SCAN: Playwright 전체 suite + browser-use AI 전수 탐색
-  - Phase 2 FIX: 발견된 버그 수정 루프
-  - Phase 3 SWEEP: 전체 회귀 + Codex
-  - 0 bugs = PASS → Step 4로
-  - bugs 남으면 수정 완료까지 다음 Sprint 진입 금지
+Step 3: Phase End인 경우에만 /kdh-bug-fix-pipeline 실행 ★
+  ★ CEO 결정 (2026-04-16): 3사 browser-use full sweep은 Phase 마지막 Sprint에서만.
+  ★ 중간 Sprint는 Step 1~2 (tsc + test + Codex)만 실행하고 Step 5로 건너뜀.
+  - Phase End일 때:
+    - Phase 1 SCAN: Playwright 전체 suite + browser-use AI 전수 탐색
+    - Phase 2 FIX: 발견된 버그 수정 루프
+    - Phase 3 SWEEP: 전체 회귀 + Codex
+    - 0 bugs = PASS → Step 4로
+    - bugs 남으면 수정 완료까지 다음 Phase 진입 금지
 
-Step 4: 5개 테마 스크린샷
+Step 4: 5개 테마 스크린샷 (Phase End만)
   - browser-use 또는 Playwright로 주요 페이지 × 5테마 스크린샷
   - Sprint End 스크린샷은 bugfix 파이프라인이 관리: _bmad-output/bug-fix/e2e-screenshots/
 
@@ -848,7 +851,7 @@ bug-fix-state.yaml에서 `escalation: dev-pipeline` + `escalation_status: pendin
 38. **mock-only Phase D = FAIL (v10.6).**
 43. **스토리 간 에이전트 재사용 절대 금지 (v11.1).** Story X 완료 → Shutdown ALL → TeamDelete → Story Y에서 TeamCreate + 새 에이전트 소환. SendMessage로 "다음 스토리 해라" 지시 금지 — fresh context 필수. 같은 스토리 내 Phase 전환(A→B→D)은 에이전트 유지 OK.
 44. **FAIL 재리뷰 시 fresh agent 필수 (v11.1).** Phase D FAIL → dev 수정 → 재리뷰 시: 기존 critic Shutdown → 새 critic 소환. 기존 에이전트에 SendMessage "다시 봐라" 금지 — 옛날 결과 반복함. 원인: sonnet 에이전트가 긴 히스토리에서 이전 리뷰와 현재 지시를 혼동. Phase D Layer 2 (integration test, 실제 HTTP 요청) 최소 1개 필수. mock만 있으면 FAIL. compliance YAML에 integration_tests_count 기록.
-40. **Sprint End = /kdh-bug-fix-pipeline 필수 (v11.0).** Sprint 내 모든 스토리 완료 후 /kdh-bug-fix-pipeline 실행. 0 bugs 아니면 다음 Sprint 진입 금지. Playwright 전체 suite + browser-use 전수 탐색 + **Codex + Gemini batch 병렬**.
+40. **Phase End = /kdh-bug-fix-pipeline 필수 (v11.0, 수정 2026-04-16).** 3사 browser-use full sweep은 **Phase 마지막 Sprint에서만** 실행. 중간 Sprint는 tsc + bun test + Codex만. 0 bugs 아니면 다음 Phase 진입 금지. CEO 결정: sweep 시간 과다 → Phase End 1회로 축소.
 42. **Reference Code Search 필수 (v10.9).** Phase B Step 1d — dev가 코드 짜기 전에 `gh search repos` + `gh search code` + npm 검색 필수. 검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용. 검색 결과(채택/기각 사유) party-log에 "## Reference Code" 섹션 기록. 검색 0건이어도 기록 필수.
 45. **Phase B party-log는 Phase D 진입 전 필수 (v11.2, 2026-04-12 A.1b 사고).** Phase B(dev 구현) 완료 후 반드시 winston + quinn이 party-log(story-{id}-phase-b-winston.md, story-{id}-phase-b-quinn.md)를 작성해야 Phase D로 전환 가능. Phase B critics 리뷰를 생략하고 Phase D로 진행 금지 — party-log 없으면 pre-commit hook이 차단하고 Phase B critics 소급 소환이 필요해짐. 소급 리뷰는 실제 수정 기회가 줄어든다. 원인: Story A.1b에서 Phase A 3 cycle 후 Phase B critics 리뷰 없이 Phase D로 진행 → hook 차단 → 소급 리뷰에서 Test 5.3 grep no-op 버그 발견 → 수정 필요.
 

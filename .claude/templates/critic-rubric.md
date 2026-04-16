@@ -1,176 +1,166 @@
-# CORTHEX Pipeline — Critic Scoring Rubric v1.0
+# Critic Scoring Rubric v2.0 (BARS — 8 dimensions × 5 levels)
 
 > Critics는 이 루브릭에 따라 **차원별 점수**를 매기고, 평균을 최종 점수로 제출.
-> 7/10 미만 = 재작성. 7+ = 통과. 차원별 3점 미만이 하나라도 있으면 = 자동 불합격.
+> 3.0/5 미만 = 재작성. 3.0+ = 통과. 차원별 1점이 하나라도 있으면 = 자동 불합격.
 
 ---
 
-## 채점 스케일 (1-10)
+## 채점 스케일 (1-5 Likert)
 
 | 점수 | 등급 | 의미 |
 |------|------|------|
-| 10 | Perfect | 고칠 게 없음. 바로 프로덕션 투입 가능. |
-| 9 | Excellent | 극히 사소한 개선점 1개. 전체 품질 탁월. |
-| 8 | Great | 사소한 개선점 2-3개. 핵심은 완벽. |
-| 7 | Good (PASS) | 기능적으로 완전. 개선 가능하나 블로커 없음. |
-| 6 | Acceptable | 작동은 하지만 빠진 것 1-2개. 수정 후 통과 가능. |
-| 5 | Mediocre | 핵심 요소 누락. 구조는 있으나 불완전. |
-| 4 | Poor | 다수 누락. 요구사항 절반만 충족. |
-| 3 | Bad | 근본적 문제. 방향 자체가 잘못됨. |
-| 2 | Very Bad | 거의 쓸 수 없음. 재작성 필요. |
-| 1 | Unacceptable | 빈 파일, 복붙, 무관한 내용. |
+| 5 | Exceptional | 모범적, 추가 개선 여지 거의 없음 |
+| 4 | Strong | 의식적 디자인, 작은 nit만 |
+| 3 | Acceptable | 작동, 개선 여지 있음 |
+| 2 | Weak | 대수정 권고 |
+| 1 | Defect | 즉시 수정 필요 |
+
+★ Score=3 부여 시 "왜 4가 아닌가" written justification 의무
 
 ---
 
-## 6개 채점 차원
+## Per-Dimension Output Format (강제)
 
-### D1: 구체성 (Specificity) — "뭉뚱그리지 않았나"
+```
+D{N} {Dimension Name}: {1-5}/5
+Evidence: [file:line — quoted code or pattern]
+Score match: [why this level — cite which BARS anchor matches]
+Not next level: [why not N+1 — what's missing for upgrade]
+```
 
-| 점수 | 기준 |
-|------|------|
-| 9-10 | 모든 값이 구체적: 파일 경로, hex 색상, px 단위, 정확한 함수명, 줄 번호 |
-| 7-8 | 대부분 구체적. 1-2곳만 "적절한", "필요에 따라" 같은 표현 |
-| 5-6 | 절반이 구체적, 절반이 추상적 ("깔끔한 디자인", "효율적인 코드") |
-| 3-4 | 대부분 추상적. 실제 구현 시 다시 물어봐야 함 |
-| 1-2 | 전부 뜬구름. "좋은 UX 제공", "성능 최적화" 수준 |
-
-**예시:**
-- 10점: `bg-slate-950 (#020617)에서 bg-zinc-900 (#18181B)으로 변경. 파일: {admin_package_path}/src/pages/example.tsx (generic example)`
-- 5점: `배경색을 어두운 계열로 변경`
-- 2점: `적절한 다크 테마 적용`
-
-### D2: 완전성 (Completeness) — "빠진 게 없나"
-
-| 점수 | 기준 |
-|------|------|
-| 9-10 | 요구사항 100% 커버. 엣지 케이스까지 포함. |
-| 7-8 | 핵심 요구사항 전부 커버. 사소한 엣지 케이스 1-2개 누락. |
-| 5-6 | 핵심 70% 커버. 중요한 요구사항 1-2개 누락. |
-| 3-4 | 핵심 절반만 커버. 주요 기능 누락. |
-| 1-2 | 요구사항 대부분 무시. |
-
-**체크리스트:**
-- [ ] Step instruction의 모든 항목이 다뤄졌는가?
-- [ ] project-context.yaml의 모든 페이지가 포함되었는가?
-- [ ] 에러 케이스 / 빈 상태 / 로딩 상태가 고려되었는가?
-- [ ] PRD/아키텍처와 일치하는가?
-
-### D3: 정확성 (Accuracy) — "틀린 게 없나"
-
-| 점수 | 기준 |
-|------|------|
-| 9-10 | 모든 기술적 정보가 정확. API 경로, 타입, DB 스키마 일치. |
-| 7-8 | 99% 정확. 오타/사소한 불일치 1건. |
-| 5-6 | 95% 정확. 존재하지 않는 API를 참조하거나, 타입이 다른 곳 2-3건. |
-| 3-4 | 다수 오류. 코드 구조를 잘못 이해. |
-| 1-2 | 팩트와 무관한 추측/할루시네이션. |
-
-**검증 방법:**
-- 참조된 파일이 실제로 존재하는가? (`Read` 도구로 확인)
-- API 경로가 서버 라우트와 일치하는가?
-- DB 컬럼/타입이 스키마와 일치하는가?
-- 의존성 패키지가 실제로 설치되어 있는가?
-
-### D4: 실행 가능성 (Implementability) — "이거 보고 바로 코드 짤 수 있나"
-
-| 점수 | 기준 |
-|------|------|
-| 9-10 | 코드 스니펫, 타입 정의, 파일 구조까지 포함. 복붙 수준. |
-| 7-8 | 핵심 로직/구조 명확. 세부 구현만 개발자 판단. |
-| 5-6 | 방향은 맞지만 "어떻게"가 부족. 추가 리서치 필요. |
-| 3-4 | 요구사항만 있고 구현 가이드 없음. |
-| 1-2 | 읽어도 뭘 만들어야 하는지 모름. |
-
-### D5: 일관성 (Consistency) — "앞뒤가 맞나"
-
-| 점수 | 기준 |
-|------|------|
-| 9-10 | 이전 Phase/Step 결정사항과 100% 정합. 컨벤션 통일. |
-| 7-8 | 대부분 정합. 용어/네이밍 불일치 1-2건. |
-| 5-6 | 이전 결정과 충돌 2-3건. 자기모순 존재. |
-| 3-4 | 이전 Phase를 무시하고 독자적 결정. |
-| 1-2 | 완전히 다른 방향. context-snapshot을 안 읽은 것 같음. |
-
-**체크리스트:**
-- [ ] 이전 Step의 context-snapshot과 일치하는가?
-- [ ] 네이밍 컨벤션(kebab-case 파일, PascalCase 컴포넌트)을 따르는가?
-- [ ] 디자인 토큰이 Phase 3에서 정의한 것과 동일한가?
-- [ ] API 응답 형식이 `{ success, data }` / `{ success, error }` 인가?
-
-### D6: 리스크 인식 (Risk Awareness) — "위험한 부분을 알고 있나"
-
-| 점수 | 기준 |
-|------|------|
-| 9-10 | 기술 리스크, 보안 리스크, 성능 리스크 모두 식별 + 대안 제시. |
-| 7-8 | 주요 리스크 식별됨. 대안이 구체적. |
-| 5-6 | 리스크 언급은 있으나 대안이 추상적. |
-| 3-4 | 명백한 리스크를 놓침 (보안 취약점, 성능 병목 등). |
-| 1-2 | 리스크 개념 자체가 없음. |
+3 슬롯 모두 필수. 주관 묘사 금지. UNCITED 표시 허용 (단 점수 ≤2로 강제).
 
 ---
 
-## Critic별 차원 가중치
+## 8개 채점 차원
 
-각 Critic은 전문 영역에 따라 가중치가 다름:
+### D1: YAGNI / 미니멀리즘
 
-### Critic-A (Architecture + API) — Winston + Amelia
-| 차원 | 가중치 |
-|------|--------|
-| D1 구체성 | 15% |
-| D2 완전성 | 15% |
-| D3 정확성 | **25%** |
-| D4 실행가능성 | **20%** |
-| D5 일관성 | 15% |
-| D6 리스크 | 10% |
+**Scope:** Added but unused/unreached code only. dead branches, unused exports, speculative params, abstractions with single call site. **D7과 boundary**: D1=죽은 코드, D7=살아있는 코드의 가독성/모듈성.
 
-### Critic-B (QA + Security) — Quinn + Dana
-| 차원 | 가중치 |
-|------|--------|
-| D1 구체성 | 10% |
-| D2 완전성 | **25%** |
-| D3 정확성 | 15% |
-| D4 실행가능성 | 10% |
-| D5 일관성 | 15% |
-| D6 리스크 | **25%** |
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | 3개 이상 unused export + dead conditional branch + abstract factory with 1 impl. 또는 새 컴포넌트 정의했는데 어디서도 mount 안 됨 |
+| 2 | 1-2개 speculative param 추가 ("for future"), 또는 미래 기능 위한 enum variant 정의됐는데 미사용 |
+| 3 | Mostly used, 1개 minor speculative element with 명시적 주석 (e.g. "deferred to next story") |
+| 4 | 모든 added symbol이 same diff에서 referenced, no premature generics, abstraction은 ≥2 call site 보유 |
+| 5 | Minimal viable code, 추가하면서 unused가 된 기존 코드도 같이 삭제 |
 
-### Critic-C (Product + Delivery) — John + Bob
-| 차원 | 가중치 |
-|------|--------|
-| D1 구체성 | **20%** |
-| D2 완전성 | **20%** |
-| D3 정확성 | 15% |
-| D4 실행가능성 | 15% |
-| D5 일관성 | 10% |
-| D6 리스크 | **20%** |
+### D2: State / Data model 설계
+
+**Scope:** Source of truth, redundancy, derived state, invariants, schema↔runtime alignment. **D4와 boundary**: D2=데이터 shape, D4=타입 시스템 사용.
+
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | Multiple sources of truth (예: parallel boolean+enum 같은 의미), derived state 따로 저장, 수동 sync 필수 |
+| 2 | 1개 redundant state field, 둘 manually sync |
+| 3 | Mostly normalized, 1-2개 derived-state-as-stored, but invariant 명시 |
+| 4 | Single source of truth, derived는 use site에서 compute, immutable defaults, schema↔runtime 일치 |
+| 5 | Impossible-state-by-design (discriminated union으로 invalid 조합 차단), exhaustive state machine |
+
+### D3: 주석 품질 (WHY vs WHAT/story-ID)
+
+**Scope:** WHY (motivation, constraint, runtime reason, gotcha) durable / WHAT or story-ID ephemeral. Story-ID regex: `[A-Z]+\-?\d+`, `#\d+`, `MF-`, `Phase [A-Z]`.
+
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | Story-ID/ticket reference dominant (5+ occurrences in diff), zero motivation comments |
+| 2 | Mix WHY+story-ID, story-ID slightly more (3-5건) |
+| 3 | WHY 일부 + story-ID 일부 (2-3건). main concept 정도는 설명 |
+| 4 | Mostly WHY (constraint, runtime reason). 1-2개 story tag만 traceability 용도 |
+| 5 | All meaningful comments explain WHY. zero ephemeral references. silent code도 self-documenting |
+
+### D4: Type Safety
+
+**Scope:** null handling, type assertions, contract discipline, end-to-end integrity, escape hatches.
+
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | 다수 `as any` cast, nullable path unchecked, broken contract, `@ts-ignore` 무근거 |
+| 2 | 1-2개 avoidable `any`/cast, partial null guard, 1개 escape hatch without comment |
+| 3 | Types 대체로 정확, 1개 minor escape hatch with comment, narrowing 일부 누락 |
+| 4 | End-to-end typing, explicit narrowing, no `any` without justification, contract import-only |
+| 5 | Impossible state encoded out (discriminated union), exhaustive switch with `never` check, contract 강제 across boundary |
+
+### D5: Security / API Surface 규율
+
+**Scope:** Field whitelisting, info leak risk, attack surface, validation at edge. UI에서도 적용: input sanitization, XSS, CSRF.
+
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | User object passthrough (DB row 통째 노출), no input validation at edge, sensitive field 응답 포함 |
+| 2 | Partial whitelist, 1-2 fields could leak, input validation 누락 |
+| 3 | Most fields whitelisted, validation 일부 inconsistent |
+| 4 | Explicit field whitelisting, input validation at edge (zod schema), no sensitive passthrough |
+| 5 | Tight API surface, schema-validated at all edges, audit-ready, principle of least privilege |
+
+### D6: A11y (UI only — N/A for backend)
+
+**Scope:** WAI-ARIA, semantic markup, keyboard navigation, focus management, screen reader.
+
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | No semantic markup, missing role/aria-live, keyboard-trap risk, focus 사라짐 |
+| 2 | Some semantic tags but role/aria-live missing for status updates, focus management partial |
+| 3 | Basic a11y (alt, semantic HTML), interactive states 일부 unclear, keyboard support 일부 |
+| 4 | role/aria-live correctly used, keyboard nav works, focus management explicit |
+| 5 | WCAG-AA-aligned: reduced-motion respected, full keyboard support, focus restore on dismiss, labels/roles/states 완비 |
+
+### D7: 유지보수성 / 6-month future readability
+
+**Scope:** Readability + modifiability + modularity, reusability, analyzability, testability. **D1과 boundary**: D7=살아있는 코드의 구조, D1=죽은 코드 존재.
+
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | Tightly coupled, no module boundary, deep nesting (≥4 levels), magic numbers, function ≥80 lines |
+| 2 | Some modules but 높은 coupling, 1-2 magic numbers, function 50-80 lines |
+| 3 | Reasonable module split, few magic numbers, function 30-50 lines, occasional deep nesting |
+| 4 | Clear modularity, named constants, shallow nesting (≤3), function ≤30 lines, easy to test |
+| 5 | Clean module boundaries, seams for substitution/testing 명시, functionality split by responsibility |
+
+### D8: Correctness / Async / Error 규율
+
+**Scope:** Floating promises, awaited/catch, exhaustiveness, error propagation, race conditions, error type discipline.
+
+| Score | BARS Anchor |
+|-------|-------------|
+| 1 | Floating promises, thrown strings 대신 Error 객체, swallowed catch, race condition obvious |
+| 2 | 1-2 floating promises 또는 thrown string, error handling partial, 1 race risk |
+| 3 | Async mostly correct, error envelope partial, 1 race acknowledged |
+| 4 | All promises awaited or `.catch()`d, structured error types, error propagation explicit, effect cleanup 정확 |
+| 5 | Discriminated error union, exhaustive handling with `never`, race impossible by design, observability hooks |
 
 ---
 
 ## 채점 출력 형식
 
 ```markdown
-## Critic-{X} Review — {Step Name}
+## Critic-{X} Review — {Step/Story Name}
 
 ### 차원별 점수
-| 차원 | 점수 | 근거 |
-|------|------|------|
-| D1 구체성 | 8/10 | 파일 경로 전부 명시, hex 색상 포함. "적절한" 표현 2곳. |
-| D2 완전성 | 7/10 | 핵심 커버됨. 에러 상태 UI 누락. |
-| D3 정확성 | 9/10 | API 경로 전부 확인. 타입 일치. |
-| D4 실행가능성 | 8/10 | 코드 스니펫 포함. 상태 관리 패턴 명확. |
-| D5 일관성 | 9/10 | 이전 Phase와 정합. 컨벤션 준수. |
-| D6 리스크 | 6/10 | WebSocket 연결 실패 시 fallback 미언급. |
+| 차원 | 점수 | Evidence | Score match | Not next level |
+|------|------|----------|-------------|----------------|
+| D1 YAGNI | 4/5 | file:line — ... | anchor 4 일치: ... | 기존 unused 미삭제 → 5 미달 |
+| D2 State | 3/5 | ... | ... | ... |
+| ... | ... | ... | ... | ... |
 
-### 가중 평균: 7.8/10 ✅ PASS
+### 평균: {X.XX}/5 {✅ PASS / ❌ FAIL}
 
-### 이슈 목록
-1. **[D2 완전성]** 에러 상태 UI 미정의 — 네트워크 끊김 시 어떤 화면?
-2. **[D6 리스크]** WebSocket 연결 실패 fallback 필요 — SSE? polling?
-3. **[D1 구체성]** Line 42: "적절한 간격" → 구체적 px/rem 값 명시 필요
-
-### Cross-talk 요약
-- Critic-A가 지적한 DB 인덱스 누락에 동의.
-- Critic-C의 스코프 우려는 Phase 2에서 해결 예정으로 판단.
+### 이슈 목록 (score ≤3 차원만)
+1. **[D2 State]** redundant field X — 근거: ...
+2. **[D8 Async]** floating promise in Y — 근거: ...
 ```
+
+---
+
+## 통과/불합격 기준
+
+| 기준 | 값 |
+|------|-----|
+| PASS | 평균 ≥ 3.0/5 |
+| Grade A (1-cycle 예외 가능) | 평균 ≥ 4.0/5 |
+| 자동 불합격 | 어떤 차원이든 1점 |
+| D6 A11y | 백엔드 라운드는 N/A 처리 (7 dims로 평균) |
 
 ---
 
@@ -182,22 +172,19 @@
 2. **보안 구멍**: 하드코딩된 시크릿, SQL 인젝션 가능 쿼리, XSS 취약점
 3. **빌드 깨짐**: 제안된 코드가 tsc를 통과하지 못할 것이 명백
 4. **데이터 손실 위험**: 마이그레이션에 DROP TABLE/COLUMN 포함 (백업 없이)
-5. **아키텍처 위반**: engine/ public API(agent-loop.ts + types.ts) 외 파일 직접 참조
+5. **아키텍처 위반**: engine/ public API 외 파일 직접 참조
 
 ---
 
 ## 적용 범위
 
 이 루브릭은 다음 파이프라인에서 사용:
-- `/kdh-plan` — planning mode의 모든 Stage (Stage 0~8)
-- `/kdh-review` — Sprint 스토리 리뷰 (D1-D6 강제 템플릿, 가중 평균 필수)
-- `/kdh-code-review-full-auto` — 3-Critic Party의 모든 리뷰
-- `/kdh-full-auto-pipeline` (legacy) — planning mode의 모든 Step
+- `/kdh-plan` — planning mode의 모든 Stage
+- `/kdh-dev-pipeline` — Phase B/D Party Mode 리뷰
+- `/kdh-bug-fix-pipeline` — bug-fix Party Mode 리뷰
+- Party Mode 전체 — 모든 critic agent 공통
 
 Sources:
-- [Rubric Is All You Need (ACM 2025)](https://dl.acm.org/doi/10.1145/3702652.3744220)
-- [LLM-As-Judge Best Practices](https://www.montecarlodata.com/blog-llm-as-judge/)
-- [Anthropic: Demystifying Evals for AI Agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
-- [AI Code Review Predictions 2026](https://www.qodo.ai/blog/5-ai-code-review-pattern-predictions-in-2026/)
-- [Architecture Assessment (CMU)](https://www.cs.cmu.edu/~pmerson/docs/ArchitectureAssessment-PauloMerson.pdf)
-- [Code Quality Rubric Design](https://www.stgm.nl/quality/stegeman-quality-2016.pdf)
+- Smith & Kendall (1963) — BARS 원론
+- RULERS (arxiv 2601.08654) — LLM-as-judge BARS 적용
+- 0415-rubric-code-quality-comparison-v1.md — KDH 5-round evaluation 결과
