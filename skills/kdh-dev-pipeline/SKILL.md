@@ -368,6 +368,38 @@ NEW: 4 phases (A→B→D→Codex). Browser verification → bug-fix pipeline at 
 | Phase E (browser E2E) | Playwright + browser-use | /kdh-bug-fix-pipeline (Sprint End) |
 | Phase F (code review) | 최종 코드 리뷰 | Phase B 리뷰에서 흡수 (Sprint 1: 추가 발견 0건) |
 
+### Story Scope Detection (v12.0 — CEO 승인 2026-04-13)
+
+스토리 시작 시 scope를 자동 감지하여 절차 분기:
+
+```
+scope 감지 기준:
+  backend  — packages/server, packages/shared, DB 스키마만 변경
+  frontend — packages/admin, packages/app, CSS, 컴포넌트만 변경
+  fullstack — 양쪽 다 변경
+
+scope별 절차 차이:
+  ┌──────────────┬────────────────┬────────────────┬───────────────┐
+  │              │ backend        │ frontend       │ fullstack     │
+  ├──────────────┼────────────────┼────────────────┼───────────────┤
+  │ Phase A      │ ✅ 풀 (3 critics)│ ✅ 풀 (3 critics)│ ✅ 풀          │
+  │ ui-design.md │ ❌ 생략        │ ✅ 필수        │ ✅ 필수        │
+  │ Phase B critics│ ✅ 2명 (winston+quinn)│ ✅ 2명 + sally(UI)│ ✅ 2명 + sally│
+  │ Phase D      │ ✅ 풀 (tests 필수)│ ✅ 경량 (1 critic OK)│ ✅ 풀      │
+  │ Codex+Gemini │ ✅ 필수        │ ❌ 생략 (브라우저 검증으로 대체)│ ✅ 필수│
+  │ tsc          │ ✅ 필수        │ ✅ 필수        │ ✅ 필수        │
+  │ bun test     │ ✅ 필수        │ ✅ 필수        │ ✅ 필수        │
+  │ pre-commit   │ party-log 필수 │ party-log 필수, Codex 면제│ 전부 필수│
+  └──────────────┴────────────────┴────────────────┴───────────────┘
+
+scope 감지 방법 (오케스트레이터):
+  1. Story 파일의 "Scope" 섹션에서 변경 파일 목록 확인
+  2. packages/server or packages/shared → backend 포함
+  3. packages/admin or packages/app → frontend 포함
+  4. 양쪽 다 → fullstack
+  5. pipeline-state.yaml에 story_scope: backend|frontend|fullstack 기록
+```
+
 ### Orchestrator Flow
 
 ```
