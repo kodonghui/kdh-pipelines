@@ -218,14 +218,22 @@ Step 1: Playwright 기존 smoke 실행
   → FAIL 목록 = 확실한 버그
   → 결과 기록
 
-Step 2: browser-use 전수 탐색
+Step 2: 3사 browser-use 전수 탐색 (각각 독립 실행)
   source ${BROWSERUSE_VENV:-$PROJECT_ROOT/browser-use-env}/bin/activate
   cd $PROJECT_ROOT
-  python3.11 _browser-use-test/sweep.py --url {e2e.dev_api_url}
-  (BROWSERUSE_VENV from preset tools.browseruse_venv; e2e.dev_api_url from preset)
   
+  3사 독립 실행 (병렬 또는 순차):
+  python3.11 _browser-use-test/sweep-openai.py --url {e2e.dev_api_url}
+  python3.11 _browser-use-test/sweep-gemini.py --url {e2e.dev_api_url}
+  python3.11 _browser-use-test/kdh_claude_browser_use.py --url {e2e.dev_api_url}
+  
+  결과 병합:
+  python3.11 _browser-use-test/sweep-merge.py --latest
+  
+  ★ 각 provider 독립 실행 — 서로 대기하지 않음
+  ★ Claude = CLI + Playwright MCP (browser-use adapter 아님)
+  ★ OpenAI/Gemini = browser-use Agent (기존 방식)
   ★ timeout 없음 — 탐색이 끝날 때까지 기다림
-  ★ 한 페이지에 기능이 여러 개 있을 수 있으므로 시간 제한 두지 않음
   ★ stall 감지: 5분간 아무 action이 없으면 → 현재 페이지 탐색 종료, 다음 페이지로
 
 Step 3: 서버 로그 분석
