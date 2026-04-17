@@ -207,10 +207,43 @@ kdh-dev-pipeline의 Step 0과 동일. project-context.yaml 재사용.
 
 ---
 
-## Phase 1: SCAN — browser-use 전수 탐색
+## Phase 1: SCAN — PRD 커버리지 + Chrome Extension 자율 + browser-use 전수 탐색
 
 ```
 팀 구성: 없음 (오케스트레이터 직접 실행)
+
+Step 0: PRD 커버리지 체크리스트 추출 (CEO 지시 2026-04-18)
+  현재 Phase의 PRD에 명시된 모든 기능/화면/상태를 체크리스트로 변환.
+  출처 우선순위:
+    1. _bmad-output/phase-{N}/planning-artifacts/prd.md → FR-* 전체
+    2. _bmad-output/phase-{N}/planning-artifacts/epics-and-stories.md → 각 스토리의 AC (Acceptance Criteria)
+    3. _bmad-output/phase-{N}/planning-artifacts/ux-design-specification.md → 화면별 상태/상호작용
+  
+  출력: _bmad-output/bug-fix/phase-{N}-prd-coverage.md
+    - 각 FR / AC / 화면 상태에 대해 "E2E 테스트 필요 / 완료 / 버그 있음"
+    - Chrome MCP로 실제 화면에서 재현해서 체크
+    - ui-design에 명시된 5 테마 전부 테스트
+  
+  규칙: PRD 체크리스트 미완료 = Phase 1 미완료. Step 1 진행 금지.
+
+Step 0.5: Chrome extension 자율 탐색 (CEO 지시 2026-04-18)
+  PRD 체크리스트와 별개로, 오케스트레이터가 Chrome extension (claude-in-chrome MCP)으로 
+  실제 사이트를 자유롭게 클릭하며 돌아다님.
+  
+  탐색 원칙:
+    - 모든 사이드바 링크 방문
+    - 모든 버튼 클릭 (disabled 포함 — tooltip/aria-label 확인)
+    - 모든 dropdown/combobox 열기 + 각 option 선택
+    - 모든 modal/dialog 열기 + 닫기 (취소/확인 둘 다)
+    - 빈 상태(0 agents, 0 members, 0 convos) 각 페이지에서 empty-state 확인
+    - 5 테마 각각 전환해서 스크린샷 차이 확인
+    - 로그인/로그아웃/세션만료 흐름 확인
+    - 모바일 뷰포트 확인 (resize_window 375x667)
+    - console 에러 메시지 수집 (read_console_messages)
+    - network 요청 실패 수집 (read_network_requests)
+  
+  탐색 중단 조건: 동일 페이지에서 5분간 새 발견 없음 + 모든 인터랙션 소진.
+  출력: 발견한 버그 전부 bug-fix-state.yaml에 기록.
 
 Step 1: Playwright 기존 smoke 실행
   cd {admin_package_path} && {package_manager}x playwright test e2e/smoke.spec.ts
