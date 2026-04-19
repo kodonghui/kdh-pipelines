@@ -1,83 +1,85 @@
 ---
 name: 'kdh-phase-handoff'
-description: 'Topic 4 writer skill — emits phase-handoff/{N}.yaml at Phase N exit. Activates Sprint N+1. Current Sprint N: reader-compat stub only.'
+description: 'Topic 4 Sprint N+1 writer — emits phase-handoff/{N}.yaml at Phase N exit per PHX-001/002/013/019.'
 ---
 
-# kdh-phase-handoff (Topic 4 v4.1)
+# kdh-phase-handoff (Topic 4 v4.1 — Sprint N+1 ACTIVE)
 
-**Status:** Sprint N reader-compat stub. Writer activates Sprint N+1.
-**Owner:** Topic 4 implementation track.
-**Source spec:** `_bmad-output/kdh-plans/0419-topic4-phase-handoff-implementation-v4.md` §1, §3 (N+1-2).
+**Status:** Writer active (Sprint N+1).
+**Implementation:** `scripts/kdh-phase-handoff.py` in consumer repo (e.g. `~/Desktop/고동희/kdh-conductor/scripts/`).
 
 ---
 
-## Purpose (Sprint N+1+)
+## When to invoke
 
-Phase N이 종료될 때 두 파일을 원자적으로 기록:
+Phase N이 끝날 때 자동으로 호출된다 (외부 트리거: retro 작성 완료 + 2-of-3 quorum 비준). 사장님이 직접 호출하지 않음.
 
-1. `_bmad-output/retro/phase-retro/{N}.md` — 사람용 회고 (PHX-001)
-2. `_bmad-output/retro/phase-handoff/{N}.yaml` — 기계 판독용 handoff (PHX-002)
+CLI:
+```bash
+python3 scripts/kdh-phase-handoff.py \
+  --phase N \
+  --retro _bmad-output/retro/phase-retro/{N}.md \
+  --ratify A B \
+  [--author A --planner A]    # PHX-019 single-author collusion check
+```
 
-Handoff schema (PHX-002):
+Writes → `_bmad-output/retro/phase-handoff/{N}.yaml`.
+
+---
+
+## Output schema (PHX-002, v4.1)
 
 ```yaml
 phase: N
-scope_tags: [...]
-source_retro: "_bmad-output/retro/phase-retro/{N}.md"
+scope_tags: [from retro YAML frontmatter]
+source_retro: _bmad-output/retro/phase-retro/{N}.md
 carry_forward:
-  constraints: [...]
-  rejected_options: [...]
-  unresolved: [...]
+  constraints: [...]           # parsed from retro "## Constraints"
+  rejected_options: [...]      # parsed from retro "## Rejected options"
+  unresolved: [...]            # parsed from retro "## Unresolved" or "## Open questions"
 active_plan_reconciliation:
-  stale: [...]
-  superseded: [...]
-  still_active: [...]
-recommended_next_phase_focus: "..."
+  stale: [{id, title}]         # parsed from retro "## Stale"
+  superseded: [{id, title}]    # parsed from retro "## Superseded"
+  still_active: [{id, title}]
+recommended_next_phase_focus: ""   # planner fills post-generation
 workspace_snapshot:
-  head_sha: "..."
-  branch: "..."
-  porcelain_status_sorted: "..."
-  workspace_integrity_hash: "sha256:..."  # PHX-013
-evidence_refs:  # PHX-014
-  - plan_id: "..."
-    action_id: "..."
-    event_jsonl_ref:
-      board_root: "..."
-      events_path: "events/board-events.jsonl"
-      sequence_no: 42  # 0-based line index (v4.1 fixed semantics)
-      content_sha256: "..."
-      captured_at_utc: "..."
-status: DRAFT | RATIFIED   # PHX-006
+  head_sha: ...                # git rev-parse HEAD
+  branch: ...                  # git rev-parse --abbrev-ref HEAD
+  porcelain_status_sorted: ... # git status --porcelain sorted
+  workspace_integrity_hash: sha256:...   # PHX-013 normalized hash
+evidence_refs: []              # populated by PHX-014 follow-up (kdh-phase-bridge + resolve-event-ref)
+status: DRAFT | RATIFIED       # DRAFT unless >=2 --ratify args
+ratified_by: [A, B]
+generated_at_utc: ISO-8601
+generator: "kdh-phase-handoff.py (Topic 4 v4.1 Sprint N+1)"
 ```
 
 ---
 
-## Current Behavior (Sprint N)
+## Exit codes
 
-이 스킬은 **존재만** 하고 실행되지 않는다. Sprint N+1에 writer 로직이 들어온 뒤에야 Phase exit trigger에서 호출된다.
-
-호출 시 no-op + log:
-```
-kdh-phase-handoff: Sprint N reader-compat mode — writer not activated. Skipping emit.
-```
+- 0 success
+- 4 PHX-019 violated (author=planner=A without non-A ratifier)
+- 10 PyYAML missing
 
 ---
 
-## Activation Gate (Sprint N+1 entry)
+## Author-Planner Collusion defense (PHX-019)
 
-- [ ] GATE-1: _index.yaml schema migration atomicity (SPEC-1 자동 검증)
-- [ ] GATE-2: flock(2) 환경 지원 확인
-- [ ] GATE-4: Topic 2 LESSONS.jsonl schema freeze (40 entries validation)
-- [ ] GATE-8: board-events authority path freeze (event_jsonl_ref resolve util)
-- [ ] PHX-009 atomic supersession 스크립트 사용 가능 (`scripts/phx-atomic-supersession.sh`)
+When `--author A --planner A`, the script refuses to write unless `--ratify` contains at least one non-A ratifier. Prevents single-A rubber-stamping.
 
-위 gate 모두 통과하면 이 SKILL.md의 **Sprint N+1 Writer Logic** 섹션이 활성화된다. 활성화 시점에 이 문서는 v2로 patched.
+---
+
+## Pair with
+
+- `kdh-phase-bridge` — Stage -1 reader that consumes this output at the next Phase's planning start.
+- `kdh-handoff-verify` — Stage 3 validator that re-checks the plan against `carry_forward.rejected_options[]`.
+- `scripts/phx-atomic-supersession.sh` — called separately to atomically commit any resulting `_index.yaml` mutations.
+- `scripts/resolve-event-ref.py` — attach evidence_refs entries pointing at BRD-015 events.
 
 ---
 
 ## References
 
-- Plan: `_bmad-output/kdh-plans/0419-topic4-phase-handoff-implementation-v4.md`
-- Canonical spec reports: `reports/0417_korean-ears-spec-table.md`, `reports/0417_topic-4-kdh-skill-phase-handoff.md`
-- Atomic writer: `scripts/phx-atomic-supersession.sh`
-- Consumer inventory: `_bmad-output/kdh-plans/consumers.yaml`
+- Spec: `_bmad-output/kdh-plans/0419-topic4-phase-handoff-implementation-v4.md` §3 N+1-2
+- Canonical: `reports/0417_korean-ears-spec-table.md` PHX-001/002/013/019
