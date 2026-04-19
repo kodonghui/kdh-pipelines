@@ -190,12 +190,14 @@ kdh-dev-pipeline의 Step 0과 동일. project-context.yaml 재사용.
    - 파일 없으면 → 스킵 (plan 없이 진행 OK)
 
 2. status: active 필터링
+   ★ Topic 4 PHX-018/PHX-022: status가 {done, archived, superseded} 인 plan은 invisible 처리
 
 3. 현재 작업과 매칭:
    - pipeline: "bug-fix" 또는 "all"인 것만
    - scope: 현재 Sprint/버그와 관련된 것만
 
 4. 매칭된 plan 본문 읽기 (Read tool)
+   ★ 읽을 때마다 해당 plan entry의 last_referenced_at_utc 갱신 (PHX-016, Sprint N+1 writer 활성화 후)
 
 5. plan 맥락을 보유하고 실행 시작:
    - plan은 "맥락 제공자" — SKILL.md의 절차/Phase 순서를 override하지 않음

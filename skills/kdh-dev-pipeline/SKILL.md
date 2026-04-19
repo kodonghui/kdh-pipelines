@@ -252,6 +252,8 @@ If `project-context.yaml` already exists and is < 1 hour old, skip re-scan (use 
    - 파일 없으면 → 스킵 (plan 없이 진행 OK)
 
 2. status: active 필터링
+   ★ Topic 4 PHX-018/PHX-022: status가 {done, archived, superseded} 인 plan은 invisible 처리
+   ★ kdh-plan은 superseded plan을 refine 대상으로 받지 못함 — reopen record 생성 경로만 허용 (PHX-010)
 
 3. 현재 작업과 매칭:
    - pipeline: "dev" 또는 "all"인 것만
@@ -261,6 +263,7 @@ If `project-context.yaml` already exists and is < 1 hour old, skip re-scan (use 
 
 4. 매칭된 plan 본문 읽기 (Read tool)
    - plan이 2개 이상이면 → 전부 읽되, 가장 최신 것 우선
+   ★ 읽을 때마다 해당 plan entry의 last_referenced_at_utc 갱신 (PHX-016, Sprint N+1 writer 활성화 후)
 
 5. plan 맥락을 보유하고 실행 시작:
    - plan은 "맥락 제공자" — SKILL.md의 절차/Phase 순서를 override하지 않음
