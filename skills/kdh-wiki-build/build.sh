@@ -127,6 +127,19 @@ GIT_SHA=$(git rev-parse --short HEAD 2>/dev/null || echo "no-git")
 
 emit_build "$GIT_SHA" "$PAGE_SIZE" "$WIKI_SIZE" "$ENTRY_COUNT"
 
+# ---- Per-page SHA (OWK-020 fast-path integrity) + Provenance 4-field (OWK-012) ----
+for page in home.md glossary.md decision-index.md; do
+  page_path="$WIKI_DIR/$page"
+  [ ! -f "$page_path" ] && continue
+  page_sha=$(sha256sum "$page_path" | awk '{print $1}' | cut -c1-16)
+  # OWK-012 provenance: source_kind = derived, source_path = page, source_id = git sha, source_version = page_sha
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[dry-run] would log: $(ts) event=INGEST source_kind=derived source_path=_bmad-output/wiki/$page source_id=$GIT_SHA source_version=$page_sha sha256=$page_sha"
+  else
+    echo "$(ts) event=INGEST source_kind=derived source_path=_bmad-output/wiki/$page source_id=$GIT_SHA source_version=$page_sha sha256=$page_sha" >> "$LOG_FILE"
+  fi
+done
+
 # ---- META UPDATE ----
 if [ "$DRY_RUN" -eq 0 ]; then
   cat > "$META_FILE" <<EOF

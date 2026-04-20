@@ -24,7 +24,9 @@ Phase 4: Prune ←── evolved 결과 참조 ──── 정리된 instinct
                                                    ↓
 Phase 5: Health ─── 스킬 목록 + 비용 ──── 건강 대시보드
                                                    ↓
-Phase 6: Report ←── Phase 1~5 결과 ──── 1줄 + 상세 + SKIP 비율
+Phase 5.5: Wiki refresh (OWK-011) ─── seed + ledger ──── build events
+                                                   ↓
+Phase 6: Report ←── Phase 1~5.5 결과 ──── 1줄 + 상세 + SKIP 비율
 ```
 
 ### Phase 1: Learn-Eval (패턴 추출 + 평가)
@@ -109,6 +111,25 @@ SKIP: 참조 파일 부재 → "Phase 5: SKIP (missing: [파일 경로])"
 3. /context-budget → 에이전트/스킬/MCP별 토큰 소비
 4. .last-12h-run 타임스탬프 업데이트
 ```
+
+### Phase 5.5: Wiki refresh (Topic 6 OWK-011, auto 주기 갱신)
+
+입력: _bmad-output/wiki/ (4 seed files) + Operational Ledgers (STATUS/DECISIONS/MASTER-ROADMAP)
+출력: log.md 에 LOCK/BUILD/INGEST events appended; wiki 페이지 갱신
+SKIP: _bmad-output/wiki/ 디렉터리 부재 → "Phase 5.5: SKIP (no wiki)"
+
+```
+1. _bmad-output/wiki/ 존재 확인. 없으면 SKIP.
+2. kdh-wiki-scan 실행 (read-only OWK 컴플라이언스 검사, /tmp/ 에 리포트)
+   - FAIL 반환 → Phase 5.5 abort with error log, Phase 6 에 포함
+3. kdh-wiki-build 실행 (OWK-018 flock + OWK-020 SHA + OWK-012 provenance 자동 기록)
+   - SRC_HASH 불변 시 skip 자동 (source 변경 없으면 idempotent)
+   - 변경 시 LOCK acquire/release + BUILD + INGEST×3 이벤트 기록
+4. kdh-wiki-scan 재실행 (post-build drift check)
+5. 결과 집계: 추가된 이벤트 수 + 새 wiki_size_bytes / wiki_entry_count
+```
+
+Reference: `0420-topic6-graphify-integration.md` §12 Fix v2-3, OWK-001~020.
 
 ### Phase 6: Report (보고)
 
