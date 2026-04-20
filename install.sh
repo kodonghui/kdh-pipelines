@@ -110,14 +110,6 @@ d.setdefault('env', {})
 d['env']['CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS'] = '1'
 
 d.setdefault('hooks', {})
-if 'UserPromptSubmit' not in d['hooks']:
-    d['hooks']['UserPromptSubmit'] = [{
-        'hooks': [{
-            'type': 'command',
-            'command': 'node ~/.claude/hooks/think-level.js',
-            'timeout': 3000
-        }]
-    }]
 if 'TeammateIdle' not in d['hooks']:
     d['hooks']['TeammateIdle'] = [{
         'hooks': [{

@@ -608,6 +608,77 @@ Step 4e: GATE — CEO 확인 (필수)
 
 ---
 
+## Sprint Close Gate (§12 Harness AND-gate, 2026-04-20)
+
+Phase 4 DEPLOY completion transitions to **Sprint Close** — triggers `scripts/sprint-gate.sh` which enforces 3-step AND-gate per `_bmad-output/kdh-plans/0420-harness-autopsy-rfc-implementation.md` §12.
+
+### Invocation
+
+```bash
+# At Sprint End (after /kdh-bug-fix-pipeline deploy Phase 4):
+./scripts/sprint-gate.sh --sprint="{sprint_id}" --branch="{target_branch}"
+
+# Exit codes:
+#   0  all 3 gates PASS → Sprint close allowed, bug-fix-state.yaml.gate = sealed
+#   1  gate 1 FAIL (login happy-path RED signal wrong → AUTH_ROUTE_MISSING_OR_UNMOUNTED or LOGIN_BUTTON_NOT_FOUND_POSSIBLY_RESKIN or NO_AUTH_RESPONSE or BAD_AUTH_STATUS)
+#   2  gate 2 FAIL (spec-contract-gate.ts mismatch — routes.d.ts ≠ spec-contract-gate.yaml)
+#   3  gate 3 FAIL (routes.d.ts missing or stale — pre-commit hook did not regenerate)
+#   9  override applied (CEO-signed token in publish/GATE_OVERRIDE.token)
+```
+
+### Gate flow
+
+1. **Gate 1 — Login happy-path E2E** (§12 Fix v2-1 T1.2)
+   - Runs `tests/e2e/login-happy-path.spec.ts` against production build
+   - Test MUST produce one of 4 explicit RED codes, OR PASS (302 + /app/hub + session_id)
+   - FAIL on: generic Playwright timeout (no explicit code), session seeding detected, redirect to non-/app/hub path
+2. **Gate 2 — Spec-contract check** (§12 T5.x)
+   - Loads `spec-contract-gate.yaml`, compares against `packages/*/routes.d.ts`
+   - FAIL on: route declared in spec but not in runtime types, or vice versa
+3. **Gate 3 — Routes type generator stale check** (§12 Fix v2-2 T5.5)
+   - Runs `generate-routes-types.ts --check-only`
+   - FAIL if generated `routes.d.ts` differs from committed copy
+
+Each gate runs independently. First FAIL short-circuits. All 3 PASS = Sprint close sealed.
+
+### Failure handling
+
+- Gate FAIL blocks `/kdh-bug-fix-pipeline deploy` from closing Sprint
+- Fix path: address specific gate error, re-run full pipeline, re-invoke sprint-gate
+- Emergency override: CEO writes `publish/GATE_OVERRIDE.token` manually → gate-events.jsonl logs OVERRIDE entry → Sprint closes with warning badge
+
+### Integration with bug-fix-state.yaml
+
+```yaml
+sprint_close:
+  gate_1_login:
+    status: PASS | FAIL | SKIPPED
+    evidence: tests/e2e/login-happy-path.spec.ts
+    red_code: null | AUTH_ROUTE_MISSING_OR_UNMOUNTED | NO_AUTH_RESPONSE | BAD_AUTH_STATUS | LOGIN_BUTTON_NOT_FOUND_POSSIBLY_RESKIN
+  gate_2_spec_contract:
+    status: PASS | FAIL
+    diff: ".sprint-gate/gate2-diff.txt" | null
+  gate_3_routes_types:
+    status: PASS | FAIL
+    diff: ".sprint-gate/gate3-diff.txt" | null
+  overall: PASS | FAIL | OVERRIDDEN
+  ts: <ISO8601>
+```
+
+### Relation to Phase 4 DEPLOY
+
+- **Phase 4 finishes** → bug-fix-state.yaml.phase4 = deployed
+- **Sprint Close gate runs** → sprint_close fields populated
+- **IF overall = PASS**: bug-fix-state.yaml.gate = sealed + Sprint may close
+- **IF overall = FAIL**: Phase 4 marked complete BUT Sprint does not close — new bug-fix cycle triggered if root cause is product bug, or P0 Harness re-dispatch if root cause is gate tooling
+
+### Reskin-aware behavior (§12 Fix v2-3 T1.3)
+
+- If Gate 1 fails with code `LOGIN_BUTTON_NOT_FOUND_POSSIBLY_RESKIN`, the gate treats it as **FAIL** (not SKIPPED / UNKNOWN)
+- This forces Sprint 4.5 Reskin team to add `data-testid="login-google-button"` to `packages/app/src/pages/login.tsx` before next Sprint close
+
+---
+
 ## Sprint End Metrics (v2.0)
 
 Phase 4 완료 후, bug-fix-state.yaml에 메트릭스 기록:
