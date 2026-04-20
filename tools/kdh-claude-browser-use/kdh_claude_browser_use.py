@@ -13,6 +13,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -138,12 +139,20 @@ async def run_claude_sweep(
         sweep_password=sweep_password,
     )
 
-    # MCP config for Playwright
+    # MCP config for Playwright — isolated profile dir per run to allow
+    # parallel Claude sweeps (default mcp-chrome-* profile locks on contention)
+    chrome_profile_dir = tempfile.mkdtemp(prefix=f"mcp-chrome-{timestamp}-")
     mcp_config = json.dumps({
         "mcpServers": {
             "playwright": {
                 "command": "npx",
-                "args": ["@playwright/mcp@latest", "--headless"],
+                "args": [
+                    "@playwright/mcp@latest",
+                    "--headless",
+                    "--isolated",
+                    "--user-data-dir",
+                    chrome_profile_dir,
+                ],
             }
         }
     })
@@ -212,6 +221,8 @@ async def run_claude_sweep(
             pages_tested = report.get("pages_tested", [])
             working = report.get("working_correctly", [])
             for b in report.get("bugs", []):
+                if isinstance(b, str):
+                    b = {"description": b}
                 bugs.append(SweepBug(
                     page=b.get("page", "unknown"),
                     bug_type=b.get("type", b.get("bug_type", "ui")),
@@ -222,6 +233,8 @@ async def run_claude_sweep(
                     console_errors=b.get("console_errors", []),
                 ))
             for fr in report.get("feature_requests", []):
+                if isinstance(fr, str):
+                    fr = {"description": fr}
                 feature_requests.append(SweepFeatureRequest(description=fr.get("description", "")))
             print(f"  [claude-native] COMPLETE — {len(bugs)} bugs, {len(pages_tested)} pages, {num_turns} turns, ${cost:.2f} ({duration:.0f}s)")
         else:
