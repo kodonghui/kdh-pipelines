@@ -28,11 +28,14 @@ disable-model-invocation: true
 ## 사용법
 
 ```
-/kdh-claude-md              → audit (기본)
-/kdh-claude-md init         → 새 프로젝트 세팅
-/kdh-claude-md audit        → 4축 감사
-/kdh-claude-md optimize     → 감사 결과 기반 실제 정리 (CEO 승인 필수)
-/kdh-claude-md check        → 건강검진 (Rule-to-Enforcement Matrix)
+/kdh-claude-md                         → audit (기본)
+/kdh-claude-md init                    → 새 프로젝트 세팅
+/kdh-claude-md audit                   → 4축 감사
+/kdh-claude-md optimize                → 감사 결과 기반 실제 정리 (CEO 승인 필수)
+/kdh-claude-md check                   → 건강검진 (Rule-to-Enforcement Matrix)
+/kdh-claude-md plan-add <file.md>      → Active Plans Index 에 plan 추가 + _index.yaml active 등록
+/kdh-claude-md plan-done <plan-id>     → Active Plans Index 에서 제거 + _index.yaml done 플립
+/kdh-claude-md plan-list               → 현재 인덱스 + _index.yaml 대조 출력
 ```
 
 ---
@@ -294,6 +297,101 @@ Audit 결과를 바탕으로 **실제 파일 이관/정리**를 실행한다.
 ★ 핵심 규칙 중 Hook 강제: {N}/{전체}
 ★ 건강 점수: {N}/10
 ```
+
+---
+
+## 모드 5: Plan Index 관리 (v4 추가)
+
+CLAUDE.md 맨 위의 `Active Plans Index` 섹션을 프로그래밍적으로 관리한다.
+CEO가 여러 아이디어를 병렬로 주면 plan이 여러 개가 되는데, 매 세션마다 어떤 plan이 진행 중인지 자동 로드되도록 CLAUDE.md 인덱스에 기록.
+
+### 마커 규약 (CLAUDE.md 안에 존재해야 함)
+
+```
+<!-- PLANS-INDEX-START — /kdh-claude-md plan-add / plan-done 으로만 편집. 수동 편집 금지. -->
+...plan 항목들...
+<!-- PLANS-INDEX-END -->
+```
+
+마커가 없으면 생성: 제목 (첫 `# ` 줄) 바로 다음에 `## 📋 Active Plans Index (세션 시작 시 필독)` 섹션 + 마커 2개를 삽입.
+
+### plan-add <file.md>
+
+**입력:** plan 파일 경로 (예: `_bmad-output/plans/2026-04-21-foo.md`)
+
+**실행 흐름:**
+```
+1. 입력 검증:
+   - 파일 존재 확인. 없으면 에러.
+   - plan-id 추출: 파일명에서 YYYY-MM-DD 제거 후 .md 제거. 또는 파일 상단 frontmatter 의 id.
+   - 동일 slug 로 "-KR.md" / "-ceo-summary.md" 파일 있으면 함께 묶음.
+
+2. Plan 파일 읽고 제목/TTL/상태 추출:
+   - 첫 "# " 줄 → 제목
+   - "## 목표" 또는 첫 본문 문단 첫 줄 → 1줄 요약
+   - CEO summary 있으면 거기서 우선 추출
+   - TTL = 기본 +7일 (CEO 지정 있으면 그것)
+
+3. _bmad-output/kdh-plans/_index.yaml 업데이트:
+   - 기존 entry 있으면 status: active 로 플립 + 날짜 갱신
+   - 없으면 신규 entry 추가 (id, file, title, status: active, scope, pipeline, created, ttl)
+
+4. CLAUDE.md 편집:
+   - PLANS-INDEX-START / END 사이에 다음 형식으로 항목 추가:
+
+     - **<plan-id>** — <1줄 요약>
+       - 한글 요약: <KR file 경로> (있으면)
+       - CEO 요약: <summary file 경로> (있으면)
+       - 풀 EARS: <메인 file 경로>
+       - 상태: active · TTL <YYYY-MM-DD> · 대기: <다음 액션>
+
+   - 이미 같은 plan-id 있으면 덮어쓰기 (새 메타데이터로).
+
+5. 보고:
+   "Active Plans Index 에 <plan-id> 추가. 남은 active plan: N개."
+```
+
+### plan-done <plan-id>
+
+**입력:** plan-id (예: `0421-claude-design-full-migration`)
+
+**실행 흐름:**
+```
+1. _index.yaml 에서 해당 entry 찾기. 없으면 에러.
+2. _index.yaml status: done 으로 플립 (파일에서 제거하지 않음 — archive 용도).
+3. CLAUDE.md PLANS-INDEX-START / END 섹션에서 해당 - **<plan-id>** 블록 통째로 제거.
+4. 보고:
+   "<plan-id> 완료 처리. CLAUDE.md 인덱스에서 제거. _index.yaml status: done 로 플립.
+   남은 active plan: N개."
+```
+
+### plan-list
+
+**실행 흐름:**
+```
+1. CLAUDE.md PLANS-INDEX 섹션 파싱 → 인덱스 plan 목록
+2. _index.yaml 읽고 status: active 목록 추출
+3. 대조:
+   - 인덱스에 있고 _index.yaml 에도 active → ✅ OK
+   - 인덱스에만 있음 → 🚩 유령 (plan-done 미실행 또는 index.yaml 수동 변경)
+   - _index.yaml 에만 있음 → 🚩 인덱스 누락 (plan-add 미실행)
+4. 출력:
+   | plan-id | CLAUDE.md | _index.yaml | TTL | 상태 |
+```
+
+### 자동 호출 포인트 (다른 스킬과 통합)
+
+- `/kdh-plan` 의 Step 7 마지막에 `plan-add` 자동 호출 (새 plan 생성 후 자동 등록)
+- `/kdh-ecc-3h` Phase 2 Plan Audit 에서 TTL 만료 plan 감지 시 자동 `plan-done` 제안
+  - 단 자동 삭제 금지 — CEO 승인 필수 (ECC-3h 의 보고만)
+
+### 안전장치
+
+- 마커 (`PLANS-INDEX-START` / `END`) 밖의 CLAUDE.md 내용은 절대 건드리지 않음.
+- 마커가 없으면 생성만 하고 기존 내용 보존.
+- `_index.yaml` 파일이 없으면 생성 (빈 `plans: []` 구조).
+- 동시 편집 충돌 방지: Edit 도구의 exact match 사용 (마커 기준).
+- `plan-done` 은 파일 삭제하지 않음. 오직 인덱스 + status 만 변경.
 
 ---
 
