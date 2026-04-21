@@ -28,6 +28,37 @@ max: 3팀
 
 ---
 
+## Step 0a: Benefit Check (병렬 이득 판정 — 최우선)
+
+병렬 분할 overhead(tmux 다중 세션 + worktree + merge + CEO 모니터링) 가 단일 세션 실행보다 느린 경우가 많음. Step 0 validation 이전에 먼저 이것부터 판정.
+
+```
+병렬이 단일보다 느린 조건 (하나라도 해당 → SINGLE 권고):
+  - 작업이 research / grep / decision-only (코드 edit 0)
+  - 작업 N개가 같은 1개 파일에 append/modify (merge 비용 > 병렬 이득)
+  - 각 작업이 ≤ 5 step 짧은 읽기/grep 작업
+  - 작업 간 순서 의존 (A 결과가 B 입력)
+  - 현재 Opus 1M context 여유 ≥ 50%
+  - pipeline 이 dev/bugfix 가 아님 (plan task 등) → parallel 스킬 지원 밖
+
+병렬이 단일보다 빠른 조건 (전부 만족해야 PARALLEL 권고):
+  - 작업 N개가 독립된 다른 파일 수정
+  - 각 작업이 ≥ 20 step 또는 장시간 빌드/테스트 포함
+  - 파일 교차 0
+  - dev/bugfix pipeline 정식 경로
+
+IF SINGLE 권고:
+  출력 즉시:
+    "병렬 overhead > 단일 실행 이득으로 판정.
+     근거: {해당 조건 1-2개}
+     권장: 현재 세션에서 순차 실행 ({ID1} → {ID2} → ...)
+     계속 병렬 진행하시겠습니까? (default: SINGLE)"
+  → CEO 명시 "병렬 강행" 응답 없으면 종료. worktree/session 생성 금지.
+
+IF PARALLEL 권고:
+  Step 0 validation 으로 진행.
+```
+
 ## Step 0: Validation (입력 검증 — 실패 시 즉시 중단)
 
 ```
