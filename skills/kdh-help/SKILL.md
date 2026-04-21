@@ -1,19 +1,36 @@
 ---
 name: kdh-help
-description: "뭐해야하지? v2 — 프로젝트 상태 읽고 다음 할 일 자동 감지 + 선택지 제시. Sprint/plan/session 중심 감지."
+description: "뭐해야하지? v3 — 프로젝트 상태 + BMAD 카탈로그 결합 라우터. bmad-help 자동 호출 → Sprint/plan/session 컨텍스트 얹어서 명령어 추천."
 ---
 
-# KDH Help v2 — "뭐해야하지?"
+# KDH Help v3 — "뭐해야하지?"
 
 프로젝트 상태를 읽고 자동으로 다음 할 일을 판단합니다.
 
 ## When to Use
 
 - `/kdh-help` — 지금 뭐 해야 하는지 모를 때
-- "뭐해야하지?", "다음 뭐야?", "현황 알려줘"
+- "뭐해야하지?", "다음 뭐야?", "현황 알려줘", "어떤 명령어 써야해?"
 - 새 세션 시작할 때 상태 파악용
 
+> v3 변경 (2026-04-21): **Phase 0 에서 `bmad-help` 자동 호출**. kdh-help = BMAD 카탈로그 라우팅 + 프로젝트 컨텍스트 풍부화 통합 라우터.
 > v2 변경 (2026-04-08): Planning 감지 축소, Sprint 블록 해석 강화, plan layer 연동, session→resume 안내.
+
+## Phase 0: BMAD 라우팅 (v3 신규)
+
+```
+1. Skill tool 로 bmad-help 호출
+   - args: CEO 가 kdh-help 에 넘긴 args 를 그대로 pass-through (args 없으면 빈 문자열)
+   - bmad-help 가 _bmad/_config/bmad-help.csv (43 스킬) 기준 매칭
+2. bmad-help 결과 캡처 → Phase 1 의 프로젝트 state 와 결합
+   - BMAD 추천이 현재 Sprint/plan 과 맞으면 우선순위 ↑
+   - 안 맞으면 kdh 스킬 추천 우선
+3. Phase 2 최종 제시에서 두 카테고리 함께 출력:
+   - "프로젝트 컨텍스트 기반 (kdh-*)": 현재 state 에 가장 잘 맞는 kdh 명령
+   - "BMAD 카탈로그 매칭 (bmad-*)": 명령어 자체를 찾을 때 쓸 BMAD 스킬
+```
+
+★ **kdh-help 가 이제 1차 관문**. bmad-help 는 그 안에서 호출되는 하위 검색 엔진.
 
 ## Phase 1: 상태 자동 감지 (30초)
 
