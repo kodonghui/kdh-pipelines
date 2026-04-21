@@ -1,4 +1,9 @@
-# kdh-visual-regression — 비주얼 회귀 테스트
+---
+name: kdh-ui-verify
+description: "UI E2E Full Interaction 검증 + 5테마 스크린샷. dev-pipeline에서 분리."
+---
+
+# UI Verification
 
 
 ## v2 Claude Design Integration (2026-04-21)
@@ -15,40 +20,31 @@
 - **DESIGN.md** = 26-line stub (CEO SKIPPED restore, 2026-04-21 T1-5). Do not read content; dereference to `/kdh-corthex-design` skill.
 - **corthex-design-system artifacts** = CEO-owned. No direct edits by Claude. Use `_bmad-output/design-requests/YYYY-MM-DD-<slug>.md` with ready-to-paste English prompt block (5 sections: Context / Constraint / Ask / Target file / Acceptance).
 
-## When to Use
-- dev-pipeline Phase A.5에서 자동 호출 (UI 스토리)
-- bug-fix-pipeline Phase 3 SWEEP에서 자동 호출
-- CEO가 수동으로 `/kdh-visual-regression` 실행
+## UI Verification (triggered when UI files changed)
 
-## 실행
+### Detection
+UI files changed = any modified/added file matching:
+- `**/*.tsx`, `**/*.jsx`, `**/*.vue`, `**/*.svelte`
+- `**/*.css`, `**/*.scss`, `**/*.less`
+- `**/*.html` (in src/ or app/ directories)
+- Route/page config files
 
-### 기준선 생성 (첫 실행 또는 의도적 갱신)
+### Full Interaction E2E
+
 ```
-cd packages/admin && bunx playwright test e2e/visual/ --update-snapshots
+Step 1: Start dev server (dev_command from project-context.yaml, 60s timeout)
+Step 2: Identify changed pages (git diff → filter UI → map to routes)
+Step 3: Playwright screenshot of ALL changed pages
+Step 4: Full interaction E2E on each changed page:
+  a. Every button: click → verify no crash + expected response
+  b. Every input: type test data → verify value + validation
+  c. Every form: fill + submit → verify success/error states
+  d. Every dropdown: open → verify options → select → verify
+  e. CRUD operations (if applicable): create → read → update → delete
+  f. Console errors: capture all, filter benign, fail on unexpected
+Step 5: Theme consistency check (design tokens match app shell)
+Step 6: Router import check (all lazy-loaded routes resolve)
+Step 7: Stop dev server
 ```
 
-### 비교 실행 (매 커밋)
-```
-cd packages/admin && bunx playwright test e2e/visual/
-```
-
-### 결과
-- PASS: 기준선과 동일 (threshold 0.2% 이내)
-- FAIL: diff 이미지 생성 → `_bmad-output/e2e-screenshots/visual-diff/`
-
-### 의도적 변경 시
-```
-/kdh-visual-regression update
-```
-→ 현재 화면으로 기준선 갱신
-
-## 테스트 범위
-- /login × 5테마
-- /dashboard × 5테마 (인증 후)
-- /divisions × 5테마 (인증 후)
-- /members × 5테마 (인증 후)
-
-## Rules
-- threshold: 0.2% (폰트 렌더링 차이 허용)
-- 기준선은 git에 커밋 (다른 환경에서도 비교 가능)
-- FAIL = 의도적 변경이면 update, 아니면 버그
+If Playwright not configured → skip automated E2E, still run router + console checks.

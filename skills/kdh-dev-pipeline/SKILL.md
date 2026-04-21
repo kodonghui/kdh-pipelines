@@ -7,6 +7,21 @@ description: 'Dev Pipeline — Sprint 실행 (Story Loop + Party Mode + Integrat
 
 Sprint 실행 파이프라인. 스토리별 개발 + 리뷰 + 테스트 + E2E + Codex + 통합 검증.
 
+
+## v2 Claude Design Integration (2026-04-21)
+
+> `/kdh-corthex-design` skill 필수 호출 + 3 테마 + mypqjitg/ndpk SSoT + sally verdict-only. Reference: `_bmad-output/audit/2026-04-21-kdh-skills-claude-design-audit-v2.md`
+
+- **Invoke `/kdh-corthex-design`** before any UI decision — returns brand checklist + tokens + preview paths + `ui_kits/console` pointers.
+- **SSoT paths** (replaces `DESIGN.md` content):
+  - React pages: `_bmad-output/ui-rebuild/claude-design-generate-result/2026-04-21-mypqjitg/project/reskin-react/src/routes/<Page>.tsx`
+  - Design system: `_bmad-output/ui-rebuild/claude-design-generate-result/2026-04-21-ndpk/project/` (`colors_and_type.css` + `preview/` + `ui_kits/console/`)
+  - Shared CSS: `packages/ui/src/styles/colors_and_type.css` (import via `@corthex/ui/styles/colors_and_type.css`)
+- **3 themes only**: Paper (default light) / Carbon (dark) / Signal (burnt-sienna accent). Selector = `[data-theme="paper|carbon|signal"]` on `<html>`. Retired theme names **forbidden**: `theme-brand` / `theme-green` / `theme-toss-light` / `theme-toss-dark` / `theme-cherry-blossom`.
+- **sally role** = verdict verifier only (visual drift vs mypqjitg). Sally authoring (Operator's Atelier / 9-section UX spec) is treated as FAIL → fresh-agent re-review.
+- **DESIGN.md** = 26-line stub (CEO SKIPPED restore, 2026-04-21 T1-5). Do not read content; dereference to `/kdh-corthex-design` skill.
+- **corthex-design-system artifacts** = CEO-owned. No direct edits by Claude. Use `_bmad-output/design-requests/YYYY-MM-DD-<slug>.md` with ready-to-paste English prompt block (5 sections: Context / Constraint / Ask / Target file / Acceptance).
+
 ## ★ v4 최적화 (2026-04-11 Plan v4)
 
 ### 구조 유지 (절대)
@@ -333,11 +348,11 @@ PROHIBITION: Never spawn agents as `critic-a`, `critic-b`, `critic-c` or any gen
 
 | Role | Model | Rationale |
 |------|-------|-----------|
-| Orchestrator (kdh-go, pipeline) | opus | Complex judgment, state management, CEO communication |
+| Orchestrator (kdh-go, pipeline) | sonnet | Complex judgment, state management, CEO communication |
 | Dev agent (builder) | sonnet | Best coding model, fast, validated in Sprint 0 |
-| Critics — Grade A (Planning) | opus | winston(Arch) + quinn(QA) + john(PM), 3명 병렬. DA = fresh instance (기존 3명 겸임 금지) |
+| Critics — Grade A (Planning) | sonnet | winston(Arch) + quinn(QA) + john(PM), 3명 병렬. DA = fresh instance (기존 3명 겸임 금지) |
 | Critics — Grade B (Planning) | sonnet | winston + quinn + john, 3명. 일괄 리뷰 |
-| Critics — Grade A (Sprint Dev) | opus | 기존 유지 (3명) |
+| Critics — Grade A (Sprint Dev) | sonnet | 기존 유지 (3명) |
 | Critics — Grade B (Sprint Dev) | sonnet | 기존 유지 (3명) |
 | Critics — Grade C (setup) | N/A | Writer Solo, no critics |
 | Codex (second opinion) | GPT-5.4 | External model, independent perspective |
