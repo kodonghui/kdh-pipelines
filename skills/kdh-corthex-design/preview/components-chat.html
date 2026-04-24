@@ -1,0 +1,28 @@
+<!doctype html><html data-theme="paper" lang="ko"><head>
+<meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<title>Chat message bubbles</title>
+<style>
+.wrap{max-width:640px;display:flex;flex-direction:column;gap:16px;padding:8px 0}
+.row-msg{display:flex;gap:10px;align-items:flex-start}
+.ava{width:28px;height:28px;border-radius:9999px;background:hsl(var(--muted));display:inline-flex;align-items:center;justify-content:center;font:600 12px/1 var(--font-sans);color:hsl(var(--muted-foreground));flex-shrink:0}
+.bub-agent{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:8px 8px 8px 2px;padding:10px 14px;max-width:420px}
+.bub-user{background:hsl(var(--secondary));border-radius:8px 2px 8px 8px;padding:10px 14px;margin-left:auto;max-width:360px;color:hsl(var(--secondary-foreground))}
+.ts{font:500 11px/16px var(--font-sans);color:hsl(var(--muted-foreground));margin-top:4px;letter-spacing:0.01em}
+.cursor::after{content:"▌";opacity:0.6;animation:blink 1s step-end infinite;margin-left:2px}
+@keyframes blink{50%{opacity:0}}
+</style></head><body><div class="card col gap-md">
+  <div class="wrap">
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <div class="bub-user body-sm">이번 주 매출 분석해줘</div>
+      <div class="ts mono tabular-nums">10:24</div>
+    </div>
+    <div class="row-msg">
+      <div class="ava">분</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div class="caption muted">분석 에이전트</div>
+        <div class="bub-agent body-sm">이번 주(04/14–04/20) 매출은 <span class="mono tabular-nums">₩284,700,000</span>. 전주 대비 <span style="color:hsl(var(--success))" class="mono">+4.2%</span>.<span class="cursor"></span></div>
+        <div class="ts mono tabular-nums">10:24</div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

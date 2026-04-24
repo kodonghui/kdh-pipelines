@@ -1,0 +1,24 @@
+<!doctype html><html data-theme="paper" lang="ko"><head>
+<meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<title>Sidebar nav</title>
+<style>
+body{background:hsl(var(--sidebar-background))}
+.nav{padding:16px 12px;width:256px;color:hsl(var(--sidebar-foreground))}
+.brand{font:700 28px/36px var(--font-sans);letter-spacing:-0.02em;padding:0 12px 16px}
+.grp{font:600 11px/16px var(--font-sans);letter-spacing:0.08em;text-transform:uppercase;color:hsl(var(--muted-foreground));padding:8px 12px 4px}
+.item{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:6px;font:400 13px/20px var(--font-sans);cursor:pointer}
+.item:hover{background:hsl(var(--sidebar-accent))}
+.item.active{background:hsl(var(--sidebar-accent));color:hsl(var(--sidebar-accent-foreground));font-weight:600}
+.dot{width:16px;height:16px;border:1.5px solid currentColor;border-radius:4px;opacity:0.8}
+</style></head><body><div class="nav">
+  <div class="brand">corthex</div>
+  <div class="grp">에이전트</div>
+  <div class="item active"><span class="dot"></span>비서 · Chief of Staff</div>
+  <div class="item"><span class="dot"></span>분석 에이전트</div>
+  <div class="item"><span class="dot"></span>법무 에이전트</div>
+  <div class="item"><span class="dot"></span>영업 매니저</div>
+  <div class="grp">대화 기록</div>
+  <div class="item">이번 주 매출 분석</div>
+  <div class="item">신제품 기획서 초안</div>
+  <div class="item">계약서 1조 검토</div>
+</div></body></html>

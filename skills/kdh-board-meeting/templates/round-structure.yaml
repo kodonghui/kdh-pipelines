@@ -1,0 +1,50 @@
+# Round Structure (authoritative pass-count source per Codex Q4 + Gemini Q4)
+# validators/registry.py reads this INSTEAD OF hardcoding pass counts.
+
+round_structure:
+  R0:
+    passes: 1
+    purpose: "kdh-research + corpus-supplement + EARS-skeleton + B/C ACK gate (BRD-025)"
+    artifacts_required:
+      - "rounds/R0/research-summary.md"
+      - "rounds/R0/corpus-supplement/"
+      - "rounds/R0/EARS-skeleton.md"
+    flags_required:
+      - "inbox/round-0/A-DONE-R0.flag"
+      - "inbox/round-0/B-ACK-R0.flag"
+      - "inbox/round-0/C-ACK-R0.flag"
+    abort_flag: "inbox/round-0/R0-INVALID.flag"
+    subheadings_required: []  # R0 is research-only, no opinion/review/alternative
+  R1:
+    passes: 2
+    purpose: "First substantive deliberation"
+    subheadings_required: ["Research done", "Opinion", "Aggressive review", "Alternative"]
+    pass_2_rule: "refute ≥1 pass-1 claim OR extend with new evidence (BRD-029)"
+  R2:
+    passes: 2
+    purpose: "Integration / v0.2 draft"
+    subheadings_required: ["Research done", "Opinion", "Aggressive review", "Alternative"]
+    pass_2_rule: "refute ≥1 pass-1 claim OR extend with new evidence (BRD-029)"
+  R3:
+    passes: 2
+    purpose: "Mandatory adversarial (BRD-017 HIGH/CRITICAL ≥1 required PER PASS)"
+    subheadings_required: ["Research done", "Opinion", "Aggressive review", "Alternative"]
+    pass_2_rule: "refute ≥1 pass-1 claim OR extend with new evidence (BRD-029)"
+    severity_gate: "HIGH or CRITICAL"
+  R4:
+    passes: 2
+    purpose: "Integration / sign-off prep"
+    subheadings_required: ["Research done", "Opinion", "Aggressive review", "Alternative"]
+    pass_2_rule: "refute ≥1 pass-1 claim OR extend with new evidence (BRD-029)"
+  R5:
+    passes: 1
+    purpose: "EARS sign-off (BRD-029 exception: R5 is 1-pass)"
+    subheadings_required: ["Research done", "EARS draft", "Signature verdict"]  # only A writes EARS; B/C sign
+  R6:
+    passes: 1
+    purpose: "Consensus + remaining dissent + improvement (BRD-030)"
+    subheadings_required: ["Agreed items", "Remaining disagreements", "Improvement suggestions"]
+
+metadata:
+  version: "0.5.2"
+  source_spec: "_bmad-output/kdh-plans/0417-board-v2-discussions/topic-1-kdh-board-meeting-howto.EARS-normalized.md"

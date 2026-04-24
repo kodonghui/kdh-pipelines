@@ -1,0 +1,23 @@
+<!doctype html><html data-theme="paper" lang="ko"><head>
+<meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<title>Card + Alert</title>
+<style>
+.acard{background:hsl(var(--card));border:1px solid hsl(var(--border));border-radius:8px;box-shadow:0 1px 2px 0 hsl(220 15% 11%/0.05);padding:20px;width:320px}
+.alert{border-left:4px solid;border-radius:0 8px 8px 0;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;width:360px}
+.alert.info{background:hsl(212 60% 40% / 0.06);border-left-color:hsl(var(--info))}
+.alert.warn{background:hsl(32 85% 44% / 0.08);border-left-color:hsl(var(--warning))}
+.alert.err{background:hsl(358 68% 42% / 0.07);border-left-color:hsl(var(--destructive))}
+</style></head><body><div class="card col gap-lg">
+  <div class="row gap-lg" style="align-items:flex-start">
+    <div class="acard">
+      <div class="h3" style="margin-bottom:8px">기본 정보</div>
+      <div class="body-sm muted" style="margin-bottom:12px">이메일 · 소속 · 역할</div>
+      <div class="body">김대표 · 영업팀 · CEO</div>
+    </div>
+    <div class="col gap-sm">
+      <div class="alert info"><div class="body-sm"><b>정보.</b> 비서가 3개 에이전트를 호출했어요.</div></div>
+      <div class="alert warn"><div class="body-sm"><b>확인 필요.</b> 요청이 많아요. <span class="mono tabular-nums">12초</span> 후 다시 시도해주세요.</div></div>
+      <div class="alert err"><div class="body-sm"><b>오류.</b> 네트워크 연결이 끊겼어요. 복구 중…</div></div>
+    </div>
+  </div>
+</div></body></html>

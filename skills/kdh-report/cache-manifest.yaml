@@ -1,0 +1,29 @@
+# /kdh-report research-cache TTL 관리 manifest
+# Step 1 (Research 3회) 의 결과물을 추적. 30일 초과 시 자동 갱신 대상.
+# --refresh 플래그 시 이 파일 무시하고 전면 재실행.
+
+version: 1
+ttl_days: 30
+
+# 고정 주제 3개 (첫 Step 1 호출 시 생성, 이후 TTL 내에는 재사용)
+topics:
+  legal_writing:
+    slug: "법학논문-작성법"
+    last_run_utc: null  # ISO8601, 첫 실행 시 기록
+    file: "research-cache/legal-writing.md"
+    expires_utc: null
+
+  exec_report:
+    slug: "임원-보고서-작성법"
+    last_run_utc: null
+    file: "research-cache/exec-report.md"
+    expires_utc: null
+
+  best_practices:
+    slug: "모범-보고-사례"
+    last_run_utc: null
+    file: "research-cache/best-practices.md"
+    expires_utc: null
+
+# 보드별 생성 이력 (호출마다 append)
+boards: []

@@ -1,0 +1,29 @@
+<!doctype html><html data-theme="paper" lang="ko"><head>
+<meta charset="utf-8"><link rel="stylesheet" href="_card.css">
+<title>Buttons — Paper variants</title>
+<style>
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 16px;border-radius:8px;border:1px solid transparent;font:600 14px/1 var(--font-sans);cursor:pointer;transition:all 150ms cubic-bezier(0.16,1,0.3,1);}
+.btn-primary{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+.btn-secondary{background:hsl(var(--secondary));color:hsl(var(--secondary-foreground))}
+.btn-outline{background:transparent;border-color:hsl(var(--border));color:hsl(var(--foreground))}
+.btn-ghost{background:transparent;color:hsl(var(--foreground))}
+.btn-destructive{background:hsl(var(--destructive));color:hsl(var(--destructive-foreground))}
+.btn-link{background:transparent;color:hsl(var(--primary));text-decoration:underline;text-underline-offset:4px;padding:0}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn-lg{height:44px;padding:0 24px;font-size:15px}
+</style></head><body><div class="card col gap-lg">
+  <div class="eyebrow muted">button · default 36 / sm 32 / lg 44</div>
+  <div class="row gap-md" style="flex-wrap:wrap;">
+    <button class="btn btn-primary">저장하기</button>
+    <button class="btn btn-secondary">나중에</button>
+    <button class="btn btn-outline">취소</button>
+    <button class="btn btn-ghost">더 보기</button>
+    <button class="btn btn-destructive">삭제</button>
+    <a class="btn btn-link">도움말</a>
+  </div>
+  <div class="row gap-md">
+    <button class="btn btn-primary btn-sm">sm · 32</button>
+    <button class="btn btn-primary">default · 36</button>
+    <button class="btn btn-primary btn-lg">lg · 44</button>
+  </div>
+</div></body></html>

@@ -1,0 +1,45 @@
+/* Shared card chrome for design system preview cards */
+@import url("../colors_and_type.css");
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  padding: 24px;
+  width: 100%;
+  min-height: 100%;
+}
+
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.gap-xs { gap: 4px; } .gap-sm { gap: 8px; } .gap-md { gap: 12px; }
+.gap-lg { gap: 16px; } .gap-xl { gap: 24px; } .gap-2xl { gap: 32px; }
+
+.mono { font-family: var(--font-mono); }
+.muted { color: hsl(var(--muted-foreground)); }
+
+/* Swatch */
+.swatch {
+  width: 56px; height: 56px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  flex-shrink: 0;
+}
+.swatch.sm { width: 40px; height: 40px; }
+.swatch.xs { width: 24px; height: 24px; border-radius: 6px; }
+
+.token-label {
+  font: 500 12px/16px var(--font-sans);
+  letter-spacing: 0.01em;
+  color: hsl(var(--foreground));
+}
+.token-meta {
+  font: 450 11px/16px var(--font-mono);
+  color: hsl(var(--muted-foreground));
+}

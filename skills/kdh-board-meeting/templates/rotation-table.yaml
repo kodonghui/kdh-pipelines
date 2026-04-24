@@ -1,0 +1,30 @@
+# Rotation Table (BRD-028) — v0.5.2
+# Canonical source for (round, pass) → speaker ordering.
+# CEO 2026-04-18: R5.1 = [A, B, C] (chairman-first for EARS draft).
+# First-speaker counts across the board (excluding R5.2 null):
+#   A = 4  (R1.1, R2.2, R4.1, R5.1)
+#   B = 3  (R2.1, R3.2, R6.1-second? NO — R6.1 first is B)
+#   C = 3  (R1.2, R3.1, R4.2)
+# Adjusted count with R6.1=[B,C,A]:
+#   first: A=3 (R1.1, R2.2, R4.1, R5.1 = 4), B=2 (R2.1, R3.2) +1 (R6.1 first) = 3, C=2 (R1.2, R3.1, R4.2 first = 3)
+# Per BRD-028, ±1 deviation permitted. CEO approved R5.1=[A,B,C].
+
+rotation_table:
+  "1.1": [A, B, C]
+  "1.2": [C, B, A]
+  "2.1": [B, C, A]
+  "2.2": [A, C, B]
+  "3.1": [C, A, B]    # R3 — BRD-017 HIGH/CRITICAL required both passes
+  "3.2": [B, A, C]
+  "4.1": [A, B, C]
+  "4.2": [C, B, A]
+  "5.1": [A, B, C]    # CEO 2026-04-18: chairman drafts EARS first
+  "5.2": null         # BRD-029: R5 is 1-pass only
+  "6.1": [B, C, A]    # BRD-028: A last in R6 consensus round
+
+metadata:
+  version: "0.5.2"
+  ceo_approved_utc: "2026-04-18T17:40:00Z"
+  source_spec: "_bmad-output/kdh-plans/0417-board-v2-discussions/topic-1-kdh-board-meeting-howto.EARS-normalized.md"
+  superseded_r51: "[B, C, A]"
+  superseded_reason: "Original BRD-028 R5.1 was [B, C, A]; CEO 2026-04-18 changed to [A, B, C] so chairman drafts EARS before B/C sign. First-speaker count goes A=4, still within ±1 per BRD-028."

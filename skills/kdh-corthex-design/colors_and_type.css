@@ -1,0 +1,305 @@
+/* ═══════════════════════════════════════════════════════════
+ * Corthex Design System — Colors & Type Tokens
+ * Source: kodonghui/corthex-v3 DESIGN.md §2–§6 (2026-04-18, sally)
+ * Direction: Operator's Atelier — quiet confidence + typographic pride + instrument heft
+ *
+ * Three themes only: Paper (light, default) / Carbon (dark) / Signal (accent)
+ * Retired — DO NOT revive: brand, toss-light, toss-dark, green, cherry-blossom
+ * ═══════════════════════════════════════════════════════════ */
+
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+/* ─────────────────────────────────────
+ * Paper — default / light
+ * Warm off-white paper + deep ink blue
+ * ───────────────────────────────────── */
+:root,
+[data-theme="paper"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --background: 40 20% 98%;        /* #FAF9F6 warm paper */
+  --foreground: 220 15% 11%;       /* #191B20 deep ink */
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 15% 11%;
+
+  /* Identity */
+  --primary: 222 47% 20%;          /* #1B2A4A deep ink blue */
+  --primary-foreground: 40 20% 98%;
+  --secondary: 220 14% 94%;        /* #ECEEF2 soft stone */
+  --secondary-foreground: 220 15% 20%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 40%;  /* #5D6472 calm grey */
+  --accent: 222 47% 20%;
+  --accent-foreground: 40 20% 98%;
+
+  /* Semantic signals */
+  --destructive: 358 68% 42%;      /* #B32534 dim red — not alarm */
+  --destructive-foreground: 0 0% 100%;
+  --success: 155 55% 32%;          /* #257A51 forest green — not neon */
+  --success-foreground: 0 0% 100%;
+  --warning: 32 85% 44%;           /* #CC7512 amber */
+  --warning-foreground: 0 0% 100%;
+  --info: 212 60% 40%;             /* #2A5D99 */
+  --info-foreground: 0 0% 100%;
+
+  /* Borders + focus */
+  --border: 220 13% 88%;
+  --input: 220 13% 88%;
+  --ring: 222 47% 20%;
+
+  --radius: 0.5rem;                /* 8px base — 12px retired 2026-04-18 */
+
+  /* Sidebar variant — slightly warmer */
+  --sidebar-background: 40 22% 96%;
+  --sidebar-foreground: 220 15% 11%;
+  --sidebar-primary: 222 47% 20%;
+  --sidebar-primary-foreground: 40 20% 98%;
+  --sidebar-accent: 220 14% 92%;
+  --sidebar-accent-foreground: 220 15% 20%;
+  --sidebar-border: 220 13% 86%;
+  --sidebar-ring: 222 47% 20%;
+}
+
+/* ─────────────────────────────────────
+ * Carbon — dark
+ * Deep graphite (never pure black) + luminous ice blue
+ * ───────────────────────────────────── */
+[data-theme="carbon"] {
+  color-scheme: dark;
+
+  --background: 220 14% 9%;        /* #15171B graphite */
+  --foreground: 40 15% 92%;        /* #ECEBE7 warm bone white */
+  --card: 220 14% 12%;
+  --card-foreground: 40 15% 92%;
+  --popover: 220 14% 12%;
+  --popover-foreground: 40 15% 92%;
+
+  --primary: 212 90% 70%;          /* #5FA8F7 luminous ice blue */
+  --primary-foreground: 220 14% 9%;
+  --secondary: 220 14% 16%;
+  --secondary-foreground: 40 15% 86%;
+  --muted: 220 14% 14%;
+  --muted-foreground: 220 10% 62%;
+  --accent: 220 14% 16%;
+  --accent-foreground: 40 15% 92%;
+
+  --destructive: 358 72% 60%;
+  --destructive-foreground: 220 14% 9%;
+  --success: 155 55% 52%;
+  --success-foreground: 220 14% 9%;
+  --warning: 32 90% 58%;
+  --warning-foreground: 220 14% 9%;
+  --info: 212 80% 62%;
+  --info-foreground: 220 14% 9%;
+
+  --border: 220 14% 20%;
+  --input: 220 14% 20%;
+  --ring: 212 90% 70%;
+
+  --radius: 0.5rem;
+
+  --sidebar-background: 220 16% 7%;
+  --sidebar-foreground: 40 15% 92%;
+  --sidebar-primary: 212 90% 70%;
+  --sidebar-primary-foreground: 220 14% 9%;
+  --sidebar-accent: 220 14% 16%;
+  --sidebar-accent-foreground: 40 15% 86%;
+  --sidebar-border: 220 14% 16%;
+  --sidebar-ring: 212 90% 70%;
+}
+
+/* ─────────────────────────────────────
+ * Signal — bold accent light
+ * Same base as Paper, primary shifts to burnt sienna
+ * ───────────────────────────────────── */
+[data-theme="signal"] {
+  color-scheme: light;
+
+  --background: 40 20% 98%;
+  --foreground: 220 15% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 15% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 15% 11%;
+
+  --primary: 14 84% 42%;           /* #C23E15 burnt sienna */
+  --primary-foreground: 40 20% 98%;
+  --secondary: 14 60% 94%;
+  --secondary-foreground: 14 84% 32%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 220 9% 40%;
+  --accent: 14 84% 42%;
+  --accent-foreground: 40 20% 98%;
+
+  --destructive: 358 68% 42%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 155 55% 32%;
+  --success-foreground: 0 0% 100%;
+  --warning: 32 85% 44%;
+  --warning-foreground: 0 0% 100%;
+  --info: 212 60% 40%;
+  --info-foreground: 0 0% 100%;
+
+  --border: 220 13% 88%;
+  --input: 220 13% 88%;
+  --ring: 14 84% 42%;
+
+  --radius: 0.5rem;
+
+  --sidebar-background: 40 22% 96%;
+  --sidebar-foreground: 220 15% 11%;
+  --sidebar-primary: 14 84% 42%;
+  --sidebar-primary-foreground: 40 20% 98%;
+  --sidebar-accent: 14 60% 94%;
+  --sidebar-accent-foreground: 14 84% 32%;
+  --sidebar-border: 220 13% 86%;
+  --sidebar-ring: 14 84% 42%;
+}
+
+/* ═══════════════════════════════════════════════════════════
+ * Typography — Pretendard Variable (Korean + Latin + numerals)
+ *              JetBrains Mono (numbers, code, stream output)
+ *
+ * NEVER use Inter / Roboto / Arial / Space Grotesk / system fonts
+ * as primary face — Korean hinting is lost, reads as generic AI.
+ * ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --font-sans:
+    "Pretendard Variable", Pretendard,
+    -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Noto Sans KR",
+    sans-serif;
+
+  --font-mono:
+    "JetBrains Mono", "JetBrains Mono Variable",
+    "D2Coding", "SF Mono", Menlo, Consolas,
+    monospace;
+
+  /* Display = same family as sans; only weight + tracking differ.
+     Do NOT add a separate display font — keeps Korean hinting consistent. */
+  --font-display: var(--font-sans);
+
+  /* Type scale — Major Third (1.25) modular, 8px grid aware
+     Values: size / line-height / tracking / weight */
+  --type-display-lg: 48px/56px -0.025em 700;
+  --type-display-md: 36px/44px -0.020em 700;
+  --type-h1:         28px/36px -0.015em 650;
+  --type-h2:         22px/30px -0.010em 600;
+  --type-h3:         18px/26px -0.005em 600;
+  --type-h4:         15px/22px  0       600;
+  --type-body-lg:    16px/26px  0       400;
+  --type-body:       15px/24px  0       400;
+  --type-body-sm:    13px/20px  0       400;
+  --type-caption:    12px/16px  0.01em  500;
+  --type-eyebrow:    11px/16px  0.08em  600;  /* uppercase */
+  --type-code:       13px/20px  0       450;  /* JetBrains Mono */
+  --type-code-block: 14px/22px  0       400;  /* JetBrains Mono */
+
+  /* Spacing scale — 8px base, 4px sub-atomic */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;   /* documented exception: list-item gap */
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+
+  /* Radii */
+  --radius-none: 0;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-base: 8px;
+  --radius-lg:   12px;
+  --radius-full: 9999px;
+
+  /* Shadow scale — elevation only, never default chrome */
+  --shadow-none:  none;
+  --shadow-sm:    0 1px 2px 0 hsl(220 15% 11% / 0.05);
+  --shadow-md:    0 4px 12px -2px hsl(220 15% 11% / 0.08),
+                  0 2px 4px -2px hsl(220 15% 11% / 0.04);
+  --shadow-lg:    0 12px 28px -8px hsl(220 15% 11% / 0.12),
+                  0 4px 12px -4px hsl(220 15% 11% / 0.06);
+  --shadow-xl:    0 24px 48px -12px hsl(220 15% 11% / 0.18),
+                  0 8px 16px -4px hsl(220 15% 11% / 0.08);
+  --shadow-inner: inset 0 1px 2px 0 hsl(220 15% 11% / 0.06);
+
+  /* Motion — punctuation only */
+  --motion-fast: 100ms;
+  --motion-base: 150ms;
+  --motion-slow: 200ms;         /* cap — never exceed on page transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Carbon override for shadows — darker shadow color on dark bg */
+[data-theme="carbon"] {
+  --shadow-sm:    0 1px 2px 0 hsl(0 0% 0% / 0.35);
+  --shadow-md:    0 4px 12px -2px hsl(0 0% 0% / 0.45),
+                  0 2px 4px -2px hsl(0 0% 0% / 0.30);
+  --shadow-lg:    0 12px 28px -8px hsl(0 0% 0% / 0.55),
+                  0 4px 12px -4px hsl(0 0% 0% / 0.35);
+  --shadow-xl:    0 24px 48px -12px hsl(0 0% 0% / 0.60),
+                  0 8px 16px -4px hsl(0 0% 0% / 0.40);
+}
+
+/* ─────────────────────────────────────
+ * Global base + body
+ * ───────────────────────────────────── */
+html, body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 24px;
+  font-feature-settings: "ss01" 1, "ss02" 1, "rlig" 1, "calt" 1, "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
+  font-feature-settings: "calt" 1;
+}
+
+/* Tabular numerals everywhere numbers carry meaning */
+.tabular-nums, table, .stat, .timestamp, .count, .token-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────
+ * Semantic typographic classes
+ * ───────────────────────────────────── */
+.display-lg { font: 700 48px/56px var(--font-display); letter-spacing: -0.025em; }
+.display-md { font: 700 36px/44px var(--font-display); letter-spacing: -0.020em; }
+.h1         { font: 650 28px/36px var(--font-sans);    letter-spacing: -0.015em; }
+.h2         { font: 600 22px/30px var(--font-sans);    letter-spacing: -0.010em; }
+.h3         { font: 600 18px/26px var(--font-sans);    letter-spacing: -0.005em; }
+.h4         { font: 600 15px/22px var(--font-sans); }
+.body-lg    { font: 400 16px/26px var(--font-sans); }
+.body       { font: 400 15px/24px var(--font-sans); }
+.body-sm    { font: 400 13px/20px var(--font-sans); }
+.caption    { font: 500 12px/16px var(--font-sans); letter-spacing: 0.01em; }
+.eyebrow    { font: 600 11px/16px var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; }
+.code-inline{ font: 450 13px/20px var(--font-mono); }
+.code-block { font: 400 14px/22px var(--font-mono); }
+
+/* ─────────────────────────────────────
+ * Utility — status dots (replace emoji indicators)
+ * ───────────────────────────────────── */
+.dot-status {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  vertical-align: middle;
+}
+.dot-status--idle    { background: hsl(var(--muted-foreground)); }
+.dot-status--thinking{ background: hsl(var(--warning)); }
+.dot-status--running { background: hsl(var(--info)); }
+.dot-status--done    { background: hsl(var(--success)); }
+.dot-status--error   { background: hsl(var(--destructive)); }
