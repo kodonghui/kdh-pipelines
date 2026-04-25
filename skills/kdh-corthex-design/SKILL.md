@@ -1,6 +1,6 @@
 ---
 name: kdh-corthex-design
-description: Reader skill for the Corthex Design System. Use to look up brand tokens, themes (Paper/Carbon/Signal), typography (Pretendard Variable + JetBrains Mono), 8px spacing grid, CSS variables, iconography, and UI kit component paths. Does NOT generate new designs — new designs come from Claude Design (claude.ai/design) handoff bundles. Mental model: Bloomberg Terminal for a Korean SME CEO.
+description: "Reader skill for the Corthex Design System. Use to look up brand tokens, themes (Paper/Carbon/Signal), typography (Pretendard Variable + JetBrains Mono), 8px spacing grid, CSS variables, iconography, and UI kit component paths. Does NOT generate new designs — new designs come from Claude Design (claude.ai/design) handoff bundles. Mental model — Bloomberg Terminal for a Korean SME CEO."
 user-invocable: true
 ---
 

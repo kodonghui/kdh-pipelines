@@ -1,3 +1,8 @@
+---
+name: kdh-a11y-scan
+description: 접근성 전수 스캔 — admin/app 모든 라우트 키보드 네비게이션 + ARIA + 색 대비 + 스크린 리더 호환성 검증. v2 Claude Design Integration (kdh-corthex-design SSoT 호출 + 3 테마 + sally verdict-only). 트리거 — 사장님이 "접근성 검사", "/kdh-a11y-scan", "a11y 검사" 호출 시.
+---
+
 # kdh-a11y-scan — 접근성 전수 스캔
 
 

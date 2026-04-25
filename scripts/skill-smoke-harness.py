@@ -393,6 +393,7 @@ def check_skill_frontmatter(claude_dir: Path, result: Result, skill_filter: Opti
     """R-06 frontmatter requirement 의 일부 — frontmatter 존재 검증.
 
     fail-closed: parse error = FAIL.
+    Skip non-skill directories (log artifacts, etc.) — names starting with '_'.
     """
     skills_dir = claude_dir / "skills"
     if not skills_dir.is_dir():
@@ -404,6 +405,9 @@ def check_skill_frontmatter(claude_dir: Path, result: Result, skill_filter: Opti
         if not skill_dir.is_dir():
             continue
         if skill_filter and skill_dir.name != skill_filter:
+            continue
+        # log artifacts (_bmad-installed-log 등) = skip — skill 아님
+        if skill_dir.name.startswith("_"):
             continue
         skill_md = skill_dir / "SKILL.md"
         if not skill_md.is_file():

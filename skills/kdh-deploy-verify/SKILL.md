@@ -1,3 +1,8 @@
+---
+name: kdh-deploy-verify
+description: 배포 후 검증 — git push / bug-fix-pipeline Phase 4 DEPLOY 직후 systemd 재시작 + 핵심 라우트 200 + smoke E2E 통과 자동 확인. 사장님이 "배포 확인해" / "/kdh-deploy-verify" 호출 시 활성.
+---
+
 # kdh-deploy-verify — 배포 후 검증
 
 ## When to Use
