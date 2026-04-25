@@ -204,6 +204,49 @@ EOF
 | 자체 검증 규칙 위반 시 재작성 무한 루프 | LLM 주장 불안정 | 최대 3회 재작성, 이후 통과분만 저장 + 실패 항목 경고 로그 |
 | Codex 백그라운드 실패 | Codex 세션 미가용 | research-cache/{slug}-codex-score.md 에 "unavailable: <reason>" 기록. 보고서 자체는 유효 |
 
+## 7.5 다이어그램·스펙 deterministic 검증 (Paige helper extract — board 0425 R-15)
+
+본문에 Mermaid diagram 또는 OpenAPI spec 을 박을 때 (포함할 때) 반드시 `~/kdh-pipelines/scripts/diagram-validate.py` 를 통과시킨다. 본 단계는 R-24 reporting invariants 의 직접 적용 — invalid output silent correction 금지, UNKNOWN 명시.
+
+### 호출
+
+```bash
+# Mermaid
+python3 ~/kdh-pipelines/scripts/diagram-validate.py --kind mermaid <file>
+# 또는 stdin
+echo '...' | python3 ~/kdh-pipelines/scripts/diagram-validate.py --kind mermaid --stdin --json
+
+# OpenAPI
+python3 ~/kdh-pipelines/scripts/diagram-validate.py --kind openapi <file>
+```
+
+### 결과 처리 매트릭스
+
+| validator state | 본문 처리 | 보고서 표기 |
+|---|---|---|
+| `VALID` | 본문에 그대로 박는다 (포함) | 일반 mermaid/yaml 코드 블록 |
+| `INVALID` | **본문에서 OMIT** | `> ⚠️ ORACLE WARNING — diagram/spec INVALID` 블록 + 사유 list (validator 가 박아준 reasons) |
+| `UNKNOWN` | **본문에서 OMIT** (validator scope 밖이라도 silent VALID 금지) | `> ⚠️ ORACLE WARNING — diagram/spec UNKNOWN` 블록 + scope 한계 명시 |
+
+### 예시
+
+```markdown
+> ⚠️ ORACLE WARNING — Mermaid diagram INVALID
+>
+> 본문에 박으려던 diagram 이 syntax check 실패. 본 보고서에서 OMIT.
+> 사유:
+> - unbalanced brackets (residual=1)
+>
+> 원본 source: rounds/R3.1/proposal-A.md:124-145
+> validator: scripts/diagram-validate.py (commit 71a5c8e)
+```
+
+### 의존성 + 룰
+
+- R-22 alias resolver: bmad-agent-tech-writer (Paige) 호출 시 본 helper 자동 trigger.
+- R-24 reporting invariants: validator 호출 결과 (PASS/FAIL/UNKNOWN) 가 보고서 metadata 에 machine-readable 로 기록.
+- bootstrap = stdlib only (deterministic). PyYAML 부재 시 OpenAPI 검증 = regex 모드 (UNKNOWN 우선).
+
 ## 8. 재사용되는 기존 스킬·파일
 
 - **`/kdh-research`** — `C:\Users\USER\.claude\skills\kdh-research\SKILL.md`. Step 1 3회 호출. Skill tool 로 invoke.
