@@ -34,6 +34,15 @@ for skill_dir in "$SCRIPT_DIR"/skills/*/; do
 done
 echo "  ✅ $SKILL_COUNT 스킬 설치 완료"
 
+# ── 2.5 Skill Alias Map (R-22 SSoT) 설치 ──
+if [ -f "$SCRIPT_DIR/skill-alias-map.yaml" ]; then
+  cp "$SCRIPT_DIR/skill-alias-map.yaml" "$CLAUDE_DIR/skill-alias-map.yaml"
+  if [ -f "$SCRIPT_DIR/skill-alias-map.yaml.sha256" ]; then
+    cp "$SCRIPT_DIR/skill-alias-map.yaml.sha256" "$CLAUDE_DIR/skill-alias-map.yaml.sha256"
+  fi
+  echo "  ✅ skill-alias-map.yaml 설치 (R-22)"
+fi
+
 # ── 3. 에이전트 설치 ──
 echo "[2/7] 에이전트 설치..."
 AGENT_COUNT=0

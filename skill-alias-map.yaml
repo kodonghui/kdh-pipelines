@@ -1,0 +1,327 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Skill Alias Map (SSoT) — board 0425-skill-ecosystem-improvement R-22
+# ═══════════════════════════════════════════════════════════════════════
+#
+# Purpose: 모든 deprecated/renamed skill reference 의 단방향 alias 해소.
+# Layer:   R-30 ad_hoc correction-manifest extension. Topic 5/3/2 frozen
+#          publish chain 와 별 layer.
+#
+# Schema:  R-22 (Ubiquitous Alias resolver SSoT)
+# Audit:   R-25 manifest auditor verifies content_sha against sidecar
+#          (skill-alias-map.yaml.sha256) on pipeline entrypoint.
+# Smoke:   R-23 smoke harness checks alias resolution + blocked_scope +
+#          tombstone redirect + fail-closed on every skill contract change.
+#
+# Authority:
+#   - mechanical alias redirect (whitelist) = R-26 GATE 미발동
+#   - semantic ambiguity / authority change  = R-27 Plane 4 (C, Gemini) 귀속
+#   - implementation 변경                    = Codex 전담 (R-01, D3)
+# ═══════════════════════════════════════════════════════════════════════
+
+schema_version: "1.0.0"
+revision: 1
+prev_revision: null
+created: "2026-04-25"
+authoring_board: "0425-skill-ecosystem-improvement"
+authoring_publish_layer: "R-30 ad_hoc correction-manifest extension"
+content_sha_sidecar: "skill-alias-map.yaml.sha256"
+
+# ─── Frozen publish chain (R-25 audits these unchanged) ────────────────
+manifest_pointers:
+  topic5_publish_manifest:
+    path: "_bmad-output/boards/0425-topic5-final-trio-harness/publish/manifest.json"
+    repo: "kdh-conductor"
+    sha256: "9417e9efa60ba7651282b2798acc819fb42822c8c757b2fd8223acd192d8a0e6"
+    status: "FROZEN_IMMUTABLE"
+  topic5_skill_contract_matrix:
+    path: "_bmad-output/boards/0425-topic5-final-trio-harness/publish/SKILL_CONTRACT_MATRIX.yaml"
+    repo: "kdh-conductor"
+    sha256: "1b0678f75919986664221a5d9242dff6ac6d0f55dd8dd526142001a98e3a5c08"
+    status: "FROZEN_IMMUTABLE"
+  topic5_post_seal_correction:
+    path: "_bmad-output/boards/0425-topic5-final-trio-harness/POST_SEAL_DEBATE/CORRECTION_PACK.json"
+    repo: "kdh-conductor"
+    sha256: "15cb6142c71ecdcd6e0c75060b30eba558c7a984b004704a9e4d650162b28590"
+    status: "FROZEN_IMMUTABLE"
+  topic3_publish_manifest:
+    path: "_bmad-output/boards/0424-topic3-trio-harness-workflow/publish/manifest.json"
+    repo: "kdh-conductor"
+    sha256: "5bd487ef81464675d081aa522966f31a713ba5accba851cc56a7d8d3fa5b891f"
+    status: "FROZEN_IMMUTABLE"
+  topic2_publish_manifest:
+    path: "_bmad-output/boards/0422-topic2-trio-harness/publish/manifest.json"
+    repo: "kdh-conductor"
+    sha256: null  # Topic 2 v0 sprint shadow 진행 중 — main merge 후 frozen
+    status: "SHADOW_WINDOW_PENDING_FROZEN"
+
+# ─── D Class 1 차단 영역 (alias 우회 시도 = blocked) ────────────────────
+blocked_scope_d_class_1:
+  description: |
+    Plane 4 Oracle (C/Gemini) 권한 영역. alias resolver 를 통해
+    이 scope 로 우회되는 redirect 시도는 fail-closed.
+  scopes:
+    - oracle_judgment        # 의미/utterance 최종 해석 = C 귀속 (R-27)
+    - qa_verdict             # QA/test PASS/FAIL 판정 = harness/actor signature 귀속
+    - deploy_authorization   # 배포 승인 = CEO + Topic 3 routing
+    - self_review_loop       # 본인이 본인 검증 = ATK-A-011/A-012 mitigated
+  enforcement: "fail_closed"
+
+# ─── CEO Confirmation Prompt + AMBIGUOUS_INTENT GATE (R-26) ────────────
+ceo_intent_gate:
+  trigger:
+    - authority_change             # 권한 owner 변경 (e.g. routing rule)
+    - execution_target_change      # 실행 대상 actor 변경
+    - frozen_dependency_interpret  # frozen sha 해석 변경
+    - ceo_intent_change            # CEO 발화 의도 재해석
+  whitelist_skip:
+    - mechanical_alias_redirect    # 본 alias resolver 의 1:1 직접 redirect
+  governance: "whitelist 자체 변경 = R-22 versioning (revision++ + prev_revision sha 기록)"
+
+# ─── Plane 4 Authority Binding (R-27) ───────────────────────────────────
+plane4_authority:
+  scope: "UNKNOWN / AMBIGUOUS-INTENT 상태 최종 의미 해석"
+  owner: "C (Gemini, Plane 4 Oracle)"
+  technical_pass_fail_owner: "harness signature / actor signature / R5 row verdict"
+  separation: "의미 ≠ 기술. alias resolver 는 mechanical 만, 의미 판정 X."
+
+# ─── Aliases ────────────────────────────────────────────────────────────
+# Each entry: 10 fields
+#   alias                   : 호출자가 쓰는 옛 이름
+#   target                  : 새 master target (skill 또는 sub-track)
+#   status                  : active | deprecated | tombstone | blocked | deferred
+#   allowed_scope           : list of scope identifiers where alias 적용
+#   blocked_scope           : list of scope identifiers where alias 우회 차단
+#   fallback                : alias 해소 실패 시 fallback 행동
+#   source_subtrack         : 본 보드 EARS sub-track ID
+#   breaking                : true|false  (옛 호출자 본문 수정 필요 여부)
+#   prev_revision           : 직전 revision 의 entry sha (초기 = null)
+#   migration_note          : 호출자 migration 가이드 1 줄
+#   argument_translation_map: 옛 args → 새 args 변환 (없으면 {})
+
+aliases:
+
+  # === R-04 / R-05: quinn label v2 폐기 drift (planning 9 곳 + swarm + ui-rebuild) ===
+
+  - alias: "quinn"
+    alias_context: "implementation reference (Phase B writer / dev executor)"
+    target: "dev_executor"
+    target_resolution: "Codex CLI (configured) | B Codex session | approved Codex wrapper"
+    status: "active"
+    allowed_scope: ["impl", "phase_b_writer", "story_implementation"]
+    blocked_scope: ["qa_verdict", "self_review_loop", "oracle_judgment"]
+    fallback: "AMBIGUOUS_INTENT GATE → CEO confirmation (semantic boundary)"
+    source_subtrack: "ST-14a"
+    breaking: false
+    prev_revision: null
+    migration_note: "kdh-planning-pipeline 9 reference + kdh-swarm + kdh-ui-rebuild 의 'quinn' impl mention 자동 redirect. 호출자 본문 수정 X."
+    argument_translation_map: {}
+
+  - alias: "quinn"
+    alias_context: "QA / test / testability reference"
+    target: "qa_reviewer"
+    target_resolution: "kdh-dev-pipeline Phase D (testability writer)"
+    status: "active"
+    allowed_scope: ["qa", "test_writer", "testability"]
+    blocked_scope: ["impl", "deploy_authorization"]
+    fallback: "AMBIGUOUS_INTENT GATE → CEO confirmation"
+    source_subtrack: "ST-14b"
+    breaking: false
+    prev_revision: null
+    migration_note: "QA 역할 보존. 'quinn 검토' 류 호출 = qa_reviewer 로 mechanical redirect."
+    argument_translation_map: {}
+
+  # === R-12 ~ R-16: BMAD persona-router 5 봉쇄 + redirect ===
+
+  - alias: "bmad-agent-analyst"
+    alias_context: "Mary persona-router (research)"
+    target: "kdh-research"
+    target_resolution: "kdh-research master (Source routing Context7→GitHub→Web)"
+    status: "active"
+    allowed_scope: ["research", "source_discovery", "credibility_scoring"]
+    blocked_scope: ["oracle_judgment"]
+    fallback: "kdh-research direct invocation"
+    source_subtrack: "ST-01"
+    breaking: false
+    prev_revision: null
+    migration_note: "Mary 호출 = kdh-research. argument 그대로 통과."
+    argument_translation_map:
+      "deep_research": "rounds"
+      "credibility": "credibility_scoring"
+
+  - alias: "bmad-agent-pm"
+    alias_context: "John persona-router (PRD / requirements)"
+    target: "kdh-planning-pipeline"
+    target_resolution: "kdh-planning-pipeline Stage 2 (PRD)"
+    status: "active"
+    allowed_scope: ["prd", "requirements", "planning_stage_2"]
+    blocked_scope: ["impl", "qa_verdict"]
+    fallback: "kdh-planning-pipeline auto stage selection"
+    source_subtrack: "ST-02"
+    breaking: false
+    prev_revision: null
+    migration_note: "John 호출 = planning-pipeline Stage 2. AC matching surface review 만."
+    argument_translation_map: {}
+
+  - alias: "bmad-agent-architect"
+    alias_context: "Winston persona-router (architecture / system design)"
+    target: "kdh-planning-pipeline"
+    target_resolution: "kdh-planning-pipeline Stage 3 (Arch)"
+    status: "active"
+    allowed_scope: ["architecture", "system_design", "planning_stage_3"]
+    blocked_scope: ["impl", "qa_verdict"]
+    fallback: "kdh-planning-pipeline Stage 3 auto"
+    source_subtrack: "ST-03"
+    breaking: false
+    prev_revision: null
+    migration_note: "Winston 호출 = Stage 3. critique 흡수 (Stage 3 checklist)."
+    argument_translation_map: {}
+
+  - alias: "bmad-agent-tech-writer"
+    alias_context: "Paige persona-router (tech docs / Mermaid / OpenAPI)"
+    target: "kdh-report"
+    target_resolution: "kdh-report master + Mermaid/OpenAPI helper extract"
+    status: "active"
+    allowed_scope: ["tech_docs", "mermaid", "openapi", "ceo_report"]
+    blocked_scope: ["oracle_judgment"]
+    fallback: "kdh-report deterministic syntax validation (invalid → UNKNOWN)"
+    source_subtrack: "ST-05"
+    breaking: false
+    prev_revision: null
+    migration_note: "Paige helper extract = kdh-report 본문 흡수. Mermaid/OpenAPI invalid = silent correct X, UNKNOWN."
+    argument_translation_map: {}
+
+  - alias: "bmad-agent-ux-designer"
+    alias_context: "Sally persona-router (UX critic, kdh-ui-rebuild Lead Writer)"
+    target: "sally-local-agent"
+    target_resolution: "~/.claude/agents/sally.md (local-first, BMAD config fallback only if both manifest+config exist)"
+    status: "active"
+    allowed_scope: ["ui_critique", "kdh_ui_rebuild_lead", "ux_review"]
+    blocked_scope: ["impl", "qa_verdict"]
+    fallback: "~/.claude/_bmad/_config/ + agent-manifest.csv 둘 다 존재 시만 BMAD path. 둘 중 하나 부재 = local agent only."
+    source_subtrack: "ST-06"
+    breaking: false
+    prev_revision: null
+    migration_note: "kdh-ui-rebuild Sally 호출 = local agent first. R-02 명시."
+    argument_translation_map: {}
+
+  # === R-01 / D3: bmad-agent-dev (Amelia) blocked — Codex 전담 룰 ===
+
+  - alias: "bmad-agent-dev"
+    alias_context: "Amelia persona-router (Phase B writer / dev executor)"
+    target: "kdh-codex-delegate"
+    target_resolution: "Codex CLI execution contract (D3 ratified). Direct Claude impl = blocked."
+    status: "blocked"
+    allowed_scope: []
+    blocked_scope: ["impl", "phase_b_writer", "story_implementation", "qa_verdict"]
+    fallback: "kdh-codex-delegate 호출 권장. Direct invocation = error."
+    source_subtrack: "ST-04"
+    breaking: true
+    prev_revision: null
+    migration_note: "Amelia direct invoke = error. dev work = kdh-codex-delegate via Codex CLI."
+    argument_translation_map: {}
+
+  # === R-16: bmad-index-docs deprecate + tombstone ===
+
+  - alias: "bmad-index-docs"
+    alias_context: "Doc index master (deprecated)"
+    target: "kdh-folder-organize"
+    target_resolution: "kdh-folder-organize Phase 5 (index 생성)"
+    status: "tombstone"
+    allowed_scope: ["doc_index"]
+    blocked_scope: []
+    fallback: "kdh-folder-organize Phase 5 직접 호출 권장. tombstone redirect notice 표시."
+    source_subtrack: "ST-07"
+    breaking: false
+    prev_revision: null
+    migration_note: "bmad-index-docs deprecate. 호출 시 redirect notice + Phase 5 실행."
+    argument_translation_map: {}
+
+  # === R-17: editorial review (prose / structure) → kdh-style-guide override ===
+
+  - alias: "bmad-editorial-review-prose"
+    alias_context: "Korean prose editorial review"
+    target: "bmad-editorial-review-prose"
+    target_resolution: "bmad-editorial-review-prose + kdh-style-guide.md override 활성화 (guide missing → fail-closed)"
+    status: "active"
+    allowed_scope: ["prose_review", "korean_editorial"]
+    blocked_scope: []
+    fallback: "kdh-style-guide.md 부재 시 disabled (warn + fail-closed)"
+    source_subtrack: "ST-09"
+    breaking: false
+    prev_revision: null
+    migration_note: "Korean editorial = kdh-style-guide.md 기준. guide 미작성 = fail-closed (R-17)."
+    argument_translation_map: {}
+
+  - alias: "bmad-editorial-review-structure"
+    alias_context: "Korean structural editorial review"
+    target: "bmad-editorial-review-structure"
+    target_resolution: "bmad-editorial-review-structure + kdh-style-guide.md override"
+    status: "active"
+    allowed_scope: ["structural_review", "korean_editorial"]
+    blocked_scope: []
+    fallback: "kdh-style-guide.md 부재 시 disabled"
+    source_subtrack: "ST-09"
+    breaking: false
+    prev_revision: null
+    migration_note: "Same as prose — guide 부재 fail-closed."
+    argument_translation_map: {}
+
+  # === R-20 / R-21 fold-in: 잔여 BMAD task ===
+
+  - alias: "bmad-distillator"
+    alias_context: "Lossless source compression"
+    target: "bmad-distillator"
+    target_resolution: "asset 검증 통과 후 kdh-research 통합 검토 (현재 deferred)"
+    status: "deferred"
+    allowed_scope: ["distill", "compression"]
+    blocked_scope: []
+    fallback: "직접 호출 가능, 단 R-20 검증 미통과 = experimental tag"
+    source_subtrack: "ST-12"
+    breaking: false
+    prev_revision: null
+    migration_note: "deferred — kdh-research 흡수 검토 후속 결정."
+    argument_translation_map: {}
+
+  - alias: "bmad-brainstorming"
+    alias_context: "Group ideation / divergent thinking"
+    target: "bmad-brainstorming"
+    target_resolution: "직접 호출 유지 (kdh-discuss 와 분기: discuss = 의사결정, brainstorming = 발산)"
+    status: "active"
+    allowed_scope: ["ideation", "divergent_thinking"]
+    blocked_scope: ["oracle_judgment", "qa_verdict"]
+    fallback: "kdh-discuss 로 redirect 시 의사결정 mode"
+    source_subtrack: "ST-11"
+    breaking: false
+    prev_revision: null
+    migration_note: "발산 = bmad-brainstorming, 수렴 = kdh-discuss. 명확 분기."
+    argument_translation_map: {}
+
+  - alias: "bmad-help"
+    alias_context: "BMAD next-skill recommender"
+    target: "kdh-help"
+    target_resolution: "kdh-help (BMAD 카탈로그 통합 라우터)"
+    status: "active"
+    allowed_scope: ["help", "next_step_recommend"]
+    blocked_scope: []
+    fallback: "bmad-help direct (kdh-help 가 내부 호출)"
+    source_subtrack: "ST-10"
+    breaking: false
+    prev_revision: null
+    migration_note: "kdh-help 가 bmad-help 자동 호출 + Sprint/plan/session context 추가."
+    argument_translation_map: {}
+
+# ─── End of aliases ─────────────────────────────────────────────────────
+
+# Resolution algorithm (R-22 SSoT):
+#   1. caller invokes alias X
+#   2. resolver finds entry where (alias == X) AND (caller_context ∈ allowed_scope)
+#   3. if status == blocked  → error with fallback message
+#      if status == tombstone → emit redirect notice, then resolve target
+#      if status == deferred  → resolve with experimental tag
+#      if status == active    → resolve target
+#   4. if caller_context ∈ blocked_scope → fail-closed (no alias resolution)
+#   5. apply argument_translation_map (옛 args → 새 args)
+#   6. if R-26 trigger condition met AND alias ∉ whitelist_skip → CEO Confirmation Prompt
+#   7. if R-27 semantic ambiguity → Plane 4 (C) escalation, NOT alias resolver
+#
+# End of skill-alias-map.yaml v1.0.0
