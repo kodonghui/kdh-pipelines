@@ -19,12 +19,20 @@
 # ═══════════════════════════════════════════════════════════════════════
 
 schema_version: "1.0.0"
-revision: 1
-prev_revision: null
+revision: 2
+prev_revision: "2e3dbaf7d1c5fd7b6662267d82c174777e4ce900aca5287dd948856246b368af"
+prev_revision_label: "v1 initial — commit e022c92"
 created: "2026-04-25"
 authoring_board: "0425-skill-ecosystem-improvement"
 authoring_publish_layer: "R-30 ad_hoc correction-manifest extension"
 content_sha_sidecar: "skill-alias-map.yaml.sha256"
+revision_2_change_note: |
+  R-25 manifest-audit 첫 발사로 발견된 결함 정정:
+  - SKILL_CONTRACT_MATRIX + POST_SEAL_CORRECTION 두 항목 = Topic 5
+    publish/manifest.json 의 canonical_files 에 등록 안 됨 = Topic 5
+    봉인의 일부 X. skill-eco 보드 작성 시점 (correction-manifest-pointer.json
+    + decision.yaml) 에 잘못 인용됨. 본 alias map 에서 제거.
+  - 진짜 frozen target = Topic 5 publish manifest + Topic 3 publish manifest 2 건만.
 
 # ─── Frozen publish chain (R-25 audits these unchanged) ────────────────
 manifest_pointers:
@@ -32,16 +40,6 @@ manifest_pointers:
     path: "_bmad-output/boards/0425-topic5-final-trio-harness/publish/manifest.json"
     repo: "kdh-conductor"
     sha256: "9417e9efa60ba7651282b2798acc819fb42822c8c757b2fd8223acd192d8a0e6"
-    status: "FROZEN_IMMUTABLE"
-  topic5_skill_contract_matrix:
-    path: "_bmad-output/boards/0425-topic5-final-trio-harness/publish/SKILL_CONTRACT_MATRIX.yaml"
-    repo: "kdh-conductor"
-    sha256: "1b0678f75919986664221a5d9242dff6ac6d0f55dd8dd526142001a98e3a5c08"
-    status: "FROZEN_IMMUTABLE"
-  topic5_post_seal_correction:
-    path: "_bmad-output/boards/0425-topic5-final-trio-harness/POST_SEAL_DEBATE/CORRECTION_PACK.json"
-    repo: "kdh-conductor"
-    sha256: "15cb6142c71ecdcd6e0c75060b30eba558c7a984b004704a9e4d650162b28590"
     status: "FROZEN_IMMUTABLE"
   topic3_publish_manifest:
     path: "_bmad-output/boards/0424-topic3-trio-harness-workflow/publish/manifest.json"
@@ -53,6 +51,19 @@ manifest_pointers:
     repo: "kdh-conductor"
     sha256: null  # Topic 2 v0 sprint shadow 진행 중 — main merge 후 frozen
     status: "SHADOW_WINDOW_PENDING_FROZEN"
+
+# ─── Audit findings (revision 2 발견 사항) ──────────────────────────────
+revision_2_findings:
+  - finding_id: "F-001"
+    severity: "MEDIUM"
+    description: "skill-eco 보드 correction-manifest-pointer.json + decision.yaml 의 frozen_dependencies_preserved 가 Topic 5 봉인의 일부가 아닌 SKILL_CONTRACT_MATRIX 와 POST_SEAL_CORRECTION 두 항목을 잘못 인용"
+    actual_topic5_canonical_files: "Topic 5 publish/manifest.json.canonical_files = {consensus, sources_frozen_phase_0, rounds, scripts, events, gates, archive}. SKILL_CONTRACT_MATRIX + POST_SEAL_CORRECTION 둘 다 미등록"
+    correction_in_this_revision: "alias map 의 manifest_pointers 에서 두 항목 제거. Topic 5 publish + Topic 3 publish 2 건만 유지"
+    upstream_correction_required: "skill-eco 보드의 correction-manifest-pointer.json 자체 (봉인 후 정정 layer 필요) — CEO 결재 항목"
+  - finding_id: "F-002"
+    severity: "LOW"
+    description: "POST_SEAL_CORRECTION_PACK 실제 path = publish/POST_SEAL_CORRECTION.yaml (skill-eco 보드의 .json path 기록은 오기록)"
+    correction: "F-001 정정에 흡수 (해당 entry 자체가 alias map 에서 제거됨)"
 
 # ─── D Class 1 차단 영역 (alias 우회 시도 = blocked) ────────────────────
 blocked_scope_d_class_1:
