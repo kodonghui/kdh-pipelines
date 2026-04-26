@@ -15,6 +15,9 @@ description: 'OWK compliance scanner for _bmad-output/wiki/ (Topic 6). Checks 4-
 
 ```bash
 # Default: scan repo-local wiki, write report to /tmp/
+./scan.sh
+
+# Skill alias form:
 /kdh-wiki-scan
 
 # Custom target wiki + output
