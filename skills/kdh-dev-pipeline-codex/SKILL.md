@@ -21,7 +21,57 @@ governance:
 
 ## Status
 
-**SKELETON.** 본 sub-skill 본문 이전 = Wave 3 step 2~5 후 완료. 현재 권위 source = wrapper `kdh-dev-pipeline/SKILL.md` Codex 호출 절차 (line 33~60, line 596~614).
+**BODY MIGRATED v1.** 본 sub-skill = 권위 source.
+
+## Codex 호출 본문 (migrated from wrapper line 33~60 + 596~614)
+
+```
+Codex 매 story 1회 필수 (CLAUDE.md 명시 룰).
+
+호출 패턴 (v11.0 + Plan v4 백그라운드 병렬):
+  1. 스토리 diff 준비:
+     git diff HEAD~1 -- packages/ > /tmp/story-diff.patch
+
+  2. codex-review.sh 호출:
+     bash ~/.claude/scripts/codex-review.sh /tmp/story-diff.patch \
+       /tmp/codex-result.md /tmp/gemini-result.md
+     # Bash run_in_background: true (Plan v4 — Phase B party-mode 와 병렬)
+
+  3. 결과 수집 = Phase B party-mode 완료 후 결과 파일 read
+     codex-review.sh 가 Codex (GPT-5.4) + Gemini (3.1 Pro) 병렬 실행
+
+  4. Plan v4 빈도 조정 (CEO 승인):
+     - Codex = 매 story 필수
+     - Gemini = 3 story 마다 1회 + Sprint End 전수
+     이유: 비용 절감 + Codex 로 안전장치 유지
+
+  5. 판정 (v11.0):
+     - 둘 다 FAIL → 자동 진행 금지, 수정 후 재실행 PASS 까지 반복 (횟수 제한 없음)
+     - 하나만 FAIL + 다른 쪽 치명 이슈 없음 → CEO 판단
+     - Context-irrelevant findings 자가 skip 가능 (사유 기록)
+```
+
+## Phase D Cross-model 과 차이
+
+| 구분 | Phase D Cross-model (kdh-dev-pipeline-phase-d) | Codex sub-skill (본 sub-skill) |
+|---|---|---|
+| 실행 시점 | Phase D PASS **후** | Phase B 와 **동시** 백그라운드 |
+| Owner | qa_reviewer 가 결과 통합 후 verdict | codex_external = second opinion |
+| Script | 동일 codex-review.sh | 동일 codex-review.sh |
+| Plan v4 빈도 조정 | Codex 매 story + Gemini 3 story 1회 | 동일 |
+
+## R-24 Reporting Invariants 준수
+
+- Verdict = PASS / FAIL / UNKNOWN (silent VALID 금지)
+- Report = exact command + exit code + skipped reasons + verdict owner = codex_external
+- artifact = research-cache/{story-slug}-codex-score.md (R-15 reporting 형식)
+- R-32 atomic-write 권장: scripts/atomic-write.py 통한 결과 저장
+
+## Failure Handling
+
+- Codex 세션 미가용 → research-cache/{slug}-codex-score.md 에
+  "unavailable: <reason>" 기록. 보고서 자체 유효.
+- FAIL → 자동 진행 금지 (Phase D Cross-model 과 동일 규칙).
 
 ## Phase D vs Codex sub-skill 차이
 

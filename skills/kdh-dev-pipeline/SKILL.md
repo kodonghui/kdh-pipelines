@@ -431,79 +431,31 @@ Step 4: bun test + tsc → Verify completion checklist → commit + push
 Step 5: Shutdown ALL → TeamDelete → update sprint status
 ```
 
-### Phase A: Create Story
+### Phase A: Create Story → kdh-dev-pipeline-phase-a (Wave 3 step 2)
 
-```
-Team: dev(Writer), winston, quinn, john = 4
-Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
+본문 = `~/kdh-pipelines/skills/kdh-dev-pipeline-phase-a/SKILL.md` (권위 source).
 
-1. dev reads story requirements from epics file
-2. dev reads create-story checklist and template
-3. dev writes story file following template
-4. Party mode: dev sends [Review Request] → winston/quinn/john review
-   - winston: architecture alignment, file structure
-   - quinn: testability, edge cases, acceptance criteria completeness
-   - john: product requirements coverage, user value
-   EARS + Gherkin (v9.4):
-   - Story "Requirements" section: EARS syntax (WHEN/THE SYSTEM SHALL/IF THEN)
-   - Story "Acceptance Criteria" section: Gherkin (Given/When/Then)
-   - quinn validates: each EARS requirement has a corresponding Gherkin acceptance criterion
-   UI Existence Check (v10.2):
-   - quinn MUST verify: "이 스토리가 참조하는 UI 요소(버튼, 페이지, 폼)가 다른 스토리 또는 UX 스펙에 정의되어 있는가?"
-   - 예: Story 1-3이 "로그아웃 클릭"을 참조 → 로그아웃 버튼이 어떤 스토리/UX에 정의됐는지 확인
-   - 없으면: 이 스토리에 "해당 UI 생성" 태스크 추가 OR 선행 스토리 dependency 명시
-   - 빈 참조 = auto-FAIL ("UI element not defined anywhere")
-5. Fix → verify → PASS (avg >= 3.0/5)
-6. Save: context-snapshots/stories/{story-id}-phase-a.md
-```
+핵심 요약:
+- Team 4: dev_executor (Writer) + winston + qa_reviewer + john (Critics)
+- EARS + Gherkin: quinn 폐기 → qa_reviewer alias 가 검증 (R-22 redirect)
+- UI Existence Check: 빈 참조 = auto-FAIL
+- artifact: context-snapshots/stories/{story-id}-phase-a.md (R-32 atomic-write)
 
-### Phase B: Develop Story
+상세 절차 + EARS 매핑 + UI Existence 룰 = sub-skill 본문 직접 참조.
 
-```
-Team: dev(Writer), winston, quinn, john = 4
-Reference: _bmad/bmm/workflows/4-implementation/dev-story/checklist.md
+### Phase B: Develop Story → kdh-dev-pipeline-phase-b (Wave 3 step 2)
 
-1. dev reads story file + DoD checklist
-   1b. dev reads API contracts from shared/src/contracts/ → import ALL types from contracts (NEVER define inline)
-       If needed type missing from contracts: STOP → update contract first → tsc → then continue
+본문 = `~/kdh-pipelines/skills/kdh-dev-pipeline-phase-b/SKILL.md` (권위 source).
 
-   === REFERENCE CODE SEARCH (v10.9 — CEO 지시 2026-04-05) ===
-   1d. dev searches for reference implementations BEFORE writing new code:
-     i.   gh search repos "{story 핵심 기술 키워드}" --sort=stars --limit=5
-     ii.  gh search code "{핵심 패턴/함수명}" --limit=10
-     iii. npm/PyPI에서 관련 라이브러리 확인 (검증된 라이브러리가 80%+ 해결하면 직접 구현 대신 사용)
-     iv.  참고 코드 발견 시 → party-log에 "## Reference Code" 섹션 기록 (URL + 채택/기각 사유)
-     v.   검색 결과 0건이어도 기록 ("searched: {query}, result: none" — 검색했다는 증거)
-     ★ "먼저 찾아보고, 있으면 검토" — 새로 짜는 건 검색 후 판단
-     ★ 기각 시 사유 필수 (예: "라이선스 비호환", "의존성 과다", "우리 패턴과 불일치")
-     Source routing (ref: kdh-research v3):
-     - Library/framework topics → Context7 MCP first, WebSearch second
-     - Code implementation patterns → GitHub search first (`gh search repos`)
-     - General best practices → WebSearch first
-     - Each source evaluated with 3-question credibility (type, recency, evidence)
+핵심 요약:
+- Writer = dev_executor (Codex CLI 전담, D3). Direct Claude impl = blocked.
+- Reference Code Search 강제 (gh search repos/code → 80%+ 해결 시 라이브러리 채택)
+- UI Story Gate: page-design CEO 승인 후 dev_executor 비즈니스 로직 구현
+- Skill tool 호출 = PROHIBITION (CLAUDE.md 명시)
+- Critics 4 (UI = +sally 5) 의 party-log 파일 = pre-commit hook 검증
+- artifact: context-snapshots/stories/{story-id}-phase-b.md (R-32 atomic-write)
 
-   === UI STORY GATE (v11 — 오케스트레이터 주도) ===
-   1c. Check: does this story create or modify UI pages? (*.tsx in features/)
-       If YES → UI Design Gate:
-         i.   오케스트레이터: 프로젝트 UI 컴포넌트 라이브러리(shadcn/ui 등)로 페이지 레이아웃 작성
-         ii.  오케스트레이터: ui-design.md 저장 (party-logs/story-{id}-ui-design.md)
-         iii. 오케스트레이터: [GATE page-design] → CEO 디자인 승인
-         iv.  dev 에이전트: 승인된 레이아웃 위에 비즈니스 로직 구현 (API 연결, 폼 검증)
-       If NO → skip to step 2
-
-2. dev implements REAL working code (no stubs/mocks/placeholders)
-   2b. UI stories: apply active theme from themes.ts, use consistent layout from ui-design.md reference
-3. Party mode: dev sends [Review Request] with changed files list
-   - winston: architecture compliance, contract compliance, 전체 코드베이스 패턴 일관성 (타입, API 호출 방식, 미들웨어)
-   - quinn: code quality, error handling, test hooks
-   - john: acceptance criteria 충족, 사용자 경험 갭, 제품 수준 품질 (에러 메시지, 상태 유실, UX 흐름)
-   - sally: (UI stories only) design matches approved ui-design.md layout
-   Critics MUST write to FILE first: party-logs/story-{id}-phase-b-{critic-name}.md (v4.4 필수)
-   Then SendMessage with file path only. 리뷰 내용은 파일에.
-   Critics include D1-D8 scores with rationale per dimension, diff file paths, inline code quotes
-4. Fix → verify → PASS
-5. Save: context-snapshots/stories/{story-id}-phase-b.md
-```
+상세 절차 + Reference Code Search 절차 + UI Story Gate i~iv = sub-skill 본문 직접 참조.
 
 ### UI Component + Theme Workflow (conditional on project-context.yaml)
 
@@ -545,72 +497,20 @@ ELSE:
   Use project's component library. Theme system from project preset.
 ```
 
-### Phase D: Test + QA (v10.1 — Phase E 통합)
+### Phase D: Test + QA → kdh-dev-pipeline-phase-d (Wave 3 step 2)
 
-```
-Team: quinn(Writer), dev(Critic), winston(Critic), john(Critic) = 4. UI stories: +sally(Critic) = 5
-Reference: TEA risk-based test strategy + QA acceptance checklist
+본문 = `~/kdh-pipelines/skills/kdh-dev-pipeline-phase-d/SKILL.md` (권위 source).
 
-Phase D = 기존 Phase D (테스트 작성) + Phase E (QA 검증) 통합.
-quinn이 Writer로 테스트 작성과 AC 검증을 한 Phase에서 수행.
-sally (UI stories only): 상호작용 흐름 자연스러움, 접근성, UX 시나리오 커버리지. john=요구사항 충족, sally=UX 품질 (비중복).
+핵심 요약 (v10.1 Phase E 통합):
+- Writer = qa_reviewer (quinn alias resolved). Critics 3 (UI = +sally 4) = dev_executor + winston + john
+- EARS-Driven Test Scaffolding: THE SYSTEM SHALL → unit / WHEN → integration / WHILE → state / IF → negative / WHERE → conditional
+- Integration Verification (wiring stories): import chain + initialization + data flow + smoke test
+- pre-commit hook 이 phase-d-{critic-name}.md 파일 존재 검증 (없으면 commit 차단)
+- artifact: context-snapshots/stories/{story-id}-phase-d.md (R-32 atomic-write)
 
-오케스트레이터 MUST (v11.0):
-  1. quinn을 Writer로 Agent 소환
-  2. dev, winston, john을 Critic으로 Agent 소환 (3명 전부)
-  3. quinn 작업 완료 후 SendMessage [Review Request]를 3명에게 전송
-  4. Critic 3명의 로그 파일 존재 확인 후에만 PASS
-  ★ pre-commit hook이 phase-d-winston.md, phase-d-quinn.md 검증
-  ★ critic 로그 없으면 커밋 차단됨
+Cross-Model Verification (Phase D 후) 도 본 sub-skill 본문에 포함됨. codex-review.sh 호출 + v11.0 (둘 다 FAIL 시 PASS 까지 무제한 반복).
 
-1. quinn designs test strategy based on story requirements
-2. quinn writes tests (unit + integration + E2E as needed)
-   EARS-Driven Test Scaffolding (v9.4):
-   2b. quinn parses EARS keywords from story requirements → generates test scaffold:
-      - THE SYSTEM SHALL → unit test (verify behavior exists)
-      - WHEN [trigger] → integration test (trigger event → assert response)
-      - WHILE [condition] → state test (set condition → verify continuous behavior)
-      - IF [bad condition] → negative test (inject bad state → assert graceful handling)
-      - WHERE [feature] → conditional test (enable/disable feature → verify both paths)
-   Integration Verification (v9.4):
-   2c. For wiring stories: import chain test + initialization test + data flow test
-   2d. For stories that CREATE something: at least 1 integration smoke test
-3. quinn runs QA checklist against implemented code
-4. quinn verifies ALL acceptance criteria from story file
-5. Party mode: quinn sends [Review Request] to dev, winston, john BY NAME
-   - dev: implementability, test framework compliance, code completeness
-   - winston: architecture test coverage, boundary tests
-   - john: acceptance criteria met? user value delivered? 제품 수준 검증
-   Critics MUST write to FILE first: party-logs/story-{id}-phase-d-{critic-name}.md (v4.4 필수)
-   Then SendMessage with file path only. 리뷰 내용은 파일에.
-   Critics include D1-D8 scores with rationale per dimension, diff file paths, inline code quotes
-6. Fix → verify → PASS
-7. Run all tests — must pass
-8. Save: context-snapshots/stories/{story-id}-phase-d.md
-```
-
-### Cross-Model Verification (Codex + Gemini)
-
-```
-Phase D PASS 후 실행. 에이전트 소환 불필요 — 오케스트레이터 직접 실행.
-codex-review.sh가 Codex(GPT-5.4) + Gemini(3.1 Pro) 병렬 실행.
-
-1. 스토리 diff 준비:
-   git diff HEAD~1 -- packages/ > /tmp/story-diff.patch
-
-2. Cross-Model 실행:
-   bash ~/.claude/scripts/codex-review.sh /tmp/story-diff.patch \
-     "이 코드를 리뷰해라. 버그, 보안 문제, 타입 오류를 찾아라."
-
-3. 판정:
-   - 하나라도 PASS → Phase transitions 진행 (두 결과 합산)
-   - 둘 다 FAIL → CEO 보고, 자동 스킵 금지
-   - FAIL 이슈 발견 → 이슈 수정 → 재실행 (max 1회)
-   - 맥락상 불필요한 지적 → 사유 기록 후 스킵 OK
-
-★ 둘 다 FAIL = 자동 진행 금지 (계속 모드에서도)
-★ Codex(GPT-5.4) + Gemini(3.1 Pro) 병렬 실행 — CEO 승인 2026-04-10
-```
+상세 절차 + EARS-Driven scaffold table + Cross-Model 절차 = sub-skill 본문 직접 참조.
 
 ### Phase transition party-log verification (v4.4)
 

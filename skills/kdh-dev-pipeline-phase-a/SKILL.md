@@ -1,7 +1,7 @@
 ---
 name: kdh-dev-pipeline-phase-a
-description: "kdh-dev-pipeline Phase A sub-skill — Story 정의 단계 (Brief / PRD / Plan). winston + qa_reviewer party-mode (Grade A) 또는 dev_executor solo (Grade C). Wave 3 R-09 modular split, wrapper /kdh-dev-pipeline 가 호출자. 단독 호출보다 wrapper 통한 phase 전환 권장."
-status: skeleton-pending-body-migration
+description: "kdh-dev-pipeline Phase A sub-skill — Story Create 단계. dev_executor (Writer) + winston/qa_reviewer/john (Critics) party-mode 4명. EARS+Gherkin 강제 + UI Existence Check. Wave 3 R-09 modular split, wrapper /kdh-dev-pipeline 가 호출자."
+status: body-migrated-v1
 wrapper: kdh-dev-pipeline
 phase: A
 writer_role: dev_executor
@@ -13,14 +13,47 @@ governance:
   manifest_audit: scripts/manifest-audit.py
   smoke_harness: scripts/skill-smoke-harness.py
   reporting_invariants: R-24 (UNKNOWN/PASS/FAIL machine-readable)
-  rollback_target: kdh-dev-pipeline (legacy monolith governance-patched)
+  rollback_target: kdh-dev-pipeline (legacy monolith governance-patched, git tag 'wave3-step1-baseline')
 ---
 
 # kdh-dev-pipeline Phase A — Story Create
 
 ## Status
 
-**SKELETON.** 본 sub-skill 본문 이전 = Wave 3 step 2~5 진행 후 완료. 현재는 wrapper 의 `kdh-dev-pipeline/SKILL.md` Phase A 섹션 (line 434~459) 본문이 권위 source.
+**BODY MIGRATED v1.** 본 sub-skill = 권위 source. wrapper `kdh-dev-pipeline/SKILL.md` 의 Phase A 섹션은 reference 만 남음 (Wave 3 step 3 축약 결과).
+
+## Phase A 본문 (migrated from wrapper line 434~459)
+
+```
+Team: dev_executor(Writer), winston, qa_reviewer, john = 4
+Reference: _bmad/bmm/workflows/4-implementation/create-story/checklist.md
+
+1. dev_executor reads story requirements from epics file
+2. dev_executor reads create-story checklist and template
+3. dev_executor writes story file following template
+4. Party mode: dev_executor sends [Review Request] → winston/qa_reviewer/john review
+   - winston: architecture alignment, file structure
+   - qa_reviewer: testability, edge cases, acceptance criteria completeness
+   - john: product requirements coverage, user value
+   EARS + Gherkin (v9.4):
+   - Story "Requirements" section: EARS syntax (WHEN/THE SYSTEM SHALL/IF THEN)
+   - Story "Acceptance Criteria" section: Gherkin (Given/When/Then)
+   - qa_reviewer validates: each EARS requirement has corresponding Gherkin AC
+   UI Existence Check (v10.2):
+   - qa_reviewer MUST verify: 본 스토리가 참조하는 UI 요소 (버튼/페이지/폼) 가
+     다른 스토리 또는 UX 스펙에 정의되어 있는가?
+   - 예: Story 1-3 가 "로그아웃 클릭" 참조 → 로그아웃 버튼이 어떤 스토리/UX 에
+     정의됐는지 확인. 미정의 시 본 스토리에 "해당 UI 생성" 태스크 추가 OR
+     선행 스토리 dependency 명시.
+   - 빈 참조 = auto-FAIL ("UI element not defined anywhere")
+5. Fix → verify → PASS (avg ≥ 3.0/5)
+6. Save: context-snapshots/stories/{story-id}-phase-a.md
+   (R-32 atomic-write 권장: scripts/atomic-write.py --target ... --lock-key ...)
+```
+
+## Alias Note (R-22)
+
+본 본문의 `qa_reviewer` reference = `skill-alias-map.yaml` 의 `quinn (QA)` alias 의 target. legacy 호출자가 "quinn QA" 로 들어와도 R-22 alias resolver 가 본 sub-skill 의 qa_reviewer role 로 redirect.
 
 ## When to Use
 
