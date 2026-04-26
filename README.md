@@ -87,6 +87,14 @@ Two automated maintenance cycles keep the harness sharp:
 
 ---
 
+## Governance Utilities
+
+| Tool | Purpose |
+|------|---------|
+| `scripts/discover-plan-index-consumers.py` | Finds live skill/script/hook consumers of `_bmad-output/kdh-plans/_index.yaml` and classifies each as read/write/both. Archive and generated-output folders are ignored by default. |
+
+---
+
 ## Quick Start
 
 ```bash
