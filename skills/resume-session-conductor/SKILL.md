@@ -122,66 +122,98 @@ Compare local vs remote state. Flag any of these:
 
 Build a "🚨 divergence alerts" subsection in the briefing if ANY detected.
 
-### Step 3: Confirm understanding (briefing)
+### Step 3: Confirm understanding (briefing — CEO 친화 한국어 형식)
 
-Respond with this expanded briefing format:
+Respond with this briefing format. **목표: 비개발자 CEO 가 한 번 읽고 현재 상태 + 결정 사항 + 다음 행동 직관 파악.**
+
+원칙:
+- 영어 헤더 → 한국어 + emoji 1 개씩 (식별용)
+- 기술 용어 등장 시 즉시 풀이 (예: "commit (변경 단위 한 묶음)")
+- SHA 해시 = 첫 8 자 + 한국어 의미 (예: "Topic 5 잠김 무결 9417e9ef")
+- 비유 사용 권장: 회사 / 직원 / 명함 / 잠김 / 도장
+- CEO 결정 항목 = 별 섹션으로 강조
+- "현재 → 다음" 축 (kdh-report §2 1번 철학)
+- 응답 최대 80 줄 (사장님 한 화면에 들어오게)
 
 ```
-SESSION LOADED: <local session file path>
-PREVIOUS SESSION: <Previous field or "(없음)">
-COMMITS SINCE SAVE (local): <list or "없음">
-════════════════════════════════════════════════
+═══════════════════════════════════════════════
+📌 지금 어디까지 왔나
+═══════════════════════════════════════════════
 
-📋 TRACKING FILES (from kdh-conductor/)
-STATUS.md: <summary of current active projects P0/P1/P2>
-DECISIONS.md: <last 3 entries tagged with timestamp>
-MASTER-ROADMAP.md: <current sprint number + its progress>
+[프로젝트] <kdh-conductor — 한 줄 요약>
 
-════════════════════════════════════════════════
+[방금 끝낸 일] (직전 세션 마무리 작업, 기술 용어 풀이 동반)
+- <항목 1, 한국어 평문>
+- <항목 2>
 
-🖥️  REMOTE SERVER STATE (corthex-v3)
-Server session: <path + topic + last-updated>
-Server branch: <current branch + HEAD SHA>
-Server tmux: <active command or "idle">
-Server pipeline: <current sprint + story>
+[회사 직원 (스킬) 명부] (skill-maturity.yaml R-NOV-02 기준)
+정상 N명 / 보류 N명 / 신입 N명 / 별칭 N명 = 총 N
 
-════════════════════════════════════════════════
+═══════════════════════════════════════════════
+🛠️ 진행 중인 작업 (호출 시 즉시 재개 가능)
+═══════════════════════════════════════════════
 
-🚨 DIVERGENCE ALERTS (if any)
-- <alert 1 with recommended action>
-- <alert 2>
+1. <작업 이름> (P0 / P1 / P2)
+   현재 = <한 줄>
+   대기 = <CEO 결재 / 외부 의존 / 시간>
+   다음 가능 = <한 줄>
 
-If none: "Local and remote state consistent."
+2. ...
 
-════════════════════════════════════════════════
+[잠김 (도장 찍은) 작업]
+- Topic 5 ... (sha 9417e9ef 무결 보존)
+- Topic 3 ... (sha 5bd487ef 무결 보존)
 
-PROJECT: <project name from session>
+═══════════════════════════════════════════════
+🖥️ 서버 (corthex-v3, 원격) 상태
+═══════════════════════════════════════════════
 
-WHAT WE'RE BUILDING:
-<2-3 sentence summary>
+브랜치 = <name>
+마지막 commit = <한국어 풀이>
+서버 터미널 (tmux) = <멈춤 / 실행 중>
+실행 중인 일 = <없음 / 한 줄 설명>
 
-CURRENT STATE:
-✅ Working: <count> items confirmed
-🔄 In Progress: <files>
-🗒️ Not Started: <stories — full list, no truncation>
+═══════════════════════════════════════════════
+⚠️ 충돌 / 주의사항
+═══════════════════════════════════════════════
 
-EXECUTION ORDER:
-1. <next> ← here
-2. <then>
-...
+[로컬 ↔ 서버 일치 여부]
+- 일치 시 = "충돌 X"
+- 불일치 시 = "<한국어 평문 + 권장 조치>"
 
-WHAT NOT TO RETRY:
-<failed approaches + reasons>
+[브랜치 별 상태]
+- main 외 브랜치 중 main 보다 앞선 commit 있는 브랜치 list (있을 시만)
 
-ACTIVE PLANS:
-<from _index.yaml status: active>
+═══════════════════════════════════════════════
+🚦 사장님이 지금 결정할 것
+═══════════════════════════════════════════════
 
-NEXT STEP:
-<exact next step>
+(있으면 1, 2, 3 으로 명시 + 보고서 path. 없으면 "결정 대기 사항 X.")
+1. <결재 대기 항목 1>
+2. <결재 대기 항목 2>
 
-════════════════════════════════════════════════
-Ready to continue. What would you like to do?
+═══════════════════════════════════════════════
+📞 사장님 답변 예시
+═══════════════════════════════════════════════
+
+"<예시 명령 1>" — <한 줄 효과>
+"<예시 명령 2>" — <한 줄 효과>
+"<예시 명령 3>" — <한 줄 효과>
+"오늘 그만" — /save-session-conductor 후 종료
+
+═══════════════════════════════════════════════
+다음 명령 대기.
+═══════════════════════════════════════════════
 ```
+
+**briefing 작성 시 자가 검증 (응답 직전):**
+- [ ] 영어 헤더 0 개 (한국어 + emoji 만)
+- [ ] 기술 용어 첫 등장 시 한국어 풀이 동반
+- [ ] SHA 해시 풀길이 노출 0 (첫 8 자 + 의미 만)
+- [ ] CEO 결정 항목 = 별 섹션 (🚦) 으로 분리 강조
+- [ ] 응답 본문 80 줄 이하
+- [ ] "박았다 / 봉인 / 직진" 표현 0 개 (메모리 룰 준수, 단 publish artifact 정식 인용 시 예외)
+- [ ] 사장님 답변 예시 3~5 개 (선택지 형태)
 
 ### Step 4: Wait for user
 

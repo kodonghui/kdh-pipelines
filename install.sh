@@ -22,17 +22,34 @@ mkdir -p "$CLAUDE_DIR/agents"
 mkdir -p "$CLAUDE_DIR/rules"
 
 # ── 2. 스킬 설치 ──
+# CONDUCTOR_MODE=1 (or KDH_ROLE=conductor) 일 때 base save-session/resume-session
+# 은 설치 안 함. conductor 버전이 모든 역할 수행. server install 시 base 필요.
 echo "[1/7] 스킬 설치..."
 SKILL_COUNT=0
+SKIPPED_COUNT=0
+CONDUCTOR_MODE="${CONDUCTOR_MODE:-${KDH_ROLE:-}}"
+CONDUCTOR_SKIP_LIST="save-session resume-session"
+
 for skill_dir in "$SCRIPT_DIR"/skills/*/; do
   if [ -f "$skill_dir/SKILL.md" ]; then
     name=$(basename "$skill_dir")
+
+    # conductor 모드에서 base session skill 제외 (CEO 지시 2026-04-26)
+    if [ "$CONDUCTOR_MODE" = "1" ] || [ "$CONDUCTOR_MODE" = "conductor" ]; then
+      case " $CONDUCTOR_SKIP_LIST " in
+        *" $name "*)
+          SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+          continue
+          ;;
+      esac
+    fi
+
     mkdir -p "$CLAUDE_DIR/skills/$name"
     cp "$skill_dir/SKILL.md" "$CLAUDE_DIR/skills/$name/SKILL.md"
     SKILL_COUNT=$((SKILL_COUNT + 1))
   fi
 done
-echo "  ✅ $SKILL_COUNT 스킬 설치 완료"
+echo "  ✅ $SKILL_COUNT 스킬 설치 완료${SKIPPED_COUNT:+ (conductor 모드 skip: $SKIPPED_COUNT)}"
 
 # ── 2.5 Skill Alias Map (R-22 SSoT) 설치 ──
 if [ -f "$SCRIPT_DIR/skill-alias-map.yaml" ]; then
