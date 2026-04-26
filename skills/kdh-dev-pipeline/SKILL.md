@@ -1264,3 +1264,77 @@ party-logs/
   {sprint}-sprint-gemini.md                   ← Gemini Sprint 리뷰
 sprint-status.yaml                            ← integration_state, batch_reviews
 ```
+
+---
+
+## Phase Sub-skills (board 0425-skill-ecosystem-improvement Wave 3 — R-08~R-11)
+
+본 wrapper 는 R-08 invocation surface preservation 룰 준수 — 호출 시 (slash + natural-language + help-router + deprecated alias) 모두 본 SKILL.md 가 받고, phase 별 본문은 sub-skill 로 modular split 진행 중.
+
+### Sub-skill Registry
+
+| sub-skill | role | wrapper 본문 위치 | status |
+|---|---|---|---|
+| `kdh-dev-pipeline-phase-a` | Story Create (winston + qa_reviewer party-mode) | line 434~459 | ✅ skeleton (R-09 신설) |
+| `kdh-dev-pipeline-phase-b` | Implementation (Codex CLI 전담, D3) | line 460~547 | ✅ skeleton (R-09 신설) |
+| `kdh-dev-pipeline-phase-d` | Test + QA (qa_reviewer + Cross-model) | line 548~614 + 1005~1046 | ✅ skeleton (R-09 신설) |
+| `kdh-dev-pipeline-codex` | 매 story 1회 Codex review (Plan v4 백그라운드 병렬) | line 33~60 + 596~614 | ✅ skeleton (R-09 신설) |
+
+### Invocation Surface (R-08 preserved)
+
+본 wrapper 의 호출 surface 는 modular split 후에도 **변경 X**:
+
+```
+/kdh-dev-pipeline                                  # 최근 story 자동 감지
+/kdh-dev-pipeline sprint <N>                       # Sprint N 진입
+/kdh-dev-pipeline story-<ID>                       # 특정 story
+/kdh-dev-pipeline 계속                             # 자율 진행
+/kdh-dev-pipeline parallel <ID1> <ID2> [ID3]       # 병렬 진행
+```
+
+자연어 호출 ("dev pipeline 돌려") 도 R-22 alias resolver 통해 본 wrapper 로 라우팅.
+
+### Phase Delegation Order
+
+```
+Phase A (kdh-dev-pipeline-phase-a) — Story Create
+   ↓ artifact: story-design.md + party-log.md
+Phase B (kdh-dev-pipeline-phase-b) — Implementation [Codex CLI 전담]
+   ‖ (병렬) Codex review (kdh-dev-pipeline-codex) [Plan v4]
+   ↓ artifact: code diff + commit hash + party-log.md
+Phase D (kdh-dev-pipeline-phase-d) — Test + QA + Cross-model
+   ↓ artifact: qa-review.md + cross-model-review.md
+Story Complete → 다음 story 또는 Sprint End → Integration Review (Level 2/3)
+```
+
+### Modular Split Status (R-09/R-10/R-11)
+
+- **R-09 sub-skill registration**: ✅ 4 SKILL.md skeleton + frontmatter 신설 완료 (Wave 3 step 1)
+- **R-10 golden path regression**: 🗒️ Wave 3 step 4 — 4 명령 동일 artifact path + hook + party-log + Codex/Gemini gate + orphan artifact detection + hook presence assertion
+- **R-11 rollback target**: 본 wrapper 자체 = governance-patched monolith. R-06 frontmatter expansion + R-20 reporting invariants + R-22 alias references + R-25 manifest audit 통합. **rollback 시 sub-skill 4 디렉토리 archive 후 본 wrapper 단독 동작 가능 (legacy fallback).**
+
+### R-32 Atomic Write Pattern (per-story lock + temp-then-rename)
+
+본 wrapper + sub-skill 의 모든 artifact 작성 = `~/kdh-pipelines/scripts/atomic-write.py` 통해 진행 권장:
+
+```bash
+python3 ~/kdh-pipelines/scripts/atomic-write.py \
+  --target party-logs/sprint1-S1.1-phase-a.md \
+  --lock-key "sprint1-S1.1" \
+  --content-from /tmp/staging.md
+```
+
+- per-story lock (flock) 으로 다중 actor 동시 쓰기 차단
+- temp file → atomic rename (POSIX rename(2)) 으로 partial write 차단
+- crash recovery = .lock 파일 stale TTL 초과 시 자동 해제
+
+### Migration Plan
+
+| step | content | done |
+|---|---|---|
+| 1 | sub-skill 디렉토리 + SKILL.md skeleton + frontmatter | ✅ |
+| 2 | 본문 이전 (wrapper → 4 sub-skill) | 🗒️ |
+| 3 | wrapper 의 phase 섹션 → reference 축약 | 🗒️ |
+| 4 | golden path regression test (R-10) | 🗒️ |
+| 5 | rollback 절차 자가 검증 (R-11) | 🗒️ |
+| 6 | wrapper 토큰 size 측정 + 30% 이상 축소 확인 | 🗒️ |
