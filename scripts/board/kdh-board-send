@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Send a KDH board artifact only after manifest verification passes."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from board_common import append_jsonl, latest_report, resolve_board, sha256_file, sha256_text, utc_now, verify_manifest_files
+
+
+def _verify(board: Path) -> tuple[bool, list[str], str | None]:
+    ok, failures, manifest = verify_manifest_files(board)
+    canonical_inputs = manifest.get("canonical_inputs")
+    manifest_hash: str | None = None
+    if isinstance(canonical_inputs, dict):
+        manifest_hash = sha256_text(json.dumps(canonical_inputs, ensure_ascii=False, sort_keys=True))
+        if manifest.get("manifest_hash") != manifest_hash:
+            ok = False
+            failures.append("manifest_hash does not match canonical_inputs")
+    token_path = board / "publish" / "READY_TO_SHIP.token"
+    if not token_path.exists():
+        ok = False
+        failures.append("missing READY_TO_SHIP.token")
+    elif manifest_hash and manifest_hash not in token_path.read_text(encoding="utf-8"):
+        ok = False
+        failures.append("READY_TO_SHIP.token is not bound to manifest hash")
+    return ok, failures, manifest_hash
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--target", required=True, choices=["ceo", "server-claude"], help="Outbound target")
+    parser.add_argument("--board-id", required=True, help="Board path or id under _bmad-output/boards")
+    parser.add_argument("--root", default=".", help="Repository root used for board lookup")
+    parser.add_argument("--artifact", choices=["prompt", "report"], default="prompt", help="Artifact to print")
+    args = parser.parse_args()
+
+    root = Path(args.root).expanduser().resolve()
+    board = resolve_board(root, args.board_id)
+    ok, failures, manifest_hash = _verify(board)
+    if not ok:
+        print(
+            json.dumps({"status": "BLOCKED", "board": str(board), "failures": failures}, ensure_ascii=False, indent=2),
+            file=sys.stderr,
+        )
+        return 1
+
+    artifact_path = board / "publish" / "prompt.md"
+    if args.artifact == "report":
+        report_path = latest_report(board)
+        if report_path is None:
+            print(json.dumps({"status": "BLOCKED", "failure": "missing report"}, ensure_ascii=False), file=sys.stderr)
+            return 1
+        artifact_path = report_path
+
+    content = artifact_path.read_text(encoding="utf-8")
+    audit_row = {
+        "event": "BOARD_SEND_STDOUT",
+        "target": args.target,
+        "artifact": artifact_path.relative_to(board).as_posix(),
+        "artifact_sha256": sha256_file(artifact_path),
+        "manifest_hash": manifest_hash,
+        "sent_at_utc": utc_now(),
+        "mode": "stdout",
+    }
+    append_jsonl(board / "events" / "send-audit.jsonl", audit_row)
+
+    print(content, end="" if content.endswith("\n") else "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

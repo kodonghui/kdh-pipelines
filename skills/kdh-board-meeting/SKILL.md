@@ -1,11 +1,11 @@
 ---
 name: kdh-board-meeting
-description: "Board meeting v2-RC1 (manual-protocol runtime; executable board scripts not installed) — 3-agent (A/B/C) deliberation, 42 ratified BRDs. v0.5.2 core (R0 research BRD-025, 2-pass deliberation BRD-029, R3 HIGH/CRITICAL BRD-017, manifest-hashed publish BRD-010, atomic constitution migration BRD-022) + v2 hardening (content-gated R0 BRD-031, citation resolver BRD-032, post-render ACK BRD-033, strength-weighted verdicts BRD-034, fairness ledger BRD-035, signature coverage BRD-036, logger backoff BRD-037a, strict event provenance BRD-037b, Delphi reveal BRD-038, critical-issue L3 parser BRD-039, devil advocate rotation BRD-040, exception provenance BRD-041, manifest-bound send BRD-042). Prevents chairman fabrication + post-hoc tampering structurally. Invoke: /kdh-board-meeting topic=\"X\" corpus=\"p1,p2\" rounds=5"
+description: "Board meeting v2-RC1 (minimum executable board helpers installed; full 42-BRD validator stack not implemented) — 3-agent (A/B/C) deliberation, 42 ratified BRDs. v0.5.2 core (R0 research BRD-025, 2-pass deliberation BRD-029, R3 HIGH/CRITICAL BRD-017, manifest-hashed publish BRD-010, atomic constitution migration BRD-022) + v2 hardening (content-gated R0 BRD-031, citation resolver BRD-032, post-render ACK BRD-033, strength-weighted verdicts BRD-034, fairness ledger BRD-035, signature coverage BRD-036, logger backoff BRD-037a, strict event provenance BRD-037b, Delphi reveal BRD-038, critical-issue L3 parser BRD-039, devil advocate rotation BRD-040, exception provenance BRD-041, manifest-bound send BRD-042). Prevents chairman fabrication + post-hoc tampering structurally. Invoke: /kdh-board-meeting topic=\"X\" corpus=\"p1,p2\" rounds=5"
 ---
 
 # /kdh-board-meeting — Board Meeting Skill v2-RC1
 
-> Runtime truth: this skill is currently a manual orchestration protocol plus templates. The executable board automation stack referenced below (`~/.claude/scripts/board/round0-validator.py`, `kdh-board-publish`, `kdh-board-send`, `kdh-board-verify`, and validator modules) is not installed in this environment. Until those tools are implemented, the operator MUST perform the stated checks manually and MUST NOT report validator/publish/send/verify automation as completed.
+> Runtime truth: this skill now has a minimum executable helper stack: `~/.claude/scripts/board/round0-validator.py`, `kdh-board-publish`, `kdh-board-send`, and `kdh-board-verify`. These helpers enforce the R0 ACK gate, manifest-bound publish, manifest verification, and verify-before-send. They are not the full 42-BRD semantic validator stack, so operators MUST report them as "minimum executable gates" unless the separate validator modules are implemented.
 
 
 When the user invokes `/kdh-board-meeting`, orchestrate a structurally-verifiable 3-agent board (A chairman, B/C participants) per the ratified 42 BRDs (BRD-001 ~ BRD-030 v0.5.2 core + BRD-031 ~ BRD-042 v2 hardening, with BRD-037 split into 037a/037b).
@@ -77,7 +77,7 @@ B and C then:
 - `IF` artifacts are relevant and sufficient, `THEN` atomic create `inbox/round-0/{B,C}-ACK-R0.flag`.
 - `IF` artifacts are irrelevant or insufficient, `THEN` atomic create `inbox/round-0/R0-INVALID.flag`. `WHEN` this flag exists, `THE SYSTEM SHALL` abort the board.
 
-Gate: planned executable `~/.claude/scripts/board/round0-validator.py {board_id}` is NOT installed in this environment. Until implemented, manually verify the 3 artifacts plus A-DONE, B-ACK, and C-ACK, then write `gates/phase-r0-pass.json` with `validator_result.status="manual-pass"` and `notes` explaining the manual check.
+Gate: run `~/.claude/scripts/board/round0-validator.py {board_id}`. It verifies the minimum executable gate: R0 research summary, EARS skeleton, source corpus presence, A-DONE, B-ACK, C-ACK, and absence of R0-INVALID. It writes `gates/phase-r0-pass.json` with `validator_result.status="pass"`. Full BRD-031 semantic content validation remains manual until separate validator modules are implemented.
 
 ### 4.3 R1 ~ R4 (BRD-029 2-pass)
 For each round N in {1, 2, 3, 4}:
@@ -105,13 +105,12 @@ Per BRD-030, each participant submits:
 ### 4.6 Publish (Phase 6 of v0.5.2; uses Phase 5 report)
 
 ```bash
-# Planned executable, currently not installed:
-# ~/.claude/scripts/board/kdh-board-publish {board_id}
-# Runtime fallback: perform the publish checks manually and mark outputs as manual-protocol artifacts.
+~/.claude/scripts/board/kdh-board-publish {board_id}
+~/.claude/scripts/board/kdh-board-verify {board_id}
 ```
 
 Sequence:
-1. `validator.py` runs all 6 modules. `IF` FAIL, `THEN` abort with `validator.log`, write nothing to `publish/`.
+1. Minimum executable helper verifies R0 gate, report, requirements, and canonical file hashes. Full semantic `validator.py` modules remain future/separate implementation.
 2. `report-renderer.py` produces `reports/{YYYYMMDD}_{slug}.md` (BRD-030). Byte-extract I/II/III, authored IV.
 3. Compute sha256 of canonical files + report → `publish/manifest.json:canonical_inputs`.
 4. Inline manifest hash header → `publish/prompt.md` + `publish/decision.yaml`.

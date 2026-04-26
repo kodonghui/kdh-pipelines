@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Publish a minimum manifest-bound KDH board package."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from board_common import (
+    atomic_write_json,
+    atomic_write_text,
+    latest_report,
+    manifest_for,
+    read_jsonl,
+    resolve_board,
+    sha256_text,
+    utc_now,
+)
+
+
+def _fail(message: str) -> int:
+    print(json.dumps({"status": "FAIL", "detail": message}, ensure_ascii=False, indent=2), file=sys.stderr)
+    return 1
+
+
+def _yaml_scalar(value: str) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("board_id", help="Board path or id under _bmad-output/boards")
+    parser.add_argument("--root", default=".", help="Repository root used for board lookup")
+    parser.add_argument(
+        "--allow-missing-r0-gate",
+        action="store_true",
+        help="Allow legacy boards that were created before the executable R0 gate existed",
+    )
+    args = parser.parse_args()
+
+    root = Path(args.root).expanduser().resolve()
+    board = resolve_board(root, args.board_id)
+
+    r0_gate = board / "gates" / "phase-r0-pass.json"
+    if not r0_gate.exists() and not args.allow_missing_r0_gate:
+        return _fail(f"missing R0 gate: {r0_gate}")
+
+    report_path = latest_report(board)
+    if report_path is None:
+        return _fail("missing board report: reports/*.md or RENDERED.md")
+
+    requirements_path = board / "consensus" / "requirements.jsonl"
+    requirements = read_jsonl(requirements_path)
+    if not requirements:
+        return _fail("missing or empty consensus/requirements.jsonl")
+
+    signatures = read_jsonl(board / "consensus" / "signatures.jsonl")
+    canonical_inputs = manifest_for(board)
+    if not canonical_inputs:
+        return _fail("no canonical files found")
+
+    manifest_body = json.dumps(canonical_inputs, ensure_ascii=False, sort_keys=True)
+    manifest_hash = sha256_text(manifest_body)
+    generated_at = utc_now()
+
+    publish_dir = board / "publish"
+    manifest = {
+        "schema_version": "kdh-board-publish-min-v1",
+        "board_id": board.name,
+        "generated_at_utc": generated_at,
+        "canonical_inputs": canonical_inputs,
+        "manifest_hash": manifest_hash,
+        "notes": [
+            "Minimum executable publish gate. Full 42-BRD validator stack is not implemented here.",
+            "Use kdh-board-verify before any send.",
+        ],
+    }
+    validator_pass = {
+        "schema_version": "kdh-board-validator-min-v1",
+        "status": "PASS_MINIMAL",
+        "generated_at_utc": generated_at,
+        "board_id": board.name,
+        "checks": {
+            "r0_gate": "present" if r0_gate.exists() else "legacy_missing_allowed",
+            "requirements_count": len(requirements),
+            "signature_rows": len(signatures),
+            "canonical_file_count": len(canonical_inputs),
+            "report": report_path.relative_to(board).as_posix(),
+        },
+        "warnings": [
+            "Signature coverage and semantic BRD validators remain manual unless separate validator modules are installed.",
+        ],
+    }
+    prompt = "\n".join(
+        [
+            f"# KDH Board Publish Package: {board.name}",
+            "",
+            f"Manifest hash: `{manifest_hash}`",
+            f"Report: `{report_path.relative_to(board).as_posix()}`",
+            f"Requirements: `{requirements_path.relative_to(board).as_posix()}`",
+            "",
+            "## Operator Instruction",
+            "Run `kdh-board-verify` before forwarding this package. If verification fails, do not send.",
+            "",
+        ]
+    )
+    decision = "\n".join(
+        [
+            "schema_version: kdh-board-decision-min-v1",
+            f"board_id: {_yaml_scalar(board.name)}",
+            "status: READY_FOR_CEO_APPROVAL",
+            f"generated_at_utc: {_yaml_scalar(generated_at)}",
+            f"manifest_hash: {_yaml_scalar(manifest_hash)}",
+            "validator_status: PASS_MINIMAL",
+            "notes:",
+            "  - Minimum executable publish artifact; full 42-BRD validator stack remains separate future work.",
+            "",
+        ]
+    )
+    ready_token = "\n".join(
+        [
+            "READY_TO_SHIP",
+            f"board_id={board.name}",
+            f"manifest_hash={manifest_hash}",
+            f"generated_at_utc={generated_at}",
+            "",
+        ]
+    )
+
+    atomic_write_json(publish_dir / "manifest.json", manifest)
+    atomic_write_json(publish_dir / "validator-pass.json", validator_pass)
+    atomic_write_text(publish_dir / "prompt.md", prompt)
+    atomic_write_text(publish_dir / "decision.yaml", decision)
+    atomic_write_text(publish_dir / "READY_TO_SHIP.token", ready_token)
+
+    print(
+        json.dumps(
+            {
+                "status": "PASS_MINIMAL",
+                "board": str(board),
+                "manifest_hash": manifest_hash,
+                "canonical_file_count": len(canonical_inputs),
+                "publish_dir": str(publish_dir),
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

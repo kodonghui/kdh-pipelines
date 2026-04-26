@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Verify a manifest-bound KDH board publish package."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from board_common import resolve_board, sha256_text, verify_manifest_files
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("board_id", help="Board path or id under _bmad-output/boards")
+    parser.add_argument("--root", default=".", help="Repository root used for board lookup")
+    args = parser.parse_args()
+
+    root = Path(args.root).expanduser().resolve()
+    board = resolve_board(root, args.board_id)
+    ok, failures, manifest = verify_manifest_files(board)
+
+    canonical_inputs = manifest.get("canonical_inputs")
+    if isinstance(canonical_inputs, dict):
+        expected_manifest_hash = manifest.get("manifest_hash")
+        actual_manifest_hash = sha256_text(json.dumps(canonical_inputs, ensure_ascii=False, sort_keys=True))
+        if expected_manifest_hash != actual_manifest_hash:
+            ok = False
+            failures.append("manifest_hash does not match canonical_inputs")
+    else:
+        actual_manifest_hash = None
+
+    token_path = board / "publish" / "READY_TO_SHIP.token"
+    if not token_path.exists():
+        ok = False
+        failures.append("missing READY_TO_SHIP.token")
+    elif actual_manifest_hash and actual_manifest_hash not in token_path.read_text(encoding="utf-8"):
+        ok = False
+        failures.append("READY_TO_SHIP.token is not bound to manifest hash")
+
+    result = {
+        "status": "PASS" if ok else "FAIL",
+        "board": str(board),
+        "manifest_hash": actual_manifest_hash,
+        "failures": failures,
+    }
+    print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

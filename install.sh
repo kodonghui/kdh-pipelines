@@ -60,6 +60,14 @@ if [ -f "$SCRIPT_DIR/skill-alias-map.yaml" ]; then
   echo "  ✅ skill-alias-map.yaml 설치 (R-22)"
 fi
 
+# ── 2.6 Board executable helpers 설치 ──
+if [ -d "$SCRIPT_DIR/scripts/board" ]; then
+  mkdir -p "$CLAUDE_DIR/scripts/board"
+  find "$SCRIPT_DIR/scripts/board" -maxdepth 1 -type f -exec cp {} "$CLAUDE_DIR/scripts/board/" \;
+  chmod +x "$CLAUDE_DIR"/scripts/board/round0-validator.py "$CLAUDE_DIR"/scripts/board/kdh-board-* 2>/dev/null || true
+  echo "  ✅ board 실행 스크립트 설치"
+fi
+
 # ── 3. 에이전트 설치 ──
 echo "[2/7] 에이전트 설치..."
 AGENT_COUNT=0
