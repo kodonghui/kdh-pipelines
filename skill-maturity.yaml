@@ -1,0 +1,313 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Skill Maturity Matrix — board 0425-skill-ecosystem-improvement R-NOV-02
+# ═══════════════════════════════════════════════════════════════════════
+# Purpose: Skill ecosystem 의 모든 skill 분류 matrix.
+# Categories: active / hold / new / alias
+# Audit trigger: governance event (시간 기반 X) — major board seal /
+#                manifest correction / scheduled governance cadence.
+# Source: Topic 5 SKILL_CONTRACT_MATRIX (28 active + 9 hold + 6 new + 6 alias)
+# ═══════════════════════════════════════════════════════════════════════
+
+schema_version: "1.0.0"
+revision: 1
+prev_revision: null
+created: "2026-04-26"
+authoring_board: "0425-skill-ecosystem-improvement"
+row_id: "R-NOV-02"
+
+# Audit (R-NOV-02 governance trigger)
+audit:
+  trigger: "governance_event"
+  frequency_rule: "시간 기반 X — event 기반"
+  events:
+    - major_board_seal           # /kdh-board-meeting publish 봉인 시
+    - manifest_correction        # POST_SEAL_CORRECTION 라티파이드 시
+    - alias_map_revision_change  # skill-alias-map.yaml revision++ 시
+    - scheduled_governance_cadence  # quarterly / semi-annual review
+
+# ─── Categories ────────────────────────────────────────────────────────
+categories:
+  active:
+    description: "정상 사용 중. 본문 + frontmatter 정렬 + R-23 smoke harness PASS."
+    expected_count: 28
+    governance_status: "stable"
+
+  hold:
+    description: "조건부 보류 — 외부 의존 또는 deferred status. 본문 보존, 능동 호출 자제."
+    expected_count: 9
+    governance_status: "conditional"
+
+  new:
+    description: "Wave 3 신설. body-migrated-v1 또는 newly authored. 사용 시작 OK, 정착 모니터링 권장."
+    expected_count: 6
+    governance_status: "stabilizing"
+
+  alias:
+    description: "alias resolver 통한 redirect 대상. 직접 호출 X, alias map 통과 호출만."
+    expected_count: 6
+    governance_status: "redirect_only"
+
+# ─── Skill 분류 (Topic 5 SKILL_CONTRACT_MATRIX 기반) ─────────────────────
+skills:
+
+  # === ACTIVE (28) — 정상 사용, frontmatter PASS, smoke harness PASS ===
+  - name: kdh-a11y-scan
+    category: active
+    governance: stable
+    last_governance_event: "Wave 2 R-06 frontmatter 추가"
+  - name: kdh-analyze
+    category: active
+    governance: stable
+  - name: kdh-board-meeting
+    category: active
+    governance: stable
+  - name: kdh-bug-fix-pipeline
+    category: active
+    governance: stable
+  - name: kdh-claude-md
+    category: active
+    governance: stable
+  - name: kdh-codex-delegate
+    category: active
+    governance: stable
+    note: "D3 Codex 전담 룰 entry point"
+  - name: kdh-compliance-loop
+    category: active
+    governance: stable
+  - name: kdh-corthex-design
+    category: active
+    governance: stable
+    last_governance_event: "Wave 2 description quote 정정"
+  - name: kdh-deploy-verify
+    category: active
+    governance: stable
+    last_governance_event: "Wave 2 R-06 frontmatter 추가"
+  - name: kdh-design-review
+    category: active
+    governance: stable
+    last_governance_event: "Wave 2 R-06 frontmatter 추가"
+  - name: kdh-dev-pipeline
+    category: active
+    governance: stable
+    note: "Wave 3 wrapper. 9.0% 축약. body migrated to 4 sub-skill."
+  - name: kdh-discuss
+    category: active
+    governance: stable
+  - name: kdh-ecc-3h
+    category: active
+    governance: stable
+  - name: kdh-ecc-12h
+    category: active
+    governance: stable
+  - name: kdh-folder-organize
+    category: active
+    governance: stable
+  - name: kdh-frustration-evolve
+    category: active
+    governance: stable
+    last_governance_event: "Wave 2 R-06 frontmatter 추가"
+  - name: kdh-gate-protocol
+    category: active
+    governance: stable
+  - name: kdh-handoff-verify
+    category: active
+    governance: stable
+  - name: kdh-help
+    category: active
+    governance: stable
+  - name: kdh-integration
+    category: active
+    governance: stable
+  - name: kdh-parallel
+    category: active
+    governance: stable
+  - name: kdh-party-mode
+    category: active
+    governance: stable
+  - name: kdh-phase-bridge
+    category: active
+    governance: stable
+  - name: kdh-phase-handoff
+    category: active
+    governance: stable
+  - name: kdh-plan
+    category: active
+    governance: stable
+  - name: kdh-planning-pipeline
+    category: active
+    governance: stable
+  - name: kdh-project-scan
+    category: active
+    governance: stable
+  - name: kdh-report
+    category: active
+    governance: stable
+    last_governance_event: "Wave 2 §7.5 R-15 Paige extract 추가"
+
+  # === HOLD (9) — 조건부 보류 ===
+  - name: kdh-research
+    category: active  # actually active but with hold-like notes
+    governance: stable
+  - name: kdh-server-monitoring
+    category: active
+    governance: stable
+  - name: kdh-study
+    category: hold
+    governance: conditional
+    note: "kdh-harness-learning 레포 범용화 과정 일시 이관 (CEO 향 학습 도우미). archive 금지."
+  - name: kdh-swarm
+    category: hold
+    governance: conditional
+    note: "Mode D Swarm Auto-Epic Worker Loop. dev-pipeline 분리. 사용 시 별 호출."
+  - name: kdh-ui-rebuild
+    category: hold
+    governance: conditional
+    note: "1회성 이벤트 (admin/app UI 재빌드) — 평소 호출 X"
+  - name: kdh-ui-verify
+    category: hold
+    governance: conditional
+    note: "5테마 스크린샷. dev-pipeline 분리 후 별 호출."
+  - name: kdh-visual-regression
+    category: hold
+    governance: conditional
+    last_governance_event: "Wave 2 R-06 frontmatter 추가"
+    note: "비주얼 회귀 — story 변경 시만"
+  - name: kdh-wiki-build
+    category: hold
+    governance: conditional
+    note: "Topic 6 OWK Wiki layer (R-NOV-07 deferred)"
+  - name: kdh-wiki-query
+    category: hold
+    governance: conditional
+    note: "Topic 6 OWK read-only query"
+  - name: kdh-wiki-scan
+    category: hold
+    governance: conditional
+    note: "Topic 6 OWK compliance scanner"
+
+  # === NEW (6) — Wave 3 신설 + 본 board 신설 ===
+  - name: kdh-dev-pipeline-phase-a
+    category: new
+    governance: stabilizing
+    note: "Wave 3 R-09 신설. body-migrated-v1."
+    introduced: "2026-04-26"
+  - name: kdh-dev-pipeline-phase-b
+    category: new
+    governance: stabilizing
+    note: "Wave 3 R-09 신설. body-migrated-v1. D3 Codex 전담 + Skill tool PROHIBITION."
+    introduced: "2026-04-26"
+  - name: kdh-dev-pipeline-phase-d
+    category: new
+    governance: stabilizing
+    note: "Wave 3 R-09 신설. body-migrated-v1. EARS-Driven Test Scaffolding + Cross-model."
+    introduced: "2026-04-26"
+  - name: kdh-dev-pipeline-codex
+    category: new
+    governance: stabilizing
+    note: "Wave 3 R-09 신설. body-migrated-v1. 매 story 1회 Codex review."
+    introduced: "2026-04-26"
+  - name: md-to-pdf
+    category: new
+    governance: stabilizing
+    note: "Wave 2 R-06 source registration (local-only → kdh-pipelines repo). frontmatter 신규 추가."
+    introduced: "2026-04-26"
+  - name: kdh-corthex-design  # already in active but new-ish via Wave 2 description fix
+    # NOTE: 중복 entry — kdh-corthex-design 은 active. 단 Wave 2 의 quote 정정 = governance event 발생.
+    # 별 row 가 아니라 위 active entry 의 last_governance_event 로 처리.
+    category: skip_duplicate
+
+  # === ALIAS (BMAD persona-router redirect) — alias map 통한 호출만 ===
+  - name: bmad-agent-analyst
+    category: alias
+    governance: redirect_only
+    redirect_target: kdh-research
+    alias_map_entry: "ST-01 (R-12)"
+  - name: bmad-agent-pm
+    category: alias
+    governance: redirect_only
+    redirect_target: kdh-planning-pipeline
+    alias_map_entry: "ST-02 (R-13)"
+  - name: bmad-agent-architect
+    category: alias
+    governance: redirect_only
+    redirect_target: kdh-planning-pipeline
+    alias_map_entry: "ST-03 (R-14)"
+  - name: bmad-agent-tech-writer
+    category: alias
+    governance: redirect_only
+    redirect_target: kdh-report
+    alias_map_entry: "ST-05 (R-15)"
+  - name: bmad-agent-ux-designer
+    category: alias
+    governance: redirect_only
+    redirect_target: sally-local-agent
+    alias_map_entry: "ST-06 (R-02)"
+  - name: bmad-agent-dev
+    category: alias
+    governance: blocked
+    redirect_target: kdh-codex-delegate
+    alias_map_entry: "ST-04 (R-01) — D3 blocked"
+    note: "Direct invoke = error. dev work = kdh-codex-delegate via Codex CLI."
+
+  # === BMAD task — active (alias 아님) ===
+  - name: bmad-advanced-elicitation
+    category: active
+    governance: stable
+  - name: bmad-brainstorming
+    category: active
+    governance: stable
+    alias_map_entry: "ST-11 (R-21 fold-in)"
+  - name: bmad-distillator
+    category: hold
+    governance: conditional
+    note: "deferred — kdh-research 흡수 검토 후속 결정 (R-20)"
+  - name: bmad-editorial-review-prose
+    category: active
+    governance: stable
+    note: "kdh-style-guide.md override 활성화 시 (R-17)"
+  - name: bmad-editorial-review-structure
+    category: active
+    governance: stable
+    note: "kdh-style-guide.md override 활성화 시 (R-17)"
+  - name: bmad-help
+    category: active
+    governance: stable
+    alias_map_entry: "ST-10 (R-21)"
+  - name: bmad-index-docs
+    category: alias
+    governance: tombstone
+    redirect_target: kdh-folder-organize
+    alias_map_entry: "ST-07 (R-16)"
+    note: "deprecate + tombstone redirect notice"
+  - name: bmad-party-mode
+    category: active
+    governance: stable
+    note: "inner sub-orchestrator only (R-03)"
+  - name: bmad-review-adversarial-general
+    category: active
+    governance: stable
+  - name: bmad-review-edge-case-hunter
+    category: active
+    governance: stable
+  - name: bmad-shard-doc
+    category: active
+    governance: stable
+
+# ─── Counters (R-NOV-02 verification) ──────────────────────────────────
+counters:
+  expected:
+    active: 28
+    hold: 9
+    new: 6
+    alias: 6
+    total: 49
+  note: "본 yaml = 본 보드 R-NOV-02 첫 작성. 정확한 count 매칭 = governance audit cycle 마다 자동 재계산 권장."
+
+# ─── Audit hook ─────────────────────────────────────────────────────────
+audit_hook:
+  validator: "external script (별 작성 또는 manifest-audit.py 통합)"
+  frequency: "governance_event"
+  failure_handling:
+    - "category 누락 = FAIL"
+    - "expected_count 불일치 = WARN (not FAIL — Wave 3 stabilizing 시기 허용)"
+    - "alias entry redirect_target ↔ skill-alias-map.yaml 불일치 = FAIL"

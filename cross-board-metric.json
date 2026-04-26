@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0.0",
+  "revision": 1,
+  "prev_revision": null,
+  "created": "2026-04-26",
+  "authoring_board": "0425-skill-ecosystem-improvement",
+  "row_id": "R-NOV-01",
+  "purpose": "Skill ecosystem dependency graph — links current skill ecosystem to {Topic 6 OWK Wiki layer, Topic 4 Graphify, corthex Phase 4}. machine-readable for R5 automation tooling (R-NOV-04 consumer).",
+  "topology": {
+    "nodes": [
+      {
+        "id": "skill-ecosystem-board",
+        "type": "board",
+        "ref": "0425-skill-ecosystem-improvement",
+        "publish_layer": "R-30 ad_hoc correction-manifest extension",
+        "manifest_pointer": "publish/correction-manifest-pointer.json"
+      },
+      {
+        "id": "topic5-final-trio-harness",
+        "type": "board",
+        "ref": "0425-topic5-final-trio-harness",
+        "publish_layer": "frozen sealed",
+        "manifest_sha": "9417e9efa60ba7651282b2798acc819fb42822c8c757b2fd8223acd192d8a0e6"
+      },
+      {
+        "id": "topic3-trio-harness-workflow",
+        "type": "board",
+        "ref": "0424-topic3-trio-harness-workflow",
+        "publish_layer": "frozen sealed",
+        "manifest_sha": "5bd487ef81464675d081aa522966f31a713ba5accba851cc56a7d8d3fa5b891f"
+      },
+      {
+        "id": "topic2-trio-harness",
+        "type": "board",
+        "ref": "0422-topic2-trio-harness",
+        "publish_layer": "shadow window pending frozen",
+        "manifest_sha": null
+      },
+      {
+        "id": "topic4-graphify",
+        "type": "board",
+        "ref": "future-board-pending",
+        "publish_layer": "not yet sealed",
+        "scope": "1축 (visualization) only — 5축 = REQ-T3-T4-ABSORPTION 후 Topic 3 implementation 으로 흡수"
+      },
+      {
+        "id": "topic6-owk-wiki",
+        "type": "board",
+        "ref": "future-board-pending",
+        "publish_layer": "not yet sealed",
+        "scope": "_bmad-output/wiki/ Readable Wiki layer (OWK-011 logging + OWK-014 search-before-create)"
+      },
+      {
+        "id": "corthex-phase-4",
+        "type": "implementation_phase",
+        "ref": "corthex-v3 Phase 4",
+        "scope": "Topic 5 implementation Phase 4 (5테마 sweep + trio mapping + worker activation + integration)",
+        "status": "pending Topic 2 v0 main merge"
+      }
+    ],
+    "edges": [
+      {
+        "from": "skill-ecosystem-board",
+        "to": "topic5-final-trio-harness",
+        "relation": "frozen_dependency",
+        "constraint": "Topic 5 publish manifest sha 9417e9ef 100% 불변 보존",
+        "evidence": "R-25 manifest auditor AUDITED_PASS"
+      },
+      {
+        "from": "skill-ecosystem-board",
+        "to": "topic3-trio-harness-workflow",
+        "relation": "frozen_dependency",
+        "constraint": "Topic 3 publish manifest sha 5bd487ef 100% 불변 보존",
+        "evidence": "R-25 manifest auditor AUDITED_PASS"
+      },
+      {
+        "from": "skill-ecosystem-board",
+        "to": "topic2-trio-harness",
+        "relation": "shadow_window_observe",
+        "constraint": "Topic 2 v0 main merge 전 = shadow window. main merge 후 frozen sha 추가",
+        "evidence": "STATUS.md P0 Topic 2 v0"
+      },
+      {
+        "from": "skill-ecosystem-board",
+        "to": "topic4-graphify",
+        "relation": "future_input_provider",
+        "scope": "skill metadata + alias map → Topic 4 graphify visualization 입력",
+        "evidence": "R-NOV-06 (deferred until Topic 3 Knowledge plane impl)"
+      },
+      {
+        "from": "skill-ecosystem-board",
+        "to": "topic6-owk-wiki",
+        "relation": "future_sync_target",
+        "scope": "skill-alias-map.yaml + R5 row → Topic 6 wiki entries",
+        "evidence": "R-NOV-07 (deferred until Topic 6 board)"
+      },
+      {
+        "from": "skill-ecosystem-board",
+        "to": "corthex-phase-4",
+        "relation": "depends_on",
+        "scope": "skill ecosystem implementation = corthex Phase 4 sprint 의 일부 (Topic 2 v0 main merge 후 진입)",
+        "evidence": "decision.yaml D2 = implementation sprint 진입 시점"
+      }
+    ]
+  },
+  "wave_progress": {
+    "wave_1": {
+      "status": "completed",
+      "commits": ["e022c92", "143abf3"],
+      "artifacts": [
+        "skill-alias-map.yaml v2 (sha 8ee30e7b)",
+        "scripts/skill-smoke-harness.py",
+        "scripts/manifest-audit.py"
+      ],
+      "depends_on": [],
+      "blocks": ["wave_2", "wave_3"]
+    },
+    "wave_2": {
+      "status": "completed",
+      "commits": ["71a5c8e", "39b6eaf"],
+      "artifacts": [
+        "11 skill frontmatter 정정 (R-06)",
+        "scripts/diagram-validate.py (R-15 Paige extract)",
+        "kdh-report SKILL.md §7.5"
+      ],
+      "depends_on": ["wave_1"],
+      "blocks": ["wave_3"]
+    },
+    "wave_3": {
+      "status": "completed",
+      "commits": ["79b551e", "edc8366"],
+      "artifacts": [
+        "4 sub-skill (kdh-dev-pipeline-phase-{a,b,d}+codex)",
+        "wrapper 9.0% 축약 (1340 → 1240 lines)",
+        "scripts/atomic-write.py (R-32)",
+        "scripts/dev-pipeline-regression.py (R-10, 31/31 PASS)",
+        "scripts/dev-pipeline-rollback.sh (R-11, DRILL_PASS)"
+      ],
+      "depends_on": ["wave_1", "wave_2"],
+      "blocks": ["wave_4"]
+    },
+    "wave_4": {
+      "status": "in_progress",
+      "in_scope": ["R-NOV-01", "R-NOV-02", "R-NOV-04", "R-NOV-05"],
+      "deferred": ["R-NOV-03 (본 보드 시점)", "R-NOV-06 (Topic 3 impl 의존)", "R-NOV-07 (Topic 6 board 의존)"],
+      "depends_on": ["wave_1", "wave_2", "wave_3"],
+      "blocks": []
+    }
+  },
+  "consumers": [
+    "R-NOV-04 machine-readable REQ dependency graph emit (per-row dependency graph 의 cross-board layer)",
+    "R-NOV-05 runtime telemetry (skill-events log 의 board context lookup)",
+    "R-NOV-06 Knowledge plane Topic 3 sync (deferred)",
+    "R-NOV-07 Topic 6 OWK Wiki sync (deferred)"
+  ],
+  "audit_hook": {
+    "validator_script": "scripts/manifest-audit.py",
+    "frequency": "governance_event",
+    "trigger_conditions": [
+      "major_board_seal",
+      "manifest_correction",
+      "alias_map_revision_change"
+    ]
+  }
+}
