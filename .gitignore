@@ -1,1 +1,5 @@
 /.claude/
+__pycache__/
+*.pyc
+/tools/_bmad-output/
+/corthex-design/
