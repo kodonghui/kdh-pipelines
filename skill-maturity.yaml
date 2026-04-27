@@ -159,10 +159,6 @@ skills:
     category: hold
     governance: conditional
     note: "Mode D Swarm Auto-Epic Worker Loop. dev-pipeline 분리. 사용 시 별 호출."
-  - name: kdh-ui-rebuild
-    category: hold
-    governance: conditional
-    note: "1회성 이벤트 (admin/app UI 재빌드) — 평소 호출 X"
   - name: kdh-ui-verify
     category: hold
     governance: conditional

@@ -111,7 +111,7 @@ plane4_authority:
 
 aliases:
 
-  # === R-04 / R-05: quinn label v2 폐기 drift (planning 9 곳 + swarm + ui-rebuild) ===
+  # === R-04 / R-05: quinn label v2 폐기 drift (planning 9 곳 + swarm) ===
 
   - alias: "quinn"
     alias_context: "implementation reference (Phase B writer / dev executor)"
@@ -124,7 +124,7 @@ aliases:
     source_subtrack: "ST-14a"
     breaking: false
     prev_revision: null
-    migration_note: "kdh-planning-pipeline 9 reference + kdh-swarm + kdh-ui-rebuild 의 'quinn' impl mention 자동 redirect. 호출자 본문 수정 X."
+    migration_note: "kdh-planning-pipeline 9 reference + kdh-swarm 의 'quinn' impl mention 자동 redirect. 호출자 본문 수정 X."
     argument_translation_map: {}
 
   - alias: "quinn"
@@ -202,17 +202,17 @@ aliases:
     argument_translation_map: {}
 
   - alias: "bmad-agent-ux-designer"
-    alias_context: "Sally persona-router (UX critic, kdh-ui-rebuild Lead Writer)"
+    alias_context: "Sally persona-router (UX critic)"
     target: "sally-local-agent"
     target_resolution: "~/.claude/agents/sally.md (local-first, BMAD config fallback only if both manifest+config exist)"
     status: "active"
-    allowed_scope: ["ui_critique", "kdh_ui_rebuild_lead", "ux_review"]
+    allowed_scope: ["ui_critique", "ux_review"]
     blocked_scope: ["impl", "qa_verdict"]
     fallback: "~/.claude/_bmad/_config/ + agent-manifest.csv 둘 다 존재 시만 BMAD path. 둘 중 하나 부재 = local agent only."
     source_subtrack: "ST-06"
     breaking: false
     prev_revision: null
-    migration_note: "kdh-ui-rebuild Sally 호출 = local agent first. R-02 명시."
+    migration_note: "Sally UX critique 호출 = local agent first. R-02 명시."
     argument_translation_map: {}
 
   # === R-01 / D3: bmad-agent-dev (Amelia) blocked — Codex 전담 룰 ===
