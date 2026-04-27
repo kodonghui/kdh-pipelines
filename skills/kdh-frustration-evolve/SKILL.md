@@ -1,6 +1,6 @@
 ---
 name: kdh-frustration-evolve
-description: CEO 짜증 로그 분석 + Claude 행동 진화 — _bmad-output/frustration-logs/*.jsonl think-level hook 기록을 24h 루프 또는 수동 실행으로 분류 + 재발 방지 룰 도출 + CLAUDE.md / memory 업데이트. 사장님이 "/kdh-frustration-evolve" / "짜증 진화" 호출 시 활성.
+description: "짜증 로그 분석 후 재발 방지 룰과 memory 갱신."
 ---
 
 # kdh-frustration-evolve

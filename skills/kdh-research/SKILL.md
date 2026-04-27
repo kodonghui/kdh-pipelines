@@ -1,6 +1,6 @@
 ---
 name: kdh-research
-description: "Deep Research v3 — Source routing (Context7→GitHub→Web), 3-question credibility scoring, conditional Round 3, analyze-ready output"
+description: "Deep research: source routing과 credibility scoring."
 ---
 
 # /kdh-research — Deep Research Command v3

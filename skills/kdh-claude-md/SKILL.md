@@ -1,6 +1,6 @@
 ---
 name: kdh-claude-md
-description: CLAUDE.md + .claude/ 폴더 정비 도구. init(신규)/audit(점검)/optimize(정리)/check(건강검진). "CLAUDE.md 점검해줘", "프로젝트 정리", "새 프로젝트 세팅" 등.
+description: "CLAUDE.md와 .claude 폴더 init/audit/optimize/check."
 disable-model-invocation: true
 ---
 

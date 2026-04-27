@@ -1,6 +1,6 @@
 ---
 name: kdh-folder-organize
-description: "프로젝트 폴더 정리 5단계 파이프라인 - scan/plan/run/index/full. Archive-first 안전 전략."
+description: "폴더 정리: scan, plan, run, index, archive-first."
 ---
 
 # /kdh-folder-organize - 폴더 정리 파이프라인

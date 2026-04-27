@@ -1,6 +1,6 @@
 ---
 name: 'kdh-dev-pipeline'
-description: 'Dev Pipeline — Sprint 실행 (Story Loop + Party Mode + Integration + E2E + Codex). 사장님 명령어: /kdh-dev-pipeline [sprint N|story-ID|계속|parallel ID1 ID2]'
+description: "개발 파이프라인 wrapper: story loop, 구현, QA, 통합."
 ---
 
 # Dev Pipeline

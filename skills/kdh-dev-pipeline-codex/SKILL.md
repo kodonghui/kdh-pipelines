@@ -1,6 +1,6 @@
 ---
 name: kdh-dev-pipeline-codex
-description: "kdh-dev-pipeline Codex sub-skill — 매 story 1회 필수 Codex review (CLAUDE.md). codex-review.sh 호출 wrapper. dev_executor (Phase B) 와 별 layer — 본 sub-skill = review 전용. Wave 3 R-09 modular split."
+description: "개발 pipeline Codex review 전용 sub-skill."
 status: skeleton-pending-body-migration
 wrapper: kdh-dev-pipeline
 phase: codex_review

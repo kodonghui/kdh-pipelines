@@ -1,6 +1,6 @@
 ---
 name: kdh-plan
-description: "실행 계획 생성기 v1.2 — research+analyze 결과를 파일/코드/명령어 수준의 구체적 실행 계획으로 변환. DAG 태스크 분해 + EARS 수락 기준 + 중단/롤백 조건 + Codex 필수 검증."
+description: "실행 계획 작성: DAG, EARS, rollback, 검증."
 ---
 
 # /kdh-plan — 실행 계획 생성기

@@ -1,6 +1,6 @@
 ---
 name: kdh-gate-protocol
-description: "GATE 분류(Business/Technical) + 19개 인벤토리. planning/dev 공통."
+description: "Business/Technical GATE 분류와 19개 인벤토리."
 ---
 
 # User Gate Protocol (v10.1)

@@ -1,6 +1,6 @@
 ---
 name: kdh-dev-pipeline-mode-c
-description: "kdh-dev-pipeline Mode C sub-skill — Parallel Story Dev. 독립 스토리 최대 3개 git worktree 병렬 실행 + sequential merge. dev-pipeline 에서 분리 (board 0425-skill-ecosystem-improvement Wave 후속)."
+description: "개발 pipeline Mode C bug-fix loop sub-skill."
 status: body-migrated-v1
 provenance:
   source: kdh-dev-pipeline SKILL.md (line 598-622)

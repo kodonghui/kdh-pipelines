@@ -1,6 +1,6 @@
 ---
 name: kdh-ecc-3h
-description: "3시간 자동 유지보수 v2 — dream + plan audit + lint + update log + report. 변경 없으면 lint만 실행. 세션 중 크론으로 자동 실행되거나 수동 호출 가능."
+description: "ECC 3h: dream, plan audit, lint, update log, report."
 tags: [maintenance, memory, automated]
 ---
 

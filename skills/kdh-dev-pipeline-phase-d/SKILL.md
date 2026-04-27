@@ -1,6 +1,6 @@
 ---
 name: kdh-dev-pipeline-phase-d
-description: "kdh-dev-pipeline Phase D sub-skill — Test + QA 단계 (Phase E 통합). qa_reviewer 가 testability + edge case + 보안 검증. Cross-model verification (Codex + Gemini 병렬, codex-review.sh) 강제. Wave 3 R-09 modular split."
+description: "개발 pipeline Phase D: test/QA/cross-model 검증."
 status: skeleton-pending-body-migration
 wrapper: kdh-dev-pipeline
 phase: D

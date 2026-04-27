@@ -1,6 +1,6 @@
 ---
 name: kdh-party-mode
-description: "Party Mode Protocol v10.4 — 멀티에이전트 리뷰. dev/planning/bug-fix 공통."
+description: "A/B/C 멀티에이전트 party review."
 ---
 
 # Party Mode Protocol

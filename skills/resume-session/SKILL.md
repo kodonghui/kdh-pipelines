@@ -1,6 +1,6 @@
 ---
 name: resume-session
-description: Load the most recent session file from ~/.claude/session-data/ and resume work with full context from where the last session ended.
+description: "로컬 session-data 기준 base resume."
 ---
 
 # Resume Session Command

@@ -1,6 +1,6 @@
 ---
 name: 'kdh-wiki-scan'
-description: 'OWK compliance scanner for _bmad-output/wiki/ (Topic 6). Checks 4-seed-file invariant, OWK-011 7-event log schema, .writer.lock hygiene, wiki_size_bytes/wiki_entry_count monotonicity. Output report to /tmp/ (not inside wiki per §12 Fix 4).'
+description: "OWK wiki compliance scanner."
 ---
 
 # kdh-wiki-scan

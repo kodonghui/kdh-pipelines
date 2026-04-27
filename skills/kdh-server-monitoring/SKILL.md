@@ -1,6 +1,6 @@
 ---
 name: 'kdh-server-monitoring'
-description: '서버 SSH 안의 Claude를 백그라운드 감시 + (v0.5 신규) 주기적 오케스트레이션 자동화. monitor의 false positive를 verify-first로 차단하고, 매 N분 git log + tmux capture로 실제 진행 상태를 직접 확인 + 보고. 사장님 명령어: /kdh-server-monitoring [start|stop|status|--orchestrate=10m --ssh-host=corthex --tmux-session=claude --interval=15 --auto-approve]'
+description: "원격 서버 tmux 감시와 verify-first 진행 보고."
 ---
 
 # kdh-server-monitoring v0.5

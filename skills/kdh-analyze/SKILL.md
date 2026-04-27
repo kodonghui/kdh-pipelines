@@ -1,6 +1,6 @@
 ---
 name: kdh-analyze
-description: "CEO 전용 깊은 분석 v2 — 6 Perspectives + Pre-mortem + Self-Attack + Codex Cross-Model Verification"
+description: "CEO 깊은 분석: 6시각, pre-mortem, self-attack, 교차검증."
 ---
 
 # /kdh-analyze v2 — CEO 전용 깊은 분석 명령어

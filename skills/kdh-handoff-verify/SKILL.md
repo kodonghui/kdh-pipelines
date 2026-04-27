@@ -1,6 +1,6 @@
 ---
 name: 'kdh-handoff-verify'
-description: 'Topic 4 Sprint N+1 Stage 3 validator — fails plans that re-propose rejected options or violate LESSONS.'
+description: "Phase handoff validator: rejected option/LESSONS 위반 차단."
 ---
 
 # kdh-handoff-verify (Topic 4 v4.1 — Sprint N+1 ACTIVE)

@@ -1,6 +1,6 @@
 ---
 name: kdh-ecc-12h
-description: "12시간 학습+진화 v2 — 6 Phase 파이프라인 (Learn→PlanRetro→Evolve→Prune→Health→Report). 입출력 계약 + SKIP 로깅."
+description: "ECC 12h: learn/retro/evolve/prune/health/report."
 tags: [learning, evolution, maintenance]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: kdh-dev-pipeline-phase-b
-description: "kdh-dev-pipeline Phase B sub-skill — Implementation 단계. dev_executor (Codex CLI 전담, D3 ratified) 가 story 구현. Direct Claude impl = blocked (D3 rule). Reference Code Search 우선. UI Story Gate (page-design CEO 승인). Wave 3 R-09 modular split."
+description: "개발 pipeline Phase B: Codex 구현 전담."
 status: body-migrated-v1
 wrapper: kdh-dev-pipeline
 phase: B

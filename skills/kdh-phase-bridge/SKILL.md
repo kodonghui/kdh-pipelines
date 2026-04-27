@@ -1,6 +1,6 @@
 ---
 name: 'kdh-phase-bridge'
-description: 'Topic 4 Sprint N+1 Stage -1 reader — injects prior phase handoff into Stage 0 Brief via Context Block.'
+description: "이전 phase handoff를 다음 brief에 주입."
 ---
 
 # kdh-phase-bridge (Topic 4 v4.1 — Sprint N+1 ACTIVE)

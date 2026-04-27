@@ -1,6 +1,6 @@
 ---
 name: kdh-study
-description: "CEO 학습 도우미 v2 — FSRS 기반 간격 반복 + 퀴즈 4종(OX/선택/빈칸/서술) + 대시보드. 기술/업무/리트 개념 학습."
+description: "CEO 학습 도우미: FSRS 퀴즈와 대시보드."
 ---
 
 # /kdh-study v2 — CEO 학습 도우미

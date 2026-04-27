@@ -1,14 +1,6 @@
 ---
 name: kdh-discuss
-description: >
-  Trigger when user says: "논의", "논의.", "논의해보자", "어떻게 생각해?", "뭐가 나을까?",
-  "고민인데", "같이 생각해보자", "A vs B", "방향을 못 잡겠어", "의견 좀",
-  "A랑 B 중", "둘 중 뭐가", "어느 쪽이", "선택 못 하겠어",
-  "판단해줘", "추천해줘", "결정 도와줘", "이 방향 맞아?",
-  "반박해줘", "이 논리 구멍", "검증해줘",
-  "/kdh-discuss", "kdh-discuss".
-  Switches Claude into active thinking partner mode — no code execution,
-  opinionated analysis, structured options with clear recommendation and next action.
+description: "논의 모드: 실행 없이 선택지, 반박, 추천을 구조화."
 ---
 
 # /kdh-discuss — CEO 논의 파트너 v3

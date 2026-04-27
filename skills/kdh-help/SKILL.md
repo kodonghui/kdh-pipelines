@@ -1,6 +1,6 @@
 ---
 name: kdh-help
-description: "뭐해야하지? v3 — 프로젝트 상태 + BMAD 카탈로그 결합 라우터. bmad-help 자동 호출 → Sprint/plan/session 컨텍스트 얹어서 명령어 추천."
+description: "현재 상태를 읽고 다음 KDH 명령을 추천."
 ---
 
 # KDH Help v3 — "뭐해야하지?"

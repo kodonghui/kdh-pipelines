@@ -1,6 +1,6 @@
 ---
 name: kdh-compliance-loop
-description: '파이프라인 준수 감시 루프 — 자가검토(3h) + Codex+Gemini 교차검토(3h) + 계속모드 주지(2h) + ecc-3h(3h) + ecc-12h(12h) 동시 등록. /kdh-dev-pipeline 계속 모드와 함께 사용.'
+description: "파이프라인 준수 감시 루프: self/Codex/Gemini/ECC."
 alwaysApply: false
 ---
 

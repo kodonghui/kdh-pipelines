@@ -1,6 +1,6 @@
 ---
 name: kdh-report
-description: "CEO 전용 법학논문형 보고서 v1 — I~VIII 번호체계 + '현재→변경' 대비 중심 + 기술용어 즉시풀이. 3회 /kdh-research (법학논문작성법/보고서작성법/모범사례) 캐시 후 board corpus 를 비개발자 친화 논증문으로 변환. 호출: /kdh-report board=<board-id> 또는 topic=\"X\" corpus=\"p1,p2\". 트리거: '보고서 써', '보고서 다시 써', '쉽게 써', 'CEO용 보고서', '평문 보고서', '/kdh-report'"
+description: "CEO용 평문 보고서: I~VIII, 현재→변경 중심."
 ---
 
 # /kdh-report — CEO 전용 법학논문형 보고서 v1

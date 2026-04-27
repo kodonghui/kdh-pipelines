@@ -1,6 +1,6 @@
 ---
 name: kdh-codex-delegate
-description: "Codex exec 위임 워크플로. CEO 지시(2026-04-21) Codex 전담 모드 — Claude = orchestration only. 5섹션 EARS 프롬프트 작성 → codex exec --full-auto → tsc/test 게이트 → commit 'Authored by Codex' → push → plan 체크박스 [x]. Party Mode 면제. main 직접 push. 한 task 단위 실행. Trigger: /kdh-codex-delegate <task-id>, 'Codex에 위임', 'Codex 작업'."
+description: "Codex exec 위임: EARS 프롬프트, 검증, commit/push."
 ---
 
 # /kdh-codex-delegate — Codex Exec Delegation v1

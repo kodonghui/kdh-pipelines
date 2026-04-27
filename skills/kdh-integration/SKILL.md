@@ -1,6 +1,6 @@
 ---
 name: kdh-integration
-description: "KDH Integration v13 — Level 2 Batch + Level 3 Sprint 통합 리뷰. dev-pipeline에서 분리."
+description: "Batch/Sprint 통합 리뷰."
 ---
 
 # KDH Integration v13 — "같이 붙여봤냐?"

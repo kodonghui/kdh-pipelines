@@ -1,6 +1,6 @@
 ---
 name: 'kdh-planning-pipeline'
-description: 'Planning Pipeline — BMAD 9 Stages (Brief→PRD→Arch→UX→Epics→Contracts→Sprint Planning). Stage-Batch Party Mode + GATE Protocol. 사장님 명령어: /kdh-planning-pipeline [auto|계속]'
+description: "Planning pipeline: brief부터 sprint planning까지."
 ---
 
 # Universal Full Pipeline v10

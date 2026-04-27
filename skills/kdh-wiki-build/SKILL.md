@@ -1,6 +1,6 @@
 ---
 name: 'kdh-wiki-build'
-description: 'Rebuild _bmad-output/wiki/ from sources with atomic lock + OWK-011 7-event logging. flock + SHA provenance + wiki_size/entry_count monotonicity. Reference: 0420-topic6-graphify-integration.md §12 Fix v2-3.'
+description: "OWK wiki rebuild: lock, provenance, monotonic log."
 ---
 
 # kdh-wiki-build

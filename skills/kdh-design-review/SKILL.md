@@ -1,6 +1,6 @@
 ---
 name: kdh-design-review
-description: 디자인 품질 검증 — Claude Design 핸드오프 + 3 테마 (Paper/Carbon/Signal) + sally verdict-only 기준 admin/app 화면별 시각 적합성 점검. v2 Claude Design Integration (kdh-corthex-design SSoT 호출). 사장님이 "디자인 리뷰" / "/kdh-design-review" 호출 시 활성.
+description: "디자인 품질 리뷰: 3테마와 sally verdict 기준."
 ---
 
 # kdh-design-review — 디자인 품질 검증

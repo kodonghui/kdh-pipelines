@@ -1,6 +1,6 @@
 ---
 name: md-to-pdf
-description: "/md-to-pdf — Markdown → PDF 변환 스킬. WSL 환경에서 Windows Chrome (powershell.exe) 호출로 변환. CSS 는 파일 전달 (--stylesheet). 사장님이 'md를 pdf로' / '마크다운 pdf로' / 'pdf로 변환' / 'pdf 뽑아줘' / '/md-to-pdf' 호출 시 활성."
+description: "Markdown to PDF via WSL Windows Chrome."
 ---
 
 # /md-to-pdf — Markdown → PDF 변환 스킬

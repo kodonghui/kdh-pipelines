@@ -1,6 +1,6 @@
 ---
 name: 'kdh-parallel'
-description: '병렬 팀 분할 — 의존성 분석 → worktree + branch + save-session 생성. /kdh-parallel [dev|bugfix] ID1 ID2 [ID3]'
+description: "병렬 worktree, branch, session 분할."
 ---
 
 # /kdh-parallel — 세션 분할 병렬 실행 도구

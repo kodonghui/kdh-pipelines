@@ -1,6 +1,6 @@
 ---
 name: kdh-swarm
-description: "Mode D: Swarm Auto-Epic Worker Loop. dev-pipeline에서 분리."
+description: "Swarm auto-epic worker loop."
 ---
 
 # Mode D: Swarm Auto-Epic

@@ -1,6 +1,6 @@
 ---
 name: kdh-ui-verify
-description: "UI E2E Full Interaction 검증 + 5테마 스크린샷. dev-pipeline에서 분리."
+description: "UI 전수 E2E와 테마별 스크린샷 검증."
 ---
 
 # UI Verification

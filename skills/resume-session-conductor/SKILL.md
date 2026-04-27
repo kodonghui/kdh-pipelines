@@ -1,6 +1,6 @@
 ---
 name: resume-session-conductor
-description: Resume a kdh-conductor orchestration session. Extends /resume-session with (1) persistent tracking files load (STATUS.md / DECISIONS.md / MASTER-ROADMAP.md), (2) remote server session+artifact SSH load, (3) local-vs-remote divergence detection. Use this instead of /resume-session when working in the kdh-conductor role (orchestrating corthex-v3 server).
+description: "Conductor resume: local tracking, remote SSH, divergence check."
 ---
 
 # Resume Session — Conductor Edition

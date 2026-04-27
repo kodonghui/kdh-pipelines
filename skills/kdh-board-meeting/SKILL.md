@@ -1,6 +1,6 @@
 ---
 name: kdh-board-meeting
-description: "Board meeting v2-RC1 (minimum executable board helpers installed; full 42-BRD validator stack not implemented) — 3-agent (A/B/C) deliberation, 42 ratified BRDs. v0.5.2 core (R0 research BRD-025, 2-pass deliberation BRD-029, R3 HIGH/CRITICAL BRD-017, manifest-hashed publish BRD-010, atomic constitution migration BRD-022) + v2 hardening (content-gated R0 BRD-031, citation resolver BRD-032, post-render ACK BRD-033, strength-weighted verdicts BRD-034, fairness ledger BRD-035, signature coverage BRD-036, logger backoff BRD-037a, strict event provenance BRD-037b, Delphi reveal BRD-038, critical-issue L3 parser BRD-039, devil advocate rotation BRD-040, exception provenance BRD-041, manifest-bound send BRD-042). Prevents chairman fabrication + post-hoc tampering structurally. Invoke: /kdh-board-meeting topic=\"X\" corpus=\"p1,p2\" rounds=5"
+description: "3-agent board 회의: R0~publish, 최소 실행 gate 포함."
 ---
 
 # /kdh-board-meeting — Board Meeting Skill v2-RC1

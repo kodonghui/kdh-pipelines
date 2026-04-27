@@ -1,6 +1,6 @@
 ---
 name: 'kdh-wiki-query'
-description: 'Read-only query skill for _bmad-output/wiki/ (Topic 6 OWK Readable Wiki layer). Grep-based search + link traversal + provenance lookup. No writes, no lock acquire. Per OWK-014 search-before-create rule.'
+description: "OWK wiki read-only 검색과 provenance 조회."
 ---
 
 # kdh-wiki-query

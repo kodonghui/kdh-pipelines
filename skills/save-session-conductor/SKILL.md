@@ -1,6 +1,6 @@
 ---
 name: save-session-conductor
-description: Save a kdh-conductor orchestration session. Extends /save-session with (1) local tracking file capture (STATUS.md / DECISIONS.md / MASTER-ROADMAP.md), (2) remote server state snapshot via SSH, (3) auto-commit + auto-push to kdh-conductor repo. Use this instead of /save-session when working in the kdh-conductor role.
+description: "Conductor save: tracking, remote snapshot, commit/push."
 ---
 
 # Save Session — Conductor Edition

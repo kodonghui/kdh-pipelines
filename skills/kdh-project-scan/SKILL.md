@@ -1,6 +1,6 @@
 ---
 name: kdh-project-scan
-description: "Project Auto-Scan — project-context.yaml 캐시. dev/planning/bug-fix 공통."
+description: "프로젝트 context.yaml 자동 스캔/cache."
 ---
 
 # Project Auto-Scan

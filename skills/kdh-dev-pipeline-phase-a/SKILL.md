@@ -1,6 +1,6 @@
 ---
 name: kdh-dev-pipeline-phase-a
-description: "kdh-dev-pipeline Phase A sub-skill — Story Create 단계. dev_executor (Writer) + winston/qa_reviewer/john (Critics) party-mode 4명. EARS+Gherkin 강제 + UI Existence Check. Wave 3 R-09 modular split, wrapper /kdh-dev-pipeline 가 호출자."
+description: "개발 pipeline Phase A: story 생성과 critic review."
 status: body-migrated-v1
 wrapper: kdh-dev-pipeline
 phase: A

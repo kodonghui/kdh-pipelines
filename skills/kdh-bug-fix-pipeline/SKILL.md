@@ -1,6 +1,6 @@
 ---
 name: 'kdh-bug-fix-pipeline'
-description: 'Bug Fix Pipeline v3.0 — 30분 주기 루프: 배포 확인 → 문서 전수검수 → Chrome MCP 자율 E2E + EARS/BARS 명세 → 픽스 → 배포. CEO 명령어: /kdh-bug-fix-pipeline (또는 loop 등록 시 30m 주기 자동 fire)'
+description: "버그 수정 루프: 배포 확인, E2E, 픽스, 재배포."
 ---
 
 # Bug Fix Pipeline v3.0 — Chrome MCP + EARS/BARS Loop

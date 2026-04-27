@@ -1,6 +1,6 @@
 ---
 name: 'kdh-phase-handoff'
-description: 'Topic 4 Sprint N+1 writer — emits phase-handoff/{N}.yaml at Phase N exit per PHX-001/002/013/019.'
+description: "Phase 종료 handoff YAML 작성."
 ---
 
 # kdh-phase-handoff (Topic 4 v4.1 — Sprint N+1 ACTIVE)

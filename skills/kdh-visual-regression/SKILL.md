@@ -1,6 +1,6 @@
 ---
 name: kdh-visual-regression
-description: 비주얼 회귀 테스트 — 5 테마 / 3 테마 (v2) 화면별 스크린샷 baseline 비교 + 픽셀 차이 임계 검증. v2 Claude Design Integration (kdh-corthex-design SSoT + sally verdict-only). 사장님이 "비주얼 회귀" / "/kdh-visual-regression" 호출 시 활성.
+description: "테마별 screenshot baseline 비주얼 회귀."
 ---
 
 # kdh-visual-regression — 비주얼 회귀 테스트
