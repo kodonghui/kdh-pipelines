@@ -103,24 +103,45 @@ gh run view <id> --repo kodonghui/corthex-v3 --json jobs --jq '.jobs[] | "\(.nam
 
 `_bmad-output/bug-fix/e2e-sweep-{YYYYMMDD}-{HHMM}-spec.md`
 
+#### 3.7 Batch Fix Plan 작성 (필수)
+
+E2E 중 버그를 발견해도 BARS 5 가 추가 탐색을 막는 경우가 아니면 즉시 코드를 고치지 않는다.
+먼저 같은 spec 파일 아래에 **Batch Fix Plan** 표를 만든다.
+
+| Bug ID | Severity | Area | Fix location | Depends on | Batch | Decision |
+|--------|----------|------|--------------|------------|-------|----------|
+| BUG-... | BARS N | app/admin/server | path | none / BUG-... | A/B/C | fix-now / defer |
+
+분류 규칙:
+
+- 의존성 없는 UI 표시/라우팅/문구/disabled affordance 버그는 같은 batch 로 묶어 한 번에 고친다.
+- 같은 API, 같은 route, 같은 DB state 를 건드리는 버그는 한 batch 안에서 순서를 적거나 별도 batch 로 분리한다.
+- BARS 5 는 즉시 고치되, 15분 안에 같은 원인으로 묶을 수 있는 버그가 있으면 함께 고친다.
+- BARS 4 는 이번 fire 안에 우선 fix 한다. 서로 독립이면 batch 로 묶는다.
+- BARS 3 이하는 의존성 없으면 batch 로 묶고, 신규 기능/API/마이그레이션이면 `DEFERRED-BUG-XXX.md` 로 분리한다.
+- batch 크기는 5~8개를 기본 상한으로 한다. 더 많으면 Batch A/B/C 로 나눈다.
+
 ### Step 4 · 픽스
 
 #### 4.1 우선순위
 
-- BARS 5 (BLOCKER) → 즉시 fix
-- BARS 4 (CRITICAL) → 이번 fire 내 fix 시도
-- BARS 3 (MAJOR) → 다음 fire 처리
-- BARS 2~1 → batch 가능
+- BARS 5 (BLOCKER) → 추가 탐색을 막으면 즉시 fix. 아니면 Batch Fix Plan 에 넣고 같은 원인 버그와 함께 fix.
+- BARS 4 (CRITICAL) → 이번 fire 내 fix. 의존성 없으면 batch 로 묶어 한 번에 fix.
+- BARS 3 (MAJOR) → 이번/다음 fire 에 batch 로 처리. route/API 가 독립이면 여러 개를 한 commit 으로 묶어도 됨.
+- BARS 2~1 → batch 처리 기본값. 단순 heading/copy/disabled affordance 는 개별 배포 금지.
 
 #### 4.2 구현 원칙
 
-- 실패 페이지마다 dev agent 병렬 dispatch 또는 server Claude 직접 Edit.
+- Batch Fix Plan 을 먼저 만든 뒤 batch 단위로 dev agent 병렬 dispatch 또는 server Claude 직접 Edit.
+- 의존성 없는 bug 는 한 번에 고치고, 한 번에 테스트하고, 한 번에 commit/push 한다.
+- 의존성 있는 bug 는 "원인 공유 / write set 충돌 / API contract 선행" 중 무엇 때문에 분리했는지 spec 에 적는다.
 - 수정 후 `bun run type-check` green 필수.
 - Scope 큰 수정 (API wiring, 새 기능) 은 `_bmad-output/bug-fix/DEFERRED-BUG-XXX.md` 로 분리.
 
 #### 4.3 Commit + Push
 
-- `fix(<scope>): BUG-XXX <short-title>` 또는 다건 묶으면 multi-line body 에 bug-id 전부 명시.
+- 단건: `fix(<scope>): BUG-XXX <short-title>`.
+- batch: `fix(<scope>): resolve e2e sweep batch <A/B/C>` + commit body 에 bug-id 전부 명시.
 - `git push` → `gh run list` CI 추적.
 - **Bug fix (route-guard / data-wiring / 표시 버그)** 는 Party Mode 생략 OK (CEO 2026-04-21 합의).
 - **신규 기능 / architecture change** 는 `/kdh-dev-pipeline` 으로 분기.
@@ -133,7 +154,7 @@ gh run view <id> --repo kodonghui/corthex-v3 --json jobs --jq '.jobs[] | "\(.nam
 
 ### 현 세션
 ```
-/loop 30m (1) 배포 (2) prd 등 planning문서와 condoctor폴더위 회의록 및 plan문서를 전수검수해서 숙지 (3) chrome extention으로 너가 직접 e2e를 자유롭게 돌아다니며 모든 ui눌러보고 채팅도 해보고 작동이나 기능이 안되는건 EARS 및 BARS 으로 명세표 작성해 (4) 버그 픽스
+/loop 30m (1) 배포 (2) prd 등 planning문서와 condoctor폴더위 회의록 및 plan문서를 전수검수해서 숙지 (3) chrome extention으로 너가 직접 e2e를 자유롭게 돌아다니며 모든 ui눌러보고 채팅도 해보고 작동이나 기능이 안되는건 EARS 및 BARS 으로 명세표 작성해 (4) Batch Fix Plan 표로 의존성 없는 버그를 묶어 한 번에 고치고, 의존성 있는 것은 분리 이유를 적어 (5) 검증/배포
 ```
 
 ### Cron 직접 (session only)
