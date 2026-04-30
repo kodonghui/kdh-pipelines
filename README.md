@@ -56,7 +56,7 @@ Bugs that exceed complexity thresholds escalate from bug-fix → planning for pr
 `kdh-codex-lifecycle` is the canonical Codex-led lifecycle entry point for the CORTHEX V4 harness.
 
 - Source skill: `skills/kdh-codex-lifecycle/SKILL.md`
-- Runtime install target: `~/.claude/skills/kdh-codex-lifecycle/SKILL.md`
+- Runtime install targets: `~/.claude/skills/kdh-codex-lifecycle/SKILL.md` and `~/.codex/skills/kdh-codex-lifecycle/SKILL.md`
 - Runner source: `/home/ubuntu/corthex-v4/scripts/lifecycle-runner.ts`
 - Command family: `bun run life:*` from `/home/ubuntu/corthex-v4`
 - Legacy boundary: `kdh-codex-delegate` remains available for existing CORTHEX v3 delegation references.

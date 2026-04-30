@@ -8,6 +8,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="$HOME/.claude"
+CODEX_DIR="$HOME/.codex"
 SETTINGS="$CLAUDE_DIR/settings.json"
 
 echo ""
@@ -20,6 +21,7 @@ echo ""
 mkdir -p "$CLAUDE_DIR/skills"
 mkdir -p "$CLAUDE_DIR/agents"
 mkdir -p "$CLAUDE_DIR/rules"
+mkdir -p "$CODEX_DIR/skills"
 
 # ── 2. 스킬 설치 ──
 # CONDUCTOR_MODE=1 (or KDH_ROLE=conductor) 일 때 base save-session/resume-session
@@ -27,8 +29,10 @@ mkdir -p "$CLAUDE_DIR/rules"
 echo "[1/7] 스킬 설치..."
 SKILL_COUNT=0
 SKIPPED_COUNT=0
+CODEX_NATIVE_COUNT=0
 CONDUCTOR_MODE="${CONDUCTOR_MODE:-${KDH_ROLE:-}}"
 CONDUCTOR_SKIP_LIST="save-session resume-session"
+CODEX_NATIVE_SKILLS="kdh-codex-lifecycle"
 
 for skill_dir in "$SCRIPT_DIR"/skills/*/; do
   if [ -f "$skill_dir/SKILL.md" ]; then
@@ -46,10 +50,18 @@ for skill_dir in "$SCRIPT_DIR"/skills/*/; do
 
     mkdir -p "$CLAUDE_DIR/skills/$name"
     cp "$skill_dir/SKILL.md" "$CLAUDE_DIR/skills/$name/SKILL.md"
+    case " $CODEX_NATIVE_SKILLS " in
+      *" $name "*)
+        mkdir -p "$CODEX_DIR/skills/$name"
+        cp "$skill_dir/SKILL.md" "$CODEX_DIR/skills/$name/SKILL.md"
+        CODEX_NATIVE_COUNT=$((CODEX_NATIVE_COUNT + 1))
+        ;;
+    esac
     SKILL_COUNT=$((SKILL_COUNT + 1))
   fi
 done
 echo "  ✅ $SKILL_COUNT 스킬 설치 완료${SKIPPED_COUNT:+ (conductor 모드 skip: $SKIPPED_COUNT)}"
+echo "  ✅ $CODEX_NATIVE_COUNT Codex native 스킬 설치 완료"
 
 # ── 2.5 Skill Alias Map (R-22 SSoT) 설치 ──
 if [ -f "$SCRIPT_DIR/skill-alias-map.yaml" ]; then
