@@ -71,6 +71,10 @@ skills:
     category: active
     governance: stable
     note: "D3 Codex 전담 룰 entry point"
+  - name: kdh-codex-lifecycle
+    category: active
+    governance: stabilizing
+    note: "CORTHEX V4 Codex-led lifecycle harness entry point; backed by corthex-v4 Bun/TypeScript life:* runner. kdh-codex-delegate remains legacy."
   - name: kdh-compliance-loop
     category: active
     governance: stable

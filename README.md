@@ -51,6 +51,18 @@ Bugs that exceed complexity thresholds escalate from bug-fix → planning for pr
 
 ---
 
+## Codex Lifecycle Harness
+
+`kdh-codex-lifecycle` is the canonical Codex-led lifecycle entry point for the CORTHEX V4 harness.
+
+- Source skill: `skills/kdh-codex-lifecycle/SKILL.md`
+- Runtime install target: `~/.claude/skills/kdh-codex-lifecycle/SKILL.md`
+- Runner source: `/home/ubuntu/corthex-v4/scripts/lifecycle-runner.ts`
+- Command family: `bun run life:*` from `/home/ubuntu/corthex-v4`
+- Legacy boundary: `kdh-codex-delegate` remains available for existing CORTHEX v3 delegation references.
+
+---
+
 ## 4-Command Workflow (discuss → research → analyze → plan)
 
 All feature work starts with 4 preparatory commands before entering a pipeline:
@@ -140,6 +152,12 @@ cp _pipeline/presets/example.yaml presets/my-project.yaml
 | `kdh-research` | Multi-source research (GitHub → docs → Exa). |
 | `kdh-analyze` | Codebase analysis. Impact + dependency mapping. |
 | `kdh-plan` | Plan generation. CEO report required before execution. |
+
+### Codex Lifecycle (1)
+
+| Skill | Description |
+|-------|-------------|
+| `kdh-codex-lifecycle` | CORTHEX V4 Codex-led lifecycle harness entrypoint backed by `corthex-v4` `life:*` commands. |
 
 ### ECC Automation (2)
 
