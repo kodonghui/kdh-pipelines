@@ -85,7 +85,7 @@ timestamp: <ISO8601>
 runner_session_correlation: <run-id>/<step-id>/<agent>
 ```
 
-For non-solo completion, the conductor must also run `life:quality` before `life:complete`. The scorecard is the lifecycle equivalent of the older planning-pipeline critic rubric: it records score, verdict, blockers, amendments, source, and evidence. `life:complete` blocks when the scorecard is missing, score is below 7, verdict is `fail`, or blockers remain. More review rounds are driven by this scorecard, not by a fixed round count.
+For non-solo completion, the conductor must also run `life:quality` before `life:complete`. The scorecard is the lifecycle equivalent of the older planning-pipeline critic rubric: it records score, verdict, blockers, amendments, source, evidence, `review_cycle`, and `minimum_review_cycles`. Team-required lifecycle steps use the global plus-one round policy: at least two quality review cycles are required before `life:complete`. `life:complete` also blocks when the scorecard is missing, score is below 7, verdict is `fail`, blockers remain, or the recorded review cycle is below the policy minimum. Extra review rounds are still driven by this scorecard, not by a fixed round count alone.
 
 Planning-mode Grade A steps are `prd`, `validate`, `architecture`, and `readiness`. Grade A handoffs must include the selected persona profile, input artifacts, rubric dimensions, required evidence, and a must-find risk checklist. Personas are selected by step; do not spawn every persona everywhere.
 
@@ -96,7 +96,7 @@ Grade A `life:quality` must use the v2 scorecard fields: reviewer list, rubric d
 - `lead_pending`: lead artifact is missing.
 - `review_pending`: lead artifact exists, but reviewer party-logs are missing. This emits `LIFECYCLE_LEAD_READY ... action=dispatch_reviewers`.
 - `blocked`: artifacts exist, but Agent Context or browser evidence gates fail.
-- `ready`: lead and reviewer artifacts exist and gates pass. Routine steps emit `action=review_then_quality_then_complete`; Grade A emits `action=quality_cross_validation_da_then_complete`.
+- `ready`: lead and reviewer artifacts exist and gates pass. Routine steps emit `action=review_then_quality_cycles_then_complete`; Grade A emits `action=quality_cross_validation_da_review_cycles_then_complete`.
 
 `watch-events.jsonl` is the machine notification channel. `life:watch` may notify a tmux target passively, but it must not type into the user-facing conductor chat as the normal wakeup path.
 
