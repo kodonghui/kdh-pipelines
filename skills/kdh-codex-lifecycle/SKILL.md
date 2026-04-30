@@ -20,7 +20,8 @@ Use this skill when work must run through the CORTHEX V4 program-enforced team l
 
 - Skill source: `/home/ubuntu/kdh-pipelines/skills/kdh-codex-lifecycle/SKILL.md`.
 - Runtime install: `/home/ubuntu/.claude/skills/kdh-codex-lifecycle/SKILL.md`.
-- Runner source: `/home/ubuntu/corthex-v4/scripts/lifecycle-runner.ts`.
+- Runner entrypoint: `/home/ubuntu/corthex-v4/scripts/lifecycle-runner.ts`.
+- Runner modules: `/home/ubuntu/corthex-v4/scripts/lifecycle/`.
 - Active repo entry point: `/home/ubuntu/corthex-v4/WORKFLOW.md`.
 
 `kdh-codex-delegate` is a legacy CORTHEX v3 Codex exec delegation skill. Keep it available while live references remain.
@@ -55,7 +56,8 @@ bun run life:init -- --id <run-id> --mode full|planning|dev|bugfix|night|qa-loop
 - `life:doctor`: read-only integrity and stale/degraded diagnostics.
 - `life:recover`: explicit state/event recovery and lock-contention promotion.
 - `life:handoff`: write or send the next role prompt.
-- `life:complete`: complete the active step with evidence.
+- `life:quality`: record the conductor-owned quality scorecard for a step.
+- `life:complete`: complete the active step with evidence after reviewer, Agent Context, browser, and quality gates pass.
 - `life:watch`: deterministic current-step router; reports lead/review/ready/blocked states, writes `watch-events.jsonl`, may delegate the compatibility flag `--auto-dispatch-reviewers` to `life:dispatch --once`, and never auto-completes.
 - `life:dispatch`: deterministic queue consumer; reads `review_pending` watch events, dedupes by notification hash and agent, creates handoff contracts, and starts missing reviewer workers from `.agents/team-lifecycle/agent-roster.json`.
 - `life:stale`: mark the active step stale with reason/action.
@@ -83,20 +85,28 @@ timestamp: <ISO8601>
 runner_session_correlation: <run-id>/<step-id>/<agent>
 ```
 
+For non-solo completion, the conductor must also run `life:quality` before `life:complete`. The scorecard is the lifecycle equivalent of the older planning-pipeline critic rubric: it records score, verdict, blockers, amendments, source, and evidence. `life:complete` blocks when the scorecard is missing, score is below 7, verdict is `fail`, or blockers remain. More review rounds are driven by this scorecard, not by a fixed round count.
+
+Planning-mode Grade A steps are `prd`, `validate`, `architecture`, and `readiness`. Grade A handoffs must include the selected persona profile, input artifacts, rubric dimensions, required evidence, and a must-find risk checklist. Personas are selected by step; do not spawn every persona everywhere.
+
+Grade A `life:quality` must use the v2 scorecard fields: reviewer list, rubric dimensions, per-reviewer scores, convergence signal, blocker list, cross-validation evidence paths, DA evidence or `da_skipped` plus a concrete reason, conductor decision, and final pass/fail. `life:complete` blocks Grade A when any of those are missing, unresolved, or blocked. Historical v1 scorecards remain evidence, but they do not satisfy new Grade A completion.
+
 `life:watch` is a conductor-side router, not a worker hook or worker cron. It observes the active lifecycle run and distinguishes:
 
 - `lead_pending`: lead artifact is missing.
 - `review_pending`: lead artifact exists, but reviewer party-logs are missing. This emits `LIFECYCLE_LEAD_READY ... action=dispatch_reviewers`.
 - `blocked`: artifacts exist, but Agent Context or browser evidence gates fail.
-- `ready`: lead and reviewer artifacts exist and gates pass. This emits `LIFECYCLE_STEP_READY ... action=review_then_complete`.
+- `ready`: lead and reviewer artifacts exist and gates pass. Routine steps emit `action=review_then_quality_then_complete`; Grade A emits `action=quality_cross_validation_da_then_complete`.
 
 `watch-events.jsonl` is the machine notification channel. `life:watch` may notify a tmux target passively, but it must not type into the user-facing conductor chat as the normal wakeup path.
 
 `--auto-dispatch-reviewers` remains as a compatibility flag only. It delegates to `life:dispatch --once`; it does not run reviewer handoffs inside the watcher.
 
-`life:dispatch` launches only `review_pending` missing reviewer workers. It must not launch workers for `ready`; `ready` stays conductor-owned review followed by `life:complete` or `life:stale`.
+`life:dispatch` launches only `review_pending` missing reviewer workers. It must not launch workers for `ready`; `ready` stays conductor-owned review followed by `life:quality` plus `life:complete` or `life:stale`.
 
 Dispatcher workers are one-assignment sessions. Their durable memory is the expected artifact and party-log files. If a worker exits without the expected artifact, dispatcher records `DISPATCH_FAILED` and leaves the lifecycle step incomplete.
+
+For active Batch C, resume at `architecture` only after `life:doctor` has no unexplained mismatch. The architecture handoff must include PRD/validate artifacts and quality findings. If architecture cannot absorb those amendments, stop and recommend PRD redo instead of silently continuing.
 
 ## Stop Conditions
 
