@@ -33,6 +33,16 @@ CODEX_NATIVE_COUNT=0
 CONDUCTOR_MODE="${CONDUCTOR_MODE:-${KDH_ROLE:-}}"
 CONDUCTOR_SKIP_LIST="save-session resume-session"
 CODEX_NATIVE_SKILLS="kdh-codex-lifecycle"
+KDH_SKILL_PROFILE="${KDH_SKILL_PROFILE:-}"
+if [ -z "$KDH_SKILL_PROFILE" ]; then
+  if [ "$CONDUCTOR_MODE" = "1" ] || [ "$CONDUCTOR_MODE" = "conductor" ]; then
+    KDH_SKILL_PROFILE="conductor-lite"
+  else
+    KDH_SKILL_PROFILE="full"
+  fi
+fi
+CONDUCTOR_LITE_SKILLS="resume-session-conductor save-session-conductor kdh-codex-lifecycle kdh-codex-delegate kdh-help kdh-discuss kdh-plan kdh-research kdh-report kdh-board-meeting kdh-planning-pipeline kdh-dev-pipeline kdh-dev-pipeline-codex kdh-bug-fix-pipeline kdh-deploy-verify kdh-server-monitoring kdh-wiki-query kdh-wiki-build kdh-wiki-scan kdh-corthex-design kdh-ui-verify kdh-project-scan kdh-gate-protocol"
+echo "  profile: $KDH_SKILL_PROFILE"
 
 for skill_dir in "$SCRIPT_DIR"/skills/*/; do
   if [ -f "$skill_dir/SKILL.md" ]; then
@@ -42,6 +52,17 @@ for skill_dir in "$SCRIPT_DIR"/skills/*/; do
     if [ "$CONDUCTOR_MODE" = "1" ] || [ "$CONDUCTOR_MODE" = "conductor" ]; then
       case " $CONDUCTOR_SKIP_LIST " in
         *" $name "*)
+          SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+          continue
+          ;;
+      esac
+    fi
+
+    if [ "$KDH_SKILL_PROFILE" = "conductor-lite" ]; then
+      case " $CONDUCTOR_LITE_SKILLS " in
+        *" $name "*)
+          ;;
+        *)
           SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
           continue
           ;;
