@@ -7,6 +7,15 @@ description: "Codex-led lifecycle harness: planning/dev/bugfix/night/QA runs thr
 
 Use this skill when work must run through the CORTHEX V4 program-enforced team lifecycle instead of solo implementation.
 
+## Session Hygiene
+
+- Spawn lifecycle workers in high-autonomy mode: Claude in auto mode, Gemini in YOLO/no-sandbox mode, and Codex workers with `codex exec --full-auto` only when Codex worker delegation is explicitly authorized.
+- Spawned lifecycle workers must not create recurring cron/scheduled tasks, invoke conductor resume/save bootstraps, or run conductor SSH/tracking updates unless the handoff explicitly asks for that work. The conductor owns persistence and orchestration state.
+- Treat each lifecycle cycle as disposable. When a cycle finishes, save the artifact and party-log, kill or exit the spawned worker session, then respawn a fresh worker for the next cycle.
+- Do not keep long-lived worker sessions across cycles and do not rely on resume context for the next cycle; context-window drift is a correctness risk.
+- Watcher and dispatcher are deterministic programs. LLMs are used only as bounded, disposable lifecycle workers that write artifact files.
+- User-facing conductor chat injection is not the normal wakeup path. Use `watch-events.jsonl` and `life:dispatch` for machine notification and worker launch.
+
 ## Source Of Truth
 
 - Skill source: `/home/ubuntu/kdh-pipelines/skills/kdh-codex-lifecycle/SKILL.md`.
@@ -47,6 +56,8 @@ bun run life:init -- --id <run-id> --mode full|planning|dev|bugfix|night|qa-loop
 - `life:recover`: explicit state/event recovery and lock-contention promotion.
 - `life:handoff`: write or send the next role prompt.
 - `life:complete`: complete the active step with evidence.
+- `life:watch`: deterministic current-step router; reports lead/review/ready/blocked states, writes `watch-events.jsonl`, may delegate the compatibility flag `--auto-dispatch-reviewers` to `life:dispatch --once`, and never auto-completes.
+- `life:dispatch`: deterministic queue consumer; reads `review_pending` watch events, dedupes by notification hash and agent, creates handoff contracts, and starts missing reviewer workers from `.agents/team-lifecycle/agent-roster.json`.
 - `life:stale`: mark the active step stale with reason/action.
 - `life:stop`: abort a run at an explicit stop condition.
 - `life:night-check`: apply night stale halt when approved by diagnostics.
@@ -72,6 +83,21 @@ timestamp: <ISO8601>
 runner_session_correlation: <run-id>/<step-id>/<agent>
 ```
 
+`life:watch` is a conductor-side router, not a worker hook or worker cron. It observes the active lifecycle run and distinguishes:
+
+- `lead_pending`: lead artifact is missing.
+- `review_pending`: lead artifact exists, but reviewer party-logs are missing. This emits `LIFECYCLE_LEAD_READY ... action=dispatch_reviewers`.
+- `blocked`: artifacts exist, but Agent Context or browser evidence gates fail.
+- `ready`: lead and reviewer artifacts exist and gates pass. This emits `LIFECYCLE_STEP_READY ... action=review_then_complete`.
+
+`watch-events.jsonl` is the machine notification channel. `life:watch` may notify a tmux target passively, but it must not type into the user-facing conductor chat as the normal wakeup path.
+
+`--auto-dispatch-reviewers` remains as a compatibility flag only. It delegates to `life:dispatch --once`; it does not run reviewer handoffs inside the watcher.
+
+`life:dispatch` launches only `review_pending` missing reviewer workers. It must not launch workers for `ready`; `ready` stays conductor-owned review followed by `life:complete` or `life:stale`.
+
+Dispatcher workers are one-assignment sessions. Their durable memory is the expected artifact and party-log files. If a worker exits without the expected artifact, dispatcher records `DISPATCH_FAILED` and leaves the lifecycle step incomplete.
+
 ## Stop Conditions
 
 Stop and report before:
@@ -87,7 +113,6 @@ Stop and report before:
 
 Do not promote these without a separate board or CEO gate:
 
-- `life:watch`
 - `life:hooks-export`
 - rollback automation
 - heartbeat daemon
